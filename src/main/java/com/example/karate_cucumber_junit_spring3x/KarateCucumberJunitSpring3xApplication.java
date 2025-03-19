@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class KarateCucumberJunitSpring3xApplication {
 
-	public static void main ( String[] args ) {
-		SpringApplication.run(KarateCucumberJunitSpring3xApplication.class , args);
-	}
+    public static void main ( String[] args ) {
+        SpringApplication.run(KarateCucumberJunitSpring3xApplication.class , args);
+    }
 }
