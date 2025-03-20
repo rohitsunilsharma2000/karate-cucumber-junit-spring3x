@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 
 public class TimeUtils {
 
-    public boolean isTimeExceedThanLraRequired(Instant currentTimeSTamp, Instant timeStamp, int delayTime) {
+    public static boolean isTimeExceedThanLraRequired(Instant currentTimeSTamp, Instant timeStamp, int delayTime) {
         if (timeStamp == null) {
             return false;
         }
