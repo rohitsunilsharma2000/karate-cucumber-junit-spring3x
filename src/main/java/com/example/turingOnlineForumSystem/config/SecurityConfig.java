@@ -1,4 +1,4 @@
-package com.example.karate_cucumber_junit_spring3x.config;
+package com.example.turingOnlineForumSystem.config;
 
 
 
