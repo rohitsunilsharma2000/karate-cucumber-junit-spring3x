@@ -1,7 +1,7 @@
 package com.example.turingOnlineForumSystem.controller;
 
 
-import com.example.turingOnlineForumSystem.model.Moderation;
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
 import com.example.turingOnlineForumSystem.service.ModerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +50,7 @@ public class ModerationController {
      * Get moderation history for a user.
      */
     @GetMapping("/history/{userId}")
-    public List<Moderation> getModerationHistory(@PathVariable Long userId) {
+    public List<ModerationDTO> getModerationHistory(@PathVariable Long userId) {
         return moderationService.getModerationHistory(userId);
     }
 }

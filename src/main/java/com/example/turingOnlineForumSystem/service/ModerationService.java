@@ -1,16 +1,24 @@
 package com.example.turingOnlineForumSystem.service;
 
 
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
 import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
-import com.example.turingOnlineForumSystem.model.*;
-import com.example.turingOnlineForumSystem.repository.*;
+import com.example.turingOnlineForumSystem.model.Moderation;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ModerationRepository;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,8 +63,6 @@ public class ModerationService {
 
         log.info("Deleted thread ID {} by moderator {}", threadId, moderatorId);
     }
-
-
 
 
     /**
@@ -108,8 +114,24 @@ public class ModerationService {
     /**
      * Get moderation history for a user.
      */
-    public List<Moderation> getModerationHistory(Long userId) {
+//    public List<Moderation> getModerationHistory(Long userId) {
+//        log.info("Fetching moderation history for user ID {}", userId);
+//        return moderationRepository.findByUserId(userId);
+//    }
+    public List<ModerationDTO> getModerationHistory(Long userId) {
         log.info("Fetching moderation history for user ID {}", userId);
-        return moderationRepository.findByUserId(userId);
+
+        List<Moderation> moderationList = moderationRepository.findByUserId(userId);
+
+        return moderationList.stream().map(m -> new ModerationDTO(
+                m.getId(),
+                m.getAction(),
+                m.getReason(),
+                m.getCreatedAt(),
+                m.getUser().getId(),
+                m.getUser().getUsername(),
+                m.getThread() != null ? m.getThread().getId() : null
+        )).collect(Collectors.toList());
     }
+
 }
