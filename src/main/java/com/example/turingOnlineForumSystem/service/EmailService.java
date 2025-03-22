@@ -1,7 +1,7 @@
-package com.example.karate_cucumber_junit_spring3x.service;
+package com.example.turingOnlineForumSystem.service;
 
 
-import com.example.karate_cucumber_junit_spring3x.model.EmailRequest;
+import com.example.turingOnlineForumSystem.model.EmailRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

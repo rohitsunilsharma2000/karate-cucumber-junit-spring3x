@@ -1,4 +1,4 @@
-package com.example.karate_cucumber_junit_spring3x.model;
+package com.example.turingOnlineForumSystem.model;
 
 import lombok.Getter;
 import lombok.Setter;
