@@ -20,6 +20,7 @@ public class MessagingService {
 
     private final MessageRepository messageRepo;
     private final UserRepository userRepo;
+    private final NotificationService notificationService;
 
     /**
      * Persists and returns a message.
@@ -40,6 +41,10 @@ public class MessagingService {
 
         Message saved = messageRepo.save(message);
         log.info("Message saved: ID {}", saved.getId());
+
+        // 🔔 Create Notification
+        notificationService.sendNotification(receiver, "📩 New message from " + sender.getUsername());
+
         return saved;
     }
 
