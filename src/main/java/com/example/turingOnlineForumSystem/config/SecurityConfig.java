@@ -1,19 +1,18 @@
 package com.example.turingOnlineForumSystem.config;
 
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -21,15 +20,38 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    //    @Bean
+//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+//        http
+//                .cors()  // Enable CORS using our custom configuration
+//                .and()
+//                .csrf().disable()  // Disable CSRF for simplicity
+//                .authorizeHttpRequests(authz -> authz
+//                        .anyRequest().permitAll()  // Allow all requests
+//                );
+//        return http.build();
+//    }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors()  // Enable CORS using our custom configuration
+                .cors()
                 .and()
-                .csrf().disable()  // Disable CSRF for simplicity
+                .csrf().disable()
                 .authorizeHttpRequests(authz -> authz
-                        .anyRequest().permitAll()  // Allow all requests
-                );
+                        .requestMatchers(
+                                "/**",                  // allow all paths (WebSocket + REST)
+                                "/chat/**",             // STOMP WebSocket endpoint
+                                "/ws/**",               // optional WS prefix if used
+                                "/topic/**",            // message broker destinations
+                                "/app/**",              // application prefix for sending messages
+                                "/api/**",              // REST APIs
+                                "/webjars/**",          // static resources (e.g. SockJS client)
+                                "/js/**", "/css/**", "/images/**"  // static assets if using Thymeleaf
+                        ).permitAll()
+                        .anyRequest().permitAll() // catch-all just in case
+                )
+                .httpBasic();  // optional, good for testing
+
         return http.build();
     }
 
