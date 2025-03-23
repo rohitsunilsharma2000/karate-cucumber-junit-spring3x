@@ -2,6 +2,7 @@ package com.example.supportservice.dto;
 
 
 import com.example.supportservice.enums.Priority;
+import com.example.supportservice.enums.TicketStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -25,4 +26,7 @@ public class TicketRequest {
     private Priority priority;
 
     private String assignedTo;
+
+    private TicketStatus status;
+
 }
