@@ -9,10 +9,12 @@
 			<relativePath/> <!-- lookup parent from repository -->
 		</parent>
 		<groupId>com.example</groupId>
-		<artifactId>karate-cucumber-junit-spring3x</artifactId>
+		<artifactId>turingOnlineForumSystem</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<name>hospital-management-system</name>
-		<description>A web-based hospital management system built using Spring Boot to handle various administrative and operational tasks in a hospital. It aims to automate processes like patient check-in, appointment scheduling, billing, lab tests, and prescription handling. The system provides real-time data for hospital staff, improves workflow, reduces errors, and enhances patient care.</description>
+		<name>Turing online forum system</name>
+		<description>
+			Build a complete Spring Boot online forum with discussion threads, user moderation tools, private messaging, and community features.
+		</description>
 		<url/>
 		<licenses>
 			<license/>
@@ -40,20 +42,7 @@
 				<artifactId>spring-boot-starter-test</artifactId>
 				<scope>test</scope>
 			</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-data-jpa</artifactId>
-			</dependency>
-			<dependency>
-				<groupId>com.h2database</groupId>
-				<artifactId>h2</artifactId>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.postgresql</groupId>
-				<artifactId>postgresql</artifactId>
-				<version>42.6.0</version> <!-- Use the latest version -->
-			</dependency>
+
 			<!-- Spring Boot Starter Web (Includes Spring Security by default) -->
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
@@ -64,24 +53,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-starter-security</artifactId>
 			</dependency>
-			<!--		Token-Based Authentication with JWT-->
-			<dependency>
-				<groupId>io.jsonwebtoken</groupId>
-				<artifactId>jjwt-api</artifactId>
-				<version>0.11.5</version>
-			</dependency>
-			<dependency>
-				<groupId>io.jsonwebtoken</groupId>
-				<artifactId>jjwt-impl</artifactId>
-				<version>0.11.5</version>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>io.jsonwebtoken</groupId>
-				<artifactId>jjwt-jackson</artifactId>
-				<version>0.11.5</version>
-				<scope>runtime</scope>
-			</dependency>
+
 
 			<!-- Spring Boot Starter for Validation -->
 			<dependency>
@@ -95,17 +67,7 @@
 				<version>1.18.24</version>
 				<scope>provided</scope>
 			</dependency>
-			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-				<version>2.7.0</version>
-			</dependency>
-			<!-- Hibernate Validator Dependency -->
-			<dependency>
-				<groupId>org.hibernate</groupId>
-				<artifactId>hibernate-validator</artifactId>
-				<version>8.0.1.Final</version>
-			</dependency>
+
 
 
 			<!-- For Jakarta Bean Validation -->
@@ -114,68 +76,57 @@
 				<artifactId>jakarta.validation-api</artifactId>
 				<version>3.0.2</version>
 			</dependency>
-			<!--spring-boot-starter-webflux: This starter includes the WebClient API, which
-			is part of Spring's reactive programming model.-->
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-webflux</artifactId>
-			</dependency>
+
 
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-starter-mail</artifactId>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-thymeleaf</artifactId>
+			</dependency>
 			<!-- MySQL, Spring Boot 3.x -->
 			<dependency>
 				<groupId>com.mysql</groupId>
 				<artifactId>mysql-connector-j</artifactId>
 				<scope>runtime</scope>
 			</dependency>
-			<!--  The jackson-datatype-jsr310 module enables Jackson to serialize and deserialize Java 8 date/time
-			types like LocalDate, LocalDateTime, and ZonedDateTime. Without it, Jackson cannot handle these
-			types, resulting in an InvalidDefinitionException..-->
 
 			<dependency>
-				<groupId>com.fasterxml.jackson.datatype</groupId>
-				<artifactId>jackson-datatype-jsr310</artifactId>
-				<version>2.15.0</version> <!-- Use a compatible version -->
-			</dependency>
-			<!-- Apache PDFBox for PDF Generation -->
-			<dependency>
-				<groupId>org.apache.pdfbox</groupId>
-				<artifactId>pdfbox</artifactId>
-				<version>2.0.27</version>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-data-jpa</artifactId>
 			</dependency>
 
-
-
-			<!-- Karate JUnit5 Integration -->
 			<dependency>
-				<groupId>com.intuit.karate</groupId>
-				<artifactId>karate-junit5</artifactId>
-				<version>1.4.1</version> <!-- Adjust Karate version as needed -->
-				<scope>test</scope>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-devtools</artifactId>
+				<version>3.4.1</version>
 			</dependency>
 
-			<!-- Cucumber dependencies -->
+			<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-websocket -->
 			<dependency>
-				<groupId>io.cucumber</groupId>
-				<artifactId>cucumber-java</artifactId>
-				<version>5.7.0</version>
-				<scope>test</scope>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-websocket</artifactId>
+				<version>3.4.0</version>
 			</dependency>
 			<dependency>
-				<groupId>io.cucumber</groupId>
-				<artifactId>cucumber-spring</artifactId>
-				<version>5.7.0</version>
-				<scope>test</scope>
+				<groupId>org.webjars</groupId>
+				<artifactId>sockjs-client</artifactId>
+				<version>1.5.1</version>
 			</dependency>
+
 			<dependency>
-				<groupId>io.cucumber</groupId>
-				<artifactId>cucumber-spring</artifactId>
-				<version>5.7.0</version>
-				<scope>test</scope>
+				<groupId>org.webjars</groupId>
+				<artifactId>stomp-websocket</artifactId>
+				<version>2.3.4</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>bootstrap</artifactId>
+				<version>5.1.3</version>
 			</dependency>
 
 
