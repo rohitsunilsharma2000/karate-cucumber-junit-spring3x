@@ -173,12 +173,63 @@ Here's a sample `pom.xml` file:
 In `src/main/resources/application.properties`, add your email server configuration:
 
 ```properties
-spring.mail.host=smtp.example.com
+# ========================
+# Application Information
+# ========================
+spring.application.name=karate-cucumber-junit-spring3x
+
+# ========================
+# Server Configuration
+# ========================
+server.port=8080
+
+# ========================
+# Security Configuration
+# ========================
+# Default in-memory user for basic authentication
+spring.security.user.name=admin
+spring.security.user.password=admin123
+
+
+# Set the active profile
+spring.profiles.active=mysql
+
+# ========================
+# Configure Mail Properties
+# ========================
+spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=your-email@example.com
-spring.mail.password=your-email-password
+spring.mail.username=rohitsunilsharma2000@gmail.com
+spring.mail.password=azmu tcjl yawj kpmd
+
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.debug=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+# ========================
+# mySql database connection (Database Configuration)
+# ========================
+spring.datasource.url=jdbc:mysql://localhost:3306/turingonlineforumsystem
+spring.datasource.username=root
+spring.datasource.password=SYSTEM
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+# Automatically create/drop schema at startup
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Enable JPA SQL logging for debugging
+spring.jpa.show-sql=true
+
+
+spring.jpa.properties.hibernate.format_sql=true
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+
 ```
 
 ### Step 4: Create Email Request Model
