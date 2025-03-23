@@ -1203,8 +1203,464 @@ public class Moderation {
 }
 
 ```
-###   `PostRepository`
+###   `MessagingController`
 ```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.dto.ChatMessageDTO;
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.service.MessagingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * Controller for handling messaging functionality in the Turing Online Forum System.
+ *
+ * <p>This controller includes:
+ * - WebSocket message handling for real-time chat
+ * - REST endpoint for chat history
+ * - A Thymeleaf view renderer for the chat UI
+ * </p>
+ *
+ * <p>Base URL: <code>/api/messages</code></p>
+ */
+@RestController
+@Slf4j
+@RequiredArgsConstructor
+@RequestMapping("/api/messages")
+public class MessagingController {
+
+    private final MessagingService messagingService;
+    private final SimpMessagingTemplate simpMessagingTemplate;
+
+    /**
+     * WebSocket endpoint to handle incoming chat messages.
+     * 
+     * <p>Messages sent to <code>/app/chat.send</code> will be received here.
+     * The message is persisted and then broadcast to the receiver's topic.</p>
+     *
+     * @param chatMessage DTO containing sender ID, receiver ID, and message content.
+     */
+    @MessageMapping("/chat.send")
+    public void sendMessage(ChatMessageDTO chatMessage) {
+        log.info("WebSocket: Received message {}", chatMessage.getContent());
+
+        Message message = messagingService.sendMessage(chatMessage);
+
+        simpMessagingTemplate.convertAndSend("/topic/messages/" + chatMessage.getReceiverId(), message);
+    }
+
+    /**
+     * REST API to retrieve the message history between two users.
+     *
+     * @param senderId   ID of the sender.
+     * @param receiverId ID of the receiver.
+     * @return A list of {@link Message} objects exchanged between the two users.
+     */
+    @GetMapping("/history")
+    public List<Message> getHistory(@RequestParam Long senderId, @RequestParam Long receiverId) {
+        return messagingService.getChatHistory(senderId, receiverId);
+    }
+
+    /**
+     * Renders the chat user interface (UI) using Thymeleaf.
+     *
+     * @param userId The ID of the current logged-in user.
+     * @param model  Spring's model object used to pass attributes to the view.
+     * @return The name of the Thymeleaf template ("chat") to render.
+     */
+    @GetMapping("/chat")
+    public String chatPage(@RequestParam Long userId, Model model) {
+        model.addAttribute("userId", userId);  // Inject user ID into the frontend
+        return "chat";  // Loads templates/chat.html
+    }
+}
+
+```
+###   `MessagingService`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.ChatMessageDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.MessageRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+ * Service class responsible for handling messaging logic.
+ * <p>
+ * This includes sending messages, persisting them, fetching chat history, 
+ * and sending real-time notifications to users.
+ * </p>
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MessagingService {
+
+    private final MessageRepository messageRepo;
+    private final UserRepository userRepo;
+    private final NotificationService notificationService;
+
+    /**
+     * Sends a message from one user to another.
+     *
+     * <p>This method will:
+     * <ul>
+     *   <li>Validate sender and receiver IDs</li>
+     *   <li>Persist the message in the database</li>
+     *   <li>Send a real-time notification to the receiver</li>
+     * </ul>
+     * </p>
+     *
+     * @param dto The {@link ChatMessageDTO} containing message content and user IDs.
+     * @return The persisted {@link Message} entity.
+     * @throws ResourceNotFoundException if either the sender or receiver does not exist.
+     */
+    public Message sendMessage(ChatMessageDTO dto) {
+        log.info("Sending message from {} to {}", dto.getSenderId(), dto.getReceiverId());
+
+        User sender = userRepo.findById(dto.getSenderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Sender not found"));
+        User receiver = userRepo.findById(dto.getReceiverId())
+                .orElseThrow(() -> new ResourceNotFoundException("Receiver not found"));
+
+        Message message = Message.builder()
+                .content(dto.getContent())
+                .sender(sender)
+                .receiver(receiver)
+                .build();
+
+        Message saved = messageRepo.save(message);
+        log.info("Message saved: ID {}", saved.getId());
+
+        // 🔔 Create notification
+        notificationService.sendNotification(receiver, "📩 New message from " + sender.getUsername());
+
+        return saved;
+    }
+
+    /**
+     * Retrieves the complete chat history between two users.
+     * 
+     * <p>Note: Only messages sent from user1 → user2 are currently returned. 
+     * To support bidirectional history, consider modifying the repository method.</p>
+     *
+     * @param user1Id The ID of the first user.
+     * @param user2Id The ID of the second user.
+     * @return A list of {@link Message} objects exchanged between the users.
+     * @throws ResourceNotFoundException if either user is not found.
+     */
+    public List<Message> getChatHistory(Long user1Id, Long user2Id) {
+        log.info("Fetching chat history between {} and {}", user1Id, user2Id);
+
+        User u1 = userRepo.findById(user1Id)
+                .orElseThrow(() -> new ResourceNotFoundException("User 1 not found"));
+        User u2 = userRepo.findById(user2Id)
+                .orElseThrow(() -> new ResourceNotFoundException("User 2 not found"));
+
+        return messageRepo.findBySenderAndReceiver(u1, u2);
+    }
+}
+
+```
+###   `MessageRepository`
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * Repository interface for {@link Message} entities.
+ * <p>
+ * Provides methods to persist and retrieve chat messages between users.
+ * </p>
+ */
+public interface MessageRepository extends JpaRepository<Message, Long> {
+
+    /**
+     * Find messages sent from one specific user to another.
+     *
+     * @param sender   The user who sent the messages.
+     * @param receiver The user who received the messages.
+     * @return A list of {@link Message} objects from sender to receiver.
+     */
+    List<Message> findBySenderAndReceiver(User sender, User receiver);
+
+}
+
+```
+###   `Message`
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+/**
+ * Entity representing a private message exchanged between two users in the forum system.
+ * <p>
+ * Each message contains content, timestamp, and references to both the sender and receiver.
+ * </p>
+ */
+@Getter
+@Setter
+@Entity
+@NoArgsConstructor   // Required by JPA
+@AllArgsConstructor
+@Builder
+public class Message {
+
+    /**
+     * Unique identifier for the message.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * The textual content of the message.
+     */
+    private String content;
+
+    /**
+     * Timestamp when the message was created.
+     * Automatically set before persistence via {@link #prePersist()}.
+     */
+    private LocalDateTime timestamp;
+
+    /**
+     * The user who sent the message.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
+    private User sender;
+
+    /**
+     * The user who received the message.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiver_id")
+    private User receiver;
+
+    /**
+     * Lifecycle hook to automatically set the timestamp before the entity is persisted.
+     */
+    @PrePersist
+    public void prePersist() {
+        this.timestamp = LocalDateTime.now();
+    }
+}
+
+```
+###   `FollowController`
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.service.FollowService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST controller for managing follow relationships between users.
+ *
+ * <p>Exposes endpoints to follow another user and retrieve the list of users being followed.</p>
+ *
+ * <p>Base URL: <code>/api/follow</code></p>
+ */
+@RestController
+@RequestMapping("/api/follow")
+@RequiredArgsConstructor
+@Slf4j
+public class FollowController {
+
+    private final FollowService followService;
+
+    /**
+     * Follow another user.
+     *
+     * @param followerId  The ID of the user who wants to follow someone.
+     * @param followingId The ID of the user to be followed.
+     * @return A success message indicating that the follow action was completed.
+     */
+    @PostMapping
+    public ResponseEntity<String> followUser(@RequestParam Long followerId, @RequestParam Long followingId) {
+        log.info("User {} is attempting to follow User {}", followerId, followingId);
+        followService.followUser(followerId, followingId);
+        return ResponseEntity.ok("Followed successfully");
+    }
+
+    /**
+     * Get a list of users that the given user is following.
+     *
+     * @param userId The ID of the user whose following list is to be retrieved.
+     * @return A list of {@link User} entities that the user is following.
+     */
+    @GetMapping("/{userId}/following")
+    public ResponseEntity<List<User>> getFollowing(@PathVariable Long userId) {
+        return ResponseEntity.ok(followService.getFollowing(userId));
+    }
+}
+
+```
+###   `FollowService`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.model.Follow;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.FollowRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Service class that handles the logic for following users in the system.
+ *
+ * <p>Includes functionality to:
+ * - Follow another user
+ * - Retrieve the list of users a given user is following
+ * </p>
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class FollowService {
+
+    private final FollowRepository followRepo;
+    private final UserRepository userRepo;
+
+    /**
+     * Follows a user by creating a follow relationship between two users.
+     *
+     * @param followerId  The ID of the user who is following.
+     * @param followingId The ID of the user to be followed.
+     * @throws java.util.NoSuchElementException if either user is not found.
+     */
+    public void followUser(Long followerId, Long followingId) {
+        User follower = userRepo.findById(followerId)
+                .orElseThrow(() -> new IllegalArgumentException("Follower not found with ID: " + followerId));
+        User following = userRepo.findById(followingId)
+                .orElseThrow(() -> new IllegalArgumentException("Following not found with ID: " + followingId));
+
+        Follow follow = new Follow(null, follower, following);
+        followRepo.save(follow);
+        log.info("User {} followed user {}", followerId, followingId);
+    }
+
+    /**
+     * Retrieves the list of users that a given user is following.
+     *
+     * @param userId The ID of the user.
+     * @return A list of {@link User} entities the user is following.
+     */
+    public List<User> getFollowing(Long userId) {
+        List<User> followingList = followRepo.findByFollowerId(userId).stream()
+                .map(Follow::getFollowing)
+                .collect(Collectors.toList());
+
+        log.info("User {} is following {} users", userId, followingList.size());
+        return followingList;
+    }
+}
+
+```
+###   `FollowRepository`
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Follow;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * Repository interface for managing {@link Follow} relationships between users.
+ *
+ * <p>Provides methods to query the follow table for operations such as retrieving
+ * all users followed by a specific user.</p>
+ */
+public interface FollowRepository extends JpaRepository<Follow, Long> {
+
+    /**
+     * Finds all follow relationships where the given user is the follower.
+     *
+     * @param followerId The ID of the follower user.
+     * @return A list of {@link Follow} entities where the user is following others.
+     */
+    List<Follow> findByFollowerId(Long followerId);
+}
+
+```
+###   `Follow`
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * Entity representing a "follow" relationship between two users.
+ *
+ * <p>This table models the connection where one user follows another. 
+ * Each record links a follower to the user they are following.</p>
+ */
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Follow {
+
+    /**
+     * Primary key for the follow relationship.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * The user who is following another user.
+     */
+    @ManyToOne
+    private User follower;
+
+    /**
+     * The user who is being followed.
+     */
+    @ManyToOne
+    private User following;
+}
+
 ```
 ###   `PostRepository`
 ```java
@@ -1215,8 +1671,6 @@ public class Moderation {
 ###   `PostRepository`
 ```java
 ```
-###   `PostRepository`
-```java
 ```
 ###   `PostRepository`
 ```java
@@ -1226,6 +1680,7 @@ public class Moderation {
 ```
 ###   `PostRepository`
 ```java
+```
 ```
 ###   `PostRepository`
 ```java
