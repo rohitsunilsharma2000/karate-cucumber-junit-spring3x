@@ -1671,7 +1671,7 @@ public class Follow {
 ###   `PostRepository`
 ```java
 ```
-```
+
 ###   `PostRepository`
 ```java
 ```
@@ -1680,7 +1680,6 @@ public class Follow {
 ```
 ###   `PostRepository`
 ```java
-```
 ```
 ###   `PostRepository`
 ```java
