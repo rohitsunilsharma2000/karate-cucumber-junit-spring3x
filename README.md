@@ -1662,32 +1662,431 @@ public class Follow {
 }
 
 ```
-###   `PostRepository`
+###   `ChatMessageDTO`
 ```java
+package com.example.turingOnlineForumSystem.dto;
+
+
+import lombok.Data;
+
+@Data
+public class ChatMessageDTO {
+    private Long senderId;
+    private Long receiverId;
+    private String content;
+}
+
 ```
-###   `PostRepository`
+###   `ModerationDTO`
 ```java
+package com.example.turingOnlineForumSystem.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ModerationDTO {
+    private Long id;
+    private String action;
+    private String reason;
+    private LocalDateTime createdAt;
+    private Long userId;
+    private String username;
+    private Long threadId;
+}
+
 ```
-###   `PostRepository`
+###   `PostDto`
 ```java
+package com.example.turingOnlineForumSystem.dto;
+
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class PostDto {
+    private Long id;
+    private String content;
+    private Long userId;
+    private Long threadId;
+    private LocalDateTime createdAt;
+}
+
 ```
 
-###   `PostRepository`
+###   `GlobalExceptionHandler`
 ```java
+package com.example.turingOnlineForumSystem.exception;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * Global exception handler for the Turing Online Forum System.
+ *
+ * <p>This class handles exceptions thrown across all REST controllers
+ * and returns consistent error responses to the client.</p>
+ */
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    /**
+     * Handles {@link ResourceNotFoundException} and returns a 404 response.
+     *
+     * @param ex the thrown exception
+     * @return ResponseEntity with status 404 and the exception message.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.error("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+    /**
+     * Handles uncaught exceptions and returns a generic 500 error response.
+     *
+     * @param ex the thrown exception
+     * @return ResponseEntity with status 500 and a generic error message.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGeneric(Exception ex) {
+        log.error("Unhandled error: ", ex);
+        return ResponseEntity.status(500).body("Internal server error");
+    }
+}
+
+```
+###   `ResourceNotFoundException`
+```java
+package com.example.turingOnlineForumSystem.exception;
+
+
+/**
+ * Custom exception thrown when a resource is not found in the system.
+ */
+public class ResourceNotFoundException extends RuntimeException {
+
+    /**
+     * Constructs a new ResourceNotFoundException with a given message.
+     *
+     * @param message Detailed message about the resource that was not found.
+     */
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+
+```
+###   `TuringOnlineForumSystem`
+```java
+package com.example.turingOnlineForumSystem;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TuringOnlineForumSystem {
+
+	public static void main ( String[] args ) {
+		SpringApplication.run(TuringOnlineForumSystem.class , args);
+	}
+}
 ```
 ###   `PostRepository`
-```java
+#### path : /src/main/resources/templates/chat.html
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Private Messaging</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #chatBox, #notificationsList {
+            border: 1px solid #ccc;
+            height: 250px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #f9f9f9;
+        }
+
+        input, button {
+            margin: 5px;
+            padding: 5px;
+        }
+
+        .message {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Private Messaging</h2>
+
+<!-- Message Form -->
+<div>
+    <label for="receiverId">Receiver ID:</label>
+    <input id="receiverId" placeholder="Enter Receiver ID" required type="text"/>
+
+    <input id="messageInput" placeholder="Type your message..." required type="text"/>
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<!-- Chat Messages -->
+<div>
+    <h4>Messages</h4>
+    <div id="chatBox"></div>
+</div>
+
+<!-- Notifications -->
+<div>
+    <h4>🔔 Notifications</h4>
+    <ul id="notificationsList"></ul>
+</div>
+
+<script type="text/javascript">
+    let stompClient = null;
+
+    // ✅ Dynamic userId from Thymeleaf
+    const userId = [[${userId}]];
+
+    function connectWebSocket() {
+        const socket = new SockJS('/chat');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, () => {
+            // ✅ Subscribe to messages
+            stompClient.subscribe('/topic/messages/' + userId, (msgOutput) => {
+                const msg = JSON.parse(msgOutput.body);
+                showMessage(msg.sender.username, msg.content);
+            });
+        });
+    }
+
+    function sendMessage() {
+        const receiverId = document.getElementById("receiverId").value.trim();
+        const content = document.getElementById("messageInput").value.trim();
+
+        if (!receiverId || !content) {
+            alert("Receiver ID and message are required!");
+            return;
+        }
+
+        stompClient.send("/app/chat.send", {}, JSON.stringify({
+            senderId: userId,
+            receiverId: receiverId,
+            content: content
+        }));
+
+        showMessage("You", content);
+        document.getElementById("messageInput").value = '';
+    }
+
+    function showMessage(sender, content) {
+        const chatBox = document.getElementById("chatBox");
+        const msgElem = document.createElement("p");
+        msgElem.classList.add("message");
+        msgElem.innerHTML = `<strong>${sender}:</strong> ${content}`;
+        chatBox.appendChild(msgElem);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function loadChatHistory(receiverId) {
+        fetch(`/api/messages/history?senderId=${userId}&receiverId=${receiverId}`)
+            .then(response => response.json())
+            .then(messages => {
+                const chatBox = document.getElementById("chatBox");
+                chatBox.innerHTML = '';
+                messages.forEach(msg => {
+                    showMessage(msg.sender.username, msg.content);
+                });
+            });
+    }
+
+    function loadNotifications() {
+        fetch(`/api/notifications/${userId}`)
+            .then(response => response.json())
+            .then(notifications => {
+                const list = document.getElementById("notificationsList");
+                list.innerHTML = '';
+                notifications.forEach(n => {
+                    const li = document.createElement("li");
+                    li.textContent = `[${new Date(n.timestamp).toLocaleTimeString()}] ${n.message}`;
+                    list.appendChild(li);
+                });
+            });
+    }
+
+    // Load chat when receiver is entered
+    document.getElementById("receiverId").addEventListener("blur", function () {
+        const receiverId = this.value.trim();
+        if (receiverId) {
+            loadChatHistory(receiverId);
+        }
+    });
+
+    connectWebSocket();
+    loadNotifications();
+    setInterval(loadNotifications, 15000); // refresh notifications every 15s
+</script>
+
+</body>
+</html>
+
 ```
-###   `PostRepository`
-```java
+
+
+
+---
+
+## 🧪  `curl` Commands for above API
+
+> Replace `localhost:8080` with your running host.
+
+### 🔹 1.Create a User
+```bash
+curl --location 'http://localhost:8080/api/users' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=65F781753C8BF95C3E32E9ED40FC1BB9' \
+--data-raw '{
+  "username": "alice",
+  "password": "secret",
+  "email": "alice@example.com",
+  "role": "USER"
+}'
 ```
-###   `PostRepository`
-```java
+
+### 🔹 1.1.View User Profile
+```bash
+curl --location 'http://localhost:8080/api/users/1' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
-###   `PostRepository`
-```java
+
+### 🔹 1.2.Update User Profile
+```bash
+curl --location --request PUT 'http://localhost:8080/api/users/1' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF' \
+--data-raw '{
+    "username": "newUsername",
+    "email": "newemail@example.com"
+}'
 ```
-###   `PostRepository`
-```java
+
+### 🔹 2. Create a Thread (Requires user ID — e.g. user with id: 1)
+```bash
+curl --location 'http://localhost:8080/api/threads' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF' \
+--data '{
+    "title": "Spring Boot Tips",
+    "content": "Let'\''s discuss Spring Boot best practices.",
+    "user": {
+        "id": 1
+    }
+}'
 ```
+
+### 🔹 3. Create a Post for that Thread (Assuming thread with id: 1 and user with id: 1
+```bash
+curl --location 'http://localhost:8080/api/posts/thread/1' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF' \
+--data-raw '{
+    "content": "I love using @Slf4j in services!",
+    "user": {
+        "id": 1
+    }
+}'
+```
+
+### 🔹 4. Get Posts of a Thread 
+```bash
+curl --location 'http://localhost:8080/api/posts/thread/1' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 5.Ban User bash not working
+```bash
+curl --location --request POST 'http://localhost:8080/api/moderation/ban-user/1?reason=Spamming' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 6.Delete Thread
+```bash
+curl --location --request DELETE 'http://localhost:8080/api/moderation/thread/1?moderatorId=99&reason=Duplicate%20Topic' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 6.View moderation history
+```bash
+curl --location 'http://localhost:8080/api/moderation/history/1' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 7.Get Message History
+```bash
+curl --location 'http://localhost:8080/api/messages/history?senderId=1&receiverId=2' \
+--header 'Accept: application/json' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 8.Send Message via WebSocket (STOMP)
+```bash
+curl --location 'http://localhost:8080/api/messages/history?senderId=1&receiverId=2' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 9.Following Other Users
+```bash
+curl --location --request POST 'http://localhost:8080/api/follow?followerId=1&followingId=2' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 10.Get Following List of a User
+```bash
+curl --location 'http://localhost:8080/api/follow/1/following' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+### 🔹 11.Get Notifications for a User
+```bash
+curl --location 'http://localhost:8080/api/follow/1/following' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+### 🔹 12. Search Users by Keyword 
+```bash
+curl --location 'http://localhost:8080/api/search/users?q=al' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+### 🔹 13.Search Threads by Title or Content
+```bash
+curl --location 'http://localhost:8080/api/search/threads?q=message' \
+--header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+```
+
+---
+
+
 
