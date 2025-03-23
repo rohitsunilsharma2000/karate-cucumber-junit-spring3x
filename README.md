@@ -741,13 +741,206 @@ public class Post {
 }
 
 ```
-###   `UserController`
+###   `PostController`
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.dto.PostDto;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.service.PostService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/posts")
+@RequiredArgsConstructor
+@Slf4j
+public class PostController {
+
+    private final PostService postService;
+
+    @PostMapping("/thread/{threadId}")
+    public Post createPost(@PathVariable Long threadId, @RequestBody Post post) {
+        return postService.createPost(post, threadId);
+    }
+
+    @GetMapping("/thread/{threadId}")
+    public List<PostDto> getPostsByThread(@PathVariable Long threadId) {
+        return postService.getPostsByThread(threadId);
+    }
+}
+
+```
+###   `PostService`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.PostDto;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Service class for handling business logic related to posts.
+ * 
+ * <p>Includes operations such as creating posts, retrieving posts by thread,
+ * and deleting all posts under a thread.</p>
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PostService {
+
+    private final PostRepository postRepository;
+    private final ThreadRepository threadRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Create a new post under a given thread.
+     *
+     * @param post      The post to create.
+     * @param threadId  The ID of the thread the post belongs to.
+     * @return The saved {@link Post} object.
+     * @throws ResourceNotFoundException if the thread or user is not found.
+     */
+    public Post createPost(Post post, Long threadId) {
+        Threads thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Thread not found with ID: " + threadId));
+
+        User user = userRepository.findById(post.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + post.getUser().getId()));
+
+        Post newPost = new Post();
+        newPost.setContent(post.getContent());
+        newPost.setUser(user);
+        newPost.setThread(thread);
+        newPost.setCreatedAt(LocalDateTime.now());
+
+        log.info("Saving post: content={}, userId={}, threadId={}",
+                newPost.getContent(),
+                newPost.getUser().getId(),
+                newPost.getThread().getId());
+
+        return postRepository.save(newPost);
+    }
+
+    /**
+     * Get all posts associated with a thread.
+     *
+     * @param threadId The ID of the thread.
+     * @return A list of {@link PostDto} representing the posts.
+     */
+    public List<PostDto> getPostsByThread(Long threadId) {
+        log.info("Fetching posts for thread ID {}", threadId);
+
+        return postRepository.findByThreadId(threadId).stream()
+                .map(post -> PostDto.builder()
+                        .id(post.getId())
+                        .content(post.getContent())
+                        .userId(post.getUser().getId())
+                        .threadId(post.getThread().getId())
+                        .createdAt(post.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Delete all posts under a specific thread.
+     *
+     * @param threadId The ID of the thread.
+     */
+    public void deletePostsByThread(Long threadId) {
+        List<Post> posts = postRepository.findByThreadId(threadId);
+        postRepository.deleteAll(posts);
+        log.info("Deleted {} posts under thread ID {}", posts.size(), threadId);
+    }
+}
+
+```
+###   `PostRepository`
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Post;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * Repository interface for {@link Post} entity.
+ * <p>Provides CRUD operations and custom query methods for working with posts.</p>
+ */
+public interface PostRepository extends JpaRepository<Post, Long> {
+
+    /**
+     * Find all posts that belong to the specified thread.
+     *
+     * @param threadId The ID of the thread.
+     * @return A list of {@link Post} objects associated with the thread.
+     */
+    List<Post> findByThreadId(Long threadId);
+}
+
+```
+
+###   `PostRepository`
 ```java
 ```
-###   `UserController`
+###   `PostRepository`
 ```java
 ```
-###   `UserController`
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
+```java
+```
+###   `PostRepository`
 ```java
 ```
 
