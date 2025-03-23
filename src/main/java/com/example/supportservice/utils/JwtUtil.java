@@ -43,7 +43,13 @@ public class JwtUtil {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject();
     }
 
-    private boolean isTokenExpired(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getExpiration().before(new Date());
+    public boolean isTokenExpired ( String token ) {
+        return Jwts.parserBuilder()
+                   .setSigningKey(key).
+                   build()
+                   .parseClaimsJws(token)
+                   .getBody()
+                   .getExpiration()
+                   .before(new Date());
     }
 }

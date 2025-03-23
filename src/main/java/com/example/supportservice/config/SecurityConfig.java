@@ -1,7 +1,6 @@
 package com.example.supportservice.config;
 
 
-
 import com.example.supportservice.filter.JwtAuthenticationFilter;
 import com.example.supportservice.service.CustomUserDetailsService;
 import com.example.supportservice.service.JwtService;
@@ -13,14 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -49,7 +45,7 @@ public class SecurityConfig {
             .requestMatchers("/admin/**").hasRole("ADMIN")           // Full access
             .requestMatchers("/agent/**").hasAnyRole("ADMIN", "AGENT") // AGENT & ADMIN
             .requestMatchers("/customer/**").hasAnyRole("ADMIN", "CUSTOMER") // CUSTOMER & ADMIN
-
+            .requestMatchers("/chat/**").permitAll() // Allow WebSocket endpoint
 
 //            .requestMatchers("/admin/**").hasRole("ADMIN")
 //            .requestMatchers("/standard/**").hasRole("STANDARD")
@@ -140,7 +136,8 @@ public class SecurityConfig {
         var configuration = new org.springframework.web.cors.CorsConfiguration();
 
         // Set your allowed origins (or "*", but not recommended in production)
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
+//        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
+        configuration.setAllowedOriginPatterns(List.of("*")); // for dev
 
         // Set allowed methods
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
