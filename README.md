@@ -424,20 +424,322 @@ public class User {
 }
 
 ```
-###   `UserController`
+###   `ThreadController`
 ```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.service.ThreadService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST controller for managing discussion threads in the Turing Online Forum System.
+ *
+ * <p>Exposes endpoints to create, retrieve, update, and delete threads.</p>
+ *
+ * <p>Base URL: <code>/api/threads</code></p>
+ */
+@RestController
+@RequestMapping("/api/threads")
+@RequiredArgsConstructor
+@Slf4j
+public class ThreadController {
+
+    private final ThreadService threadsService;
+
+    /**
+     * Create a new discussion thread.
+     *
+     * @param threads The {@link Threads} object to create.
+     * @return The created {@link Threads} object.
+     */
+    @PostMapping
+    public Threads createThreads(@RequestBody Threads threads) {
+        log.debug("Request to create Threads: {}", threads.getTitle());
+        return threadsService.createThread(threads);
+    }
+
+    /**
+     * Get a thread by its ID.
+     *
+     * @param id The ID of the thread.
+     * @return The {@link Threads} object with the specified ID.
+     */
+    @GetMapping("/{id}")
+    public Threads getThreads(@PathVariable Long id) {
+        return threadsService.getThread(id);
+    }
+
+    /**
+     * Retrieve all threads.
+     *
+     * @return A list of all {@link Threads} objects.
+     */
+    @GetMapping
+    public List<Threads> getAllThreadss() {
+        return threadsService.getAllThreads();
+    }
+
+    /**
+     * Update an existing thread.
+     *
+     * @param id      The ID of the thread to update.
+     * @param threads The updated {@link Threads} object.
+     * @return The updated {@link Threads} object.
+     */
+    @PutMapping("/{id}")
+    public Threads updateThreads(@PathVariable Long id, @RequestBody Threads threads) {
+        return threadsService.updateThread(id, threads);
+    }
+
+    /**
+     * Delete a thread by its ID.
+     *
+     * @param id The ID of the thread to delete.
+     */
+    @DeleteMapping("/{id}")
+    public void deleteThreads(@PathVariable Long id) {
+        threadsService.deleteThread(id);
+    }
+}
+
 ```
-###   `UserController`
+###   `ThreadService`
 ```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Service class for managing discussion threads in the Turing Online Forum System.
+ * 
+ * <p>This class handles the core business logic for creating, updating, retrieving,
+ * and deleting threads. It interacts with the {@link ThreadRepository} for database operations.</p>
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class ThreadService {
+
+    private final ThreadRepository threadRepository;
+
+    /**
+     * Create a new thread and set its creation and update timestamps.
+     *
+     * @param thread The {@link Threads} object to create.
+     * @return The saved {@link Threads} object with generated ID.
+     */
+    public Threads createThread(Threads thread) {
+        thread.setCreatedAt(LocalDateTime.now());
+        thread.setUpdatedAt(LocalDateTime.now());
+        Threads saved = threadRepository.save(thread);
+        log.info("Created thread with ID {}", saved.getId());
+        return saved;
+    }
+
+    /**
+     * Update an existing thread with new content and title.
+     *
+     * @param id            The ID of the thread to update.
+     * @param updatedThread The thread data with updated fields.
+     * @return The updated {@link Threads} object.
+     * @throws ResourceNotFoundException if the thread with the specified ID is not found.
+     */
+    public Threads updateThread(Long id, Threads updatedThread) {
+        return threadRepository.findById(id).map(thread -> {
+            thread.setTitle(updatedThread.getTitle());
+            thread.setContent(updatedThread.getContent());
+            thread.setUpdatedAt(LocalDateTime.now());
+            Threads saved = threadRepository.save(thread);
+            log.info("Updated thread with ID {}", saved.getId());
+            return saved;
+        }).orElseThrow(() -> {
+            log.error("Thread with ID {} not found", id);
+            return new ResourceNotFoundException("Thread not found");
+        });
+    }
+
+    /**
+     * Delete a thread by its ID.
+     *
+     * @param id The ID of the thread to delete.
+     * @throws ResourceNotFoundException if the thread with the specified ID is not found.
+     */
+    public void deleteThread(Long id) {
+        if (!threadRepository.existsById(id)) {
+            log.error("Thread with ID {} not found for deletion", id);
+            throw new ResourceNotFoundException("Thread not found");
+        }
+        threadRepository.deleteById(id);
+        log.info("Deleted thread with ID {}", id);
+    }
+
+    /**
+     * Retrieve a single thread by its ID.
+     *
+     * @param id The ID of the thread.
+     * @return The {@link Threads} object.
+     * @throws ResourceNotFoundException if the thread is not found.
+     */
+    public Threads getThread(Long id) {
+        return threadRepository.findById(id).orElseThrow(() -> {
+            log.error("Thread with ID {} not found", id);
+            return new ResourceNotFoundException("Thread not found");
+        });
+    }
+
+    /**
+     * Retrieve all threads from the database.
+     *
+     * @return A list of all {@link Threads} objects.
+     */
+    public List<Threads> getAllThreads() {
+        log.info("Fetching all threads");
+        return threadRepository.findAll();
+    }
+}
+
+
 ```
-###   `UserController`
+###   `ThreadRepository`
 ```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * Repository interface for {@link Threads} entities.
+ * <p>
+ * Provides built-in CRUD operations and custom query methods to
+ * interact with the discussion threads stored in the database.
+ * </p>
+ */
+public interface ThreadRepository extends JpaRepository<Threads, Long> {
+
+    /**
+     * Find threads where the title or content contains the given keyword (case-insensitive).
+     *
+     * @param title   The keyword to search in the title.
+     * @param content The keyword to search in the content.
+     * @return A list of {@link Threads} that match the search criteria.
+     */
+    List<Threads> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(String title, String content);
+}
+
 ```
-###   `UserController`
+###   `Threads`
 ```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Entity representing a discussion thread in the Turing Online Forum System.
+ * <p>
+ * Each thread is associated with a {@link User} and contains multiple {@link Post} entries.
+ * </p>
+ */
+@Getter
+@Setter
+@Entity
+@Table(name = "thread") // Ensure this matches your actual DB table name
+public class Threads {
+
+    /**
+     * Unique identifier for the thread.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * Title of the thread.
+     */
+    private String title;
+
+    /**
+     * Content/body of the thread.
+     */
+    private String content;
+
+    /**
+     * Timestamp indicating when the thread was created.
+     */
+    private LocalDateTime createdAt = LocalDateTime
+
 ```
-###   `UserController`
+###   `Post`
 ```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+/**
+ * Entity representing a post or reply in a discussion thread.
+ * <p>
+ * Each post is linked to a {@link Threads} object and is authored by a {@link User}.
+ * </p>
+ */
+@Getter
+@Setter
+@Entity
+public class Post {
+
+    /**
+     * Unique identifier for the post.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * Content of the post.
+     */
+    private String content;
+
+    /**
+     * Timestamp indicating when the post was created.
+     */
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    /**
+     * The thread to which this post belongs.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "thread_id", nullable = false)
+    private Threads thread;
+
+    /**
+     * The user who created this post.
+     */
+    @ManyToOne
+    private User user;
+}
+
 ```
 ###   `UserController`
 ```java
