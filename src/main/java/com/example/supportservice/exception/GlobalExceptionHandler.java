@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.exception;
+package com.example.supportservice.exception;
 
 
 
@@ -60,6 +60,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleDoctorAlreadyExistsException ( ResourceNotFoundException ex , WebRequest request ) {
         log.error("Resource not found: {}", ex.getMessage());
         return buildErrorResponse(ex.getMessage() , HttpStatus.NOT_FOUND , request);
+    }
+
+    @ExceptionHandler(TicketNotFoundException.class)
+    public ResponseEntity<String> handleTicketNotFound(TicketNotFoundException ex) {
+        log.warn("Ticket not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
 }
