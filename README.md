@@ -898,17 +898,310 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
 ```
 
-###   `PostRepository`
+###   `ModerationController`
 ```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
+import com.example.turingOnlineForumSystem.service.ModerationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST controller for moderation actions in the Turing Online Forum System.
+ * <p>
+ * Provides administrative endpoints for moderators to manage threads, posts,
+ * and user behavior.
+ * </p>
+ *
+ * <p>Base URL: <code>/api/moderation</code></p>
+ */
+@RestController
+@RequestMapping("/api/moderation")
+@RequiredArgsConstructor
+@Slf4j
+public class ModerationController {
+
+    private final ModerationService moderationService;
+
+    /**
+     * Delete a thread as a moderator.
+     *
+     * @param threadId     The ID of the thread to delete.
+     * @param moderatorId  The ID of the moderator performing the action.
+     * @param reason       The reason for deletion.
+     */
+    @DeleteMapping("/thread/{threadId}")
+    public void deleteThread(@PathVariable Long threadId,
+                             @RequestParam Long moderatorId,
+                             @RequestParam String reason) {
+        moderationService.deleteThread(threadId, moderatorId, reason);
+    }
+
+    /**
+     * Delete a post as a moderator.
+     *
+     * @param postId       The ID of the post to delete.
+     * @param moderatorId  The ID of the moderator performing the action.
+     * @param reason       The reason for deletion.
+     */
+    @DeleteMapping("/post/{postId}")
+    public void deletePost(@PathVariable Long postId,
+                           @RequestParam Long moderatorId,
+                           @RequestParam String reason) {
+        moderationService.deletePost(postId, moderatorId, reason);
+    }
+
+    /**
+     * Ban a user from posting.
+     *
+     * @param userId The ID of the user to ban.
+     * @param reason The reason for banning the user.
+     */
+    @PostMapping("/ban-user/{userId}")
+    public void banUser(@PathVariable Long userId,
+                        @RequestParam String reason) {
+        moderationService.banUser(userId, reason);
+    }
+
+    /**
+     * Get moderation history for a specific user.
+     *
+     * @param userId The ID of the user whose moderation history is requested.
+     * @return A list of {@link ModerationDTO} representing moderation actions taken on the user.
+     */
+    @GetMapping("/history/{userId}")
+    public List<ModerationDTO> getModerationHistory(@PathVariable Long userId) {
+        return moderationService.getModerationHistory(userId);
+    }
+}
+
 ```
-###   `PostRepository`
+###   `ModerationService`
 ```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Moderation;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ModerationRepository;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Service class for handling moderation actions in the forum system.
+ *
+ * <p>This includes deleting threads/posts, banning users, and logging all moderation activities.</p>
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class ModerationService {
+
+    private final ModerationRepository moderationRepository;
+    private final ThreadRepository threadsRepository;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Delete a thread by its ID and log the moderation action.
+     *
+     * @param threadId     The ID of the thread to delete.
+     * @param moderatorId  The moderator performing the action.
+     * @param reason       The reason for deletion.
+     */
+    public void deleteThread(Long threadId, Long moderatorId, String reason) {
+        Threads threadRef = threadsRepository.getReferenceById(threadId);
+        User threadOwner = userRepository.getReferenceById(threadRef.getUser().getId());
+
+        Moderation moderation = Moderation.builder()
+                .action("DELETE_THREAD")
+                .reason(reason)
+                .user(threadOwner)
+                .thread(threadRef)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        moderationRepository.saveAndFlush(moderation);
+
+        List<Post> posts = postRepository.findByThreadId(threadId);
+        postRepository.deleteAll(posts);
+        threadsRepository.deleteById(threadId);
+
+        log.info("Deleted thread ID {} by moderator {}", threadId, moderatorId);
+    }
+
+    /**
+     * Delete a post by its ID and log the moderation action.
+     *
+     * @param postId       The ID of the post to delete.
+     * @param moderatorId  The moderator performing the action.
+     * @param reason       The reason for deletion.
+     */
+    public void deletePost(Long postId, Long moderatorId, String reason) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+
+        postRepository.deleteById(postId);
+
+        Moderation moderation = Moderation.builder()
+                .action("DELETE_POST")
+                .reason(reason)
+                .user(post.getUser())
+                .thread(post.getThread())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        moderationRepository.save(moderation);
+        log.info("Moderator {} deleted post ID {} with reason: {}", moderatorId, postId, reason);
+    }
+
+    /**
+     * Ban a user from posting and log the action.
+     *
+     * @param userId The ID of the user to ban.
+     * @param reason The reason for the ban.
+     */
+    public void banUser(Long userId, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setBanned(true);
+        userRepository.save(user);
+
+        Moderation moderation = Moderation.builder()
+                .action("BAN_USER")
+                .reason(reason)
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        moderationRepository.save(moderation);
+        log.info("User ID {} has been banned for reason: {}", userId, reason);
+    }
+
+    /**
+     * Get moderation history for a specific user.
+     *
+     * @param userId The ID of the user.
+     * @return A list of moderation actions taken against the user.
+     */
+    public List<ModerationDTO> getModerationHistory(Long userId
+
 ```
-###   `PostRepository`
+###   `ModerationRepository`
 ```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Moderation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * Repository interface for {@link Moderation} entity.
+ *
+ * <p>Provides database access methods for retrieving moderation history records.</p>
+ */
+public interface ModerationRepository extends JpaRepository<Moderation, Long> {
+
+    /**
+     * Find all moderation records for a specific user.
+     *
+     * @param userId The ID of the user.
+     * @return A list of moderation actions associated with the user.
+     */
+    List<Moderation> findByUserId(Long userId);
+}
+
 ```
-###   `PostRepository`
+###   `Moderation`
 ```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.LocalDateTime;
+
+/**
+ * Entity representing a moderation action (e.g., delete, ban) performed on a user/thread/post.
+ */
+@Getter
+@Setter
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Moderation {
+
+    /**
+     * Unique identifier for the moderation record.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * Type of action (e.g., DELETE_THREAD, DELETE_POST, BAN_USER).
+     */
+    private String action;
+
+    /**
+     * Reason provided for the action.
+     */
+    private String reason;
+
+    /**
+     * Timestamp when the action was performed.
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    /**
+     * The user who was moderated.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    /**
+     * The thread associated with the action, if applicable.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "thread_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Threads thread;
+
+    /**
+     * Automatically set createdAt before persisting if not set.
+     */
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+}
+
 ```
 ###   `PostRepository`
 ```java
