@@ -241,3 +241,211 @@ public class UserController {
 }
 
 ```
+###   `UserService`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Service class for managing user-related operations.
+ * <p>
+ * Provides business logic for:
+ * - Retrieving a user by ID
+ * - Updating user profiles
+ * - Saving new users
+ * - Fetching all users
+ * </p>
+ * 
+ * Interacts with the {@link UserRepository} for database operations.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class UserService {
+
+    private final UserRepository userRepo;
+
+    /**
+     * Retrieve a user by their ID or throw an exception if not found.
+     *
+     * @param id The ID of the user to retrieve.
+     * @return The {@link User} object.
+     * @throws ResourceNotFoundException if the user does not exist.
+     */
+    public User getUserById(Long id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+    }
+
+    /**
+     * Update an existing user's profile.
+     *
+     * @param id          The ID of the user to update.
+     * @param updatedUser The updated user details.
+     * @return The updated {@link User} object after saving to the database.
+     */
+    public User updateUserProfile(Long id, User updatedUser) {
+        User existing = getUserById(id);
+        existing.setUsername(updatedUser.getUsername());
+        existing.setEmail(updatedUser.getEmail());
+        return userRepo.save(existing);
+    }
+
+    /**
+     * Find a user by their ID.
+     *
+     * @param id The ID of the user.
+     * @return An {@link Optional} containing the user if found.
+     */
+    public Optional<User> findById(Long id) {
+        return userRepo.findById(id);
+    }
+
+    /**
+     * Retrieve all users from the database.
+     *
+     * @return A list of all {@link User} objects.
+     */
+    public List<User> findAll() {
+        return userRepo.findAll();
+    }
+
+    /**
+     * Save a new or existing user to the database.
+     *
+     * @param user The {@link User} object to save.
+     * @return The saved {@link User} object with any generated fields populated.
+     */
+    public User save(User user) {
+        return userRepo.save(user);
+    }
+}
+
+```
+###   `UserRepository`
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * Repository interface for performing CRUD operations on {@link User} entities.
+ * <p>
+ * Extends {@link JpaRepository} to provide built-in support for:
+ * - Saving, deleting, and finding users
+ * - Pagination and sorting
+ * </p>
+ * 
+ * Also includes custom query methods for searching users by username.
+ */
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    /**
+     * Find all users whose username contains the specified keyword, ignoring case.
+     *
+     * @param keyword The keyword to search for within usernames.
+     * @return A list of users with usernames that contain the keyword (case-insensitive).
+     */
+    List<User> findByUsernameContainingIgnoreCase(String keyword);
+}
+
+```
+###   `User`
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+/**
+ * Entity representing a user in the Turing Online Forum System.
+ * 
+ * <p>This class is mapped to the "user" table in the database and includes
+ * attributes related to authentication, authorization, and profile management.</p>
+ */
+@Getter
+@Setter
+@Entity
+@Table(name = "user")
+public class User {
+
+    /**
+     * Unique identifier for the user (primary key).
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * The username of the user.
+     */
+    private String username;
+
+    /**
+     * The hashed password of the user.
+     */
+    private String password;
+
+    /**
+     * The email address of the user.
+     */
+    private String email;
+
+    /**
+     * The role assigned to the user (e.g., ADMIN, USER, MODERATOR).
+     */
+    private String role;
+
+    /**
+     * The date and time when the user account was created.
+     */
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    /**
+     * Indicates whether the user is banned.
+     */
+    @Column(name = "is_banned")
+    private Boolean banned = false;
+}
+
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+###   `UserController`
+```java
+```
+
