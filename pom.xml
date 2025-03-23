@@ -9,7 +9,7 @@
 			<relativePath/> <!-- lookup parent from repository -->
 		</parent>
 		<groupId>com.example</groupId>
-		<artifactId>turingLLMTuningSystem</artifactId>
+		<artifactId>supportservice</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<name>Turing LLM Tuning System</name>
 		<description>Turing LLM Tuning System</description>
@@ -112,6 +112,24 @@
 			<groupId>org.webjars</groupId>
 			<artifactId>bootstrap</artifactId>
 			<version>5.1.3</version>
+		</dependency>
+		<!--		Token-Based Authentication with JWT-->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.11.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.11.5</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.11.5</version>
+			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
 
