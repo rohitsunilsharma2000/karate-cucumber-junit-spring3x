@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,12 +41,15 @@ public class Ticket {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Attachment> attachments;
+    private List<Attachment> attachments = new ArrayList<>(); // ✅ initialize
+
 
     @ManyToOne
     @JoinColumn(name = "assigned_agent_id")
     private User assignedAgent;
+
 
 
 }

@@ -21,4 +21,6 @@ public class RegisterRequest {
     private String password;
     @NotNull
     private String role; // ADMIN, AGENT, CUSTOMER
+
+
 }
