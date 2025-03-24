@@ -518,6 +518,120 @@ public class TuringOnlineForumSystem {
 
 ```
 
+
+## 🌐 2. `SecurityConfig` 
+
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/config/SecurityConfig.java`
+
+```java
+package com.example.turingOnlineForumSystem.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+/**
+ * 🔐 SecurityConfig
+ *
+ * This configuration class sets up HTTP security, CORS, and user authentication
+ * for the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @Configuration: Marks this class as a Spring configuration.
+ * - @EnableWebSecurity: Enables Spring Security support.
+ *
+ * 🧩 Features Configured:
+ * - Allows all WebSocket and REST endpoints.
+ * - Disables CSRF for simplicity (suitable for stateless APIs and WebSockets).
+ * - Configures CORS to allow cross-origin requests (especially for local development).
+ * - Defines an in-memory user with no password encoding for testing.
+ */
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    /**
+     * 🔐 Defines the security filter chain:
+     * - Enables CORS.
+     * - Disables CSRF.
+     * - Permits access to all endpoints including WebSocket and REST.
+     * - Enables HTTP basic authentication for quick testing.
+     */
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .cors()
+            .and()
+            .csrf().disable()
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers(
+                    "/**",
+                    "/chat/**",
+                    "/ws/**",
+                    "/topic/**",
+                    "/app/**",
+                    "/api/**",
+                    "/webjars/**",
+                    "/js/**", "/css/**", "/images/**"
+                ).permitAll()
+                .anyRequest().permitAll()
+            )
+            .httpBasic(); // for basic testing
+
+        return http.build();
+    }
+
+    /**
+     * 🌍 Configures global CORS policy:
+     * - Allows frontend domains (e.g., localhost:3000).
+     * - Supports all HTTP methods and headers.
+     * - Allows credentials and caches preflight results for 1 hour.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    /**
+     * 👤 In-memory user authentication setup:
+     * - Adds a default user with username: `user` and password: `password`
+     * - Role: `USER`
+     */
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails user = User.withUsername("user")
+                               .password("{noop}password") // {noop} disables password encoding
+                               .roles("USER")
+                               .build();
+        return new InMemoryUserDetailsManager(user);
+    }
+}
+```
+
+
+
+
+
 ## ⚙️ Features
 
 
