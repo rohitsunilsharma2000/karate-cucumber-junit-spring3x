@@ -1956,7 +1956,1321 @@ public class TuringOnlineForumSystem {
 
 ```
 
+###   `ModerationControllerIntegrationTest`
+```java
+package com.example.turingOnlineForumSystem.controller;
 
+
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+public class ModerationControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ThreadRepository threadRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+    @Autowired
+    private ModerationRepository moderationRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
+
+
+    private User moderator;
+    private User regularUser;
+    private Threads thread;
+    private Post post;
+
+    @BeforeEach
+    void setup() {
+        moderationRepository.deleteAll(); // ✅ No more NPE
+        messageRepository.deleteAll(); // <-- Add this line
+        postRepository.deleteAll();
+        threadRepository.deleteAll();
+        userRepository.deleteAll();
+
+        moderator = userRepository.save(User.builder()
+                                            .username("moderator")
+                                            .email("mod@example.com")
+                                            .banned(false)
+                                            .createdAt(LocalDateTime.now())
+                                            .build());
+
+        regularUser = userRepository.save(User.builder()
+                                              .username("user")
+                                              .email("user@example.com")
+                                              .banned(false)
+                                              .createdAt(LocalDateTime.now())
+                                              .build());
+
+        thread = threadRepository.save(Threads.builder()
+                                              .title("Test Thread")
+                                              .content("Thread Content")
+                                              .createdAt(LocalDateTime.now())
+                                              .user(regularUser)
+                                              .posts(Collections.emptyList())
+                                              .build());
+
+        post = postRepository.save(Post.builder()
+                                       .content("Test Post")
+                                       .createdAt(LocalDateTime.now())
+                                       .user(regularUser)
+                                       .thread(thread)
+                                       .build());
+    }
+
+    @Test
+    void testDeletePost() throws Exception {
+        mockMvc.perform(delete("/api/moderation/post/" + post.getId())
+                        .param("moderatorId", moderator.getId().toString())
+                        .param("reason", "Violation of rules"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testDeleteThread() throws Exception {
+        mockMvc.perform(delete("/api/moderation/thread/" + thread.getId())
+                        .param("moderatorId", moderator.getId().toString())
+                        .param("reason", "Duplicate content"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testBanUser() throws Exception {
+        mockMvc.perform(post("/api/moderation/ban-user/" + regularUser.getId())
+                        .param("reason", "Spamming"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetModerationHistory() throws Exception {
+        mockMvc.perform(get("/api/moderation/history/" + regularUser.getId()))
+                .andExpect(status().isOk());
+    }
+}
+
+
+
+```
+###   `NotificationControllerIntegrationTest`
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.Notification;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.NotificationRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+public class NotificationControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    private User user;
+
+    @BeforeEach
+    public void setUp() {
+        user = new User();
+        user.setUsername("testuser");
+        user.setEmail("testuser@example.com");
+        user.setPassword("password");
+        user.setCreatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        Notification notification = Notification.builder()
+                .message("Test Notification")
+                .recipient(user)
+                .isRead(false)
+                .timestamp(LocalDateTime.now())
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    @Test
+    public void testGetUserNotifications() throws Exception {
+        mockMvc.perform(get("/api/notifications/" + user.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].message").value("Test Notification"));
+    }
+
+    @Test
+    public void testMarkNotificationAsRead() throws Exception {
+        Notification notification = notificationRepository.findByRecipientId(user.getId()).get(0);
+        mockMvc.perform(put("/api/notifications/read/" + notification.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testDeleteNotification() throws Exception {
+        Notification notification = notificationRepository.findByRecipientId(user.getId()).get(0);
+        mockMvc.perform(delete("/api/notifications/" + notification.getId()))
+                .andExpect(status().isOk());
+    }
+}
+```
+###   `PostControllerIntegrationTest`
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class PostControllerIntegrationTest {
+
+
+        @LocalServerPort
+        private int port;
+
+        @Autowired
+        private TestRestTemplate restTemplate;
+
+        private String url(String path) {
+            return "http://localhost:" + port + path;
+        }
+
+        @Test
+        void testFullForumFlow() {
+            // Step 1: Create User
+            User newUser = new User();
+            newUser.setUsername("alice");
+            newUser.setPassword("secret");
+            newUser.setEmail("alice@example.com");
+            newUser.setRole("USER");
+
+            ResponseEntity<User> userResponse = restTemplate.postForEntity(
+                    url("/api/users"),
+                    newUser,
+                    User.class
+            );
+
+            assertThat(userResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+            User createdUser = userResponse.getBody();
+            assertThat(createdUser).isNotNull();
+            assertThat(createdUser.getId()).isNotNull();
+
+            // Step 2: Create Thread with that user
+            Threads thread = new Threads();
+            thread.setTitle("Spring Boot Tips");
+            thread.setContent("Let's discuss Spring Boot best practices.");
+            thread.setUser(createdUser);
+
+            ResponseEntity<Threads> threadResponse = restTemplate.postForEntity(
+                    url("/api/threads"),
+                    thread,
+                    Threads.class
+            );
+
+            assertThat(threadResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+            Threads createdThread = threadResponse.getBody();
+            assertThat(createdThread).isNotNull();
+            assertThat(createdThread.getId()).isNotNull();
+
+            // Step 3: Create Post in that thread
+            Post post = new Post();
+            post.setContent("I love using @Slf4j in services!");
+            post.setUser(createdUser);
+
+            ResponseEntity<Post> postResponse = restTemplate.postForEntity(
+                    url("/api/posts/thread/" + createdThread.getId()),
+                    post,
+                    Post.class
+            );
+
+            assertThat(postResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+            Post createdPost = postResponse.getBody();
+            assertThat(createdPost).isNotNull();
+            assertThat(createdPost.getId()).isNotNull();
+
+            // Step 4: Fetch Posts by thread
+            ResponseEntity<Post[]> getPostsResponse = restTemplate.getForEntity(
+                    url("/api/posts/thread/" + createdThread.getId()),
+                    Post[].class
+            );
+
+            assertThat(getPostsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+            Post[] posts = getPostsResponse.getBody();
+            assertThat(posts).isNotNull();
+            assertThat(posts.length).isGreaterThanOrEqualTo(1);
+
+
+        }
+    }
+
+```
+###   `ThreadControllerIntegrationTest`
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+//@ActiveProfiles("test") // Optional: for test-specific configs
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class ThreadControllerIntegrationTest {
+
+    private static User testUser;
+    private static Long createdThreadId;
+    private final RestTemplate restTemplate = new RestTemplate();
+    @LocalServerPort
+    private int port;
+    private String baseUrl;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ThreadRepository threadRepository;
+
+    @BeforeEach
+    void setUp() {
+        baseUrl = "http://localhost:" + port + "/api/threads";
+
+        if (testUser == null) {
+            testUser = userRepository.save(User.builder()
+                    .username("testUser")
+                    .email("test@example.com")
+                    .password("pass123")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+        }
+    }
+
+    @Test
+    @Order(1)
+    void testCreateThread() {
+        Threads thread = Threads.builder()
+                .title("Test Thread")
+                .content("Thread content here.")
+                .createdAt(LocalDateTime.now())
+                .user(testUser)
+                .build();
+
+        ResponseEntity<Threads> response = restTemplate.postForEntity(baseUrl, thread, Threads.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getId());
+
+        createdThreadId = response.getBody().getId();
+    }
+
+    @Test
+    @Order(2)
+    void testGetThreadById() {
+        ResponseEntity<Threads> response = restTemplate.getForEntity(baseUrl + "/" + createdThreadId, Threads.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Test Thread", response.getBody().getTitle());
+    }
+
+    @Test
+    @Order(3)
+    void testUpdateThread() {
+        Threads updated = Threads.builder()
+                .title("Updated Thread Title")
+                .content("Updated content")
+                .user(testUser)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Threads> entity = new HttpEntity<>(updated, headers);
+
+        ResponseEntity<Threads> response = restTemplate.exchange(
+                baseUrl + "/" + createdThreadId,
+                HttpMethod.PUT,
+                entity,
+                Threads.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Updated Thread Title", response.getBody().getTitle());
+    }
+
+    @Test
+    @Order(4)
+    void testGetAllThreads() {
+        ResponseEntity<Threads[]> response = restTemplate.getForEntity(baseUrl, Threads[].class);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().length > 0);
+    }
+
+    @Test
+    @Order(5)
+    void testDeleteThread() {
+        restTemplate.delete(baseUrl + "/" + createdThreadId);
+        boolean exists = threadRepository.existsById(createdThreadId);
+        assertFalse(exists);
+    }
+}
+
+
+```
+###   `UserControllerIntegrationTest`
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class UserControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    /**
+     * Test user creation.
+     */
+    @Test
+    void testCreateUser() throws Exception {
+        User user = User.builder()
+                .username("john_doe")
+                .email("john@example.com")
+                .password("password123")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.username").value("john_doe"));
+    }
+
+    /**
+     * Test fetching all users.
+     */
+    @Test
+    void testGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    /**
+     * Test getting a user by ID.
+     */
+    @Test
+    void testGetUserById() throws Exception {
+        // First create a user
+        User user = User.builder()
+                .username("alice")
+                .email("alice@example.com")
+                .password("alicepass")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        String response = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long userId = objectMapper.readTree(response).get("id").asLong();
+
+        // Then fetch the user by ID
+        mockMvc.perform(get("/api/users/" + userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("alice"));
+    }
+
+    /**
+     * Test updating user profile.
+     */
+    @Test
+    void testUpdateUser() throws Exception {
+        // Create user first
+        User user = User.builder()
+                .username("mike")
+                .email("mike@example.com")
+                .password("mikepass")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        String response = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long userId = objectMapper.readTree(response).get("id").asLong();
+
+        // Update request
+        User updatedUser = User.builder()
+                .username("mike_updated")
+                .email("mike_new@example.com")
+                .password("newpass")
+                .build();
+
+        mockMvc.perform(put("/api/users/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("mike_updated"));
+    }
+}
+
+```
+###   `FollowServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.model.Follow;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.FollowRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class FollowServiceTest {
+
+    @Mock
+    private FollowRepository followRepo;
+
+    @Mock
+    private UserRepository userRepo;
+
+    @InjectMocks
+    private FollowService followService;
+
+    private User follower;
+    private User following;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        follower = new User();
+        follower.setId(1L);
+        follower.setUsername("user1");
+
+        following = new User();
+        following.setId(2L);
+        following.setUsername("user2");
+    }
+
+    @Test
+    void testFollowUser_Success() {
+        when(userRepo.findById(1L)).thenReturn(Optional.of(follower));
+        when(userRepo.findById(2L)).thenReturn(Optional.of(following));
+
+        followService.followUser(1L, 2L);
+
+        verify(followRepo, times(1)).save(any(Follow.class));
+    }
+
+    @Test
+    void testGetFollowing_ReturnsListOfUsers() {
+        Follow follow = new Follow(1L, follower, following);
+        when(followRepo.findByFollowerId(1L)).thenReturn(List.of(follow));
+
+        List<User> result = followService.getFollowing(1L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testFollowUser_UserNotFound() {
+        when(userRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(Exception.class, () -> followService.followUser(1L, 2L));
+    }
+}
+
+```
+###   `MessagingServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.dto.ChatMessageDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.MessageRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class MessagingServiceTest {
+
+    @Mock
+    private MessageRepository messageRepo;
+
+    @Mock
+    private UserRepository userRepo;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @InjectMocks
+    private MessagingService messagingService;
+
+    private User sender;
+    private User receiver;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        sender = new User();
+        sender.setId(1L);
+        sender.setUsername("Alice");
+
+        receiver = new User();
+        receiver.setId(2L);
+        receiver.setUsername("Bob");
+    }
+
+    @Test
+    void testSendMessage_Success() {
+        ChatMessageDTO dto = new ChatMessageDTO();
+        dto.setSenderId(1L);
+        dto.setReceiverId(2L);
+        dto.setContent("Hello!");
+
+        when(userRepo.findById(1L)).thenReturn(Optional.of(sender));
+        when(userRepo.findById(2L)).thenReturn(Optional.of(receiver));
+
+        Message saved = Message.builder()
+                               .id(10L)
+                               .content("Hello!")
+                               .sender(sender)
+                               .receiver(receiver)
+                               .build();
+
+        when(messageRepo.save(any(Message.class))).thenReturn(saved);
+
+        Message result = messagingService.sendMessage(dto);
+
+        assertNotNull(result);
+        assertEquals("Hello!", result.getContent());
+        assertEquals("Alice", result.getSender().getUsername());
+
+        verify(notificationService).sendNotification(receiver, "📩 New message from Alice");
+    }
+
+    @Test
+    void testSendMessage_SenderNotFound() {
+        ChatMessageDTO dto = new ChatMessageDTO();
+        dto.setSenderId(99L);
+        dto.setReceiverId(2L);
+        dto.setContent("Hi");
+
+        when(userRepo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> messagingService.sendMessage(dto));
+    }
+
+    @Test
+    void testGetChatHistory_ReturnsMessages() {
+        when(userRepo.findById(1L)).thenReturn(Optional.of(sender));
+        when(userRepo.findById(2L)).thenReturn(Optional.of(receiver));
+
+        Message msg = Message.builder()
+                             .id(1L)
+                             .content("Hey Bob")
+                             .sender(sender)
+                             .receiver(receiver)
+                             .build();
+
+        when(messageRepo.findBySenderAndReceiver(sender, receiver)).thenReturn(List.of(msg));
+
+        List<Message> history = messagingService.getChatHistory(1L, 2L);
+
+        assertEquals(1, history.size());
+        assertEquals("Hey Bob", history.get(0).getContent());
+    }
+
+    @Test
+    void testGetChatHistory_UserNotFound() {
+        when(userRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> messagingService.getChatHistory(1L, 2L));
+    }
+}
+
+
+```
+###   `ModerationServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.*;
+import com.example.turingOnlineForumSystem.repository.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class ModerationServiceTest {
+
+    @Mock private ModerationRepository moderationRepository;
+    @Mock private ThreadRepository threadRepository;
+    @Mock private PostRepository postRepository;
+    @Mock private UserRepository userRepository;
+
+    @InjectMocks private ModerationService moderationService;
+
+    private User user;
+    private Threads thread;
+    private Post post;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        user = User.builder().id(1L).username("Alice").build();
+        thread = Threads.builder().id(10L).title("Sample Thread").user(user).build();
+        post = Post.builder().id(100L).content("Sample post").thread(thread).user(user).build();
+    }
+
+    @Test
+    void testDeleteThread() {
+        when(threadRepository.getReferenceById(10L)).thenReturn(thread);
+        when(userRepository.getReferenceById(1L)).thenReturn(user);
+        when(postRepository.findByThreadId(10L)).thenReturn(List.of(post));
+
+        moderationService.deleteThread(10L, 99L, "Inappropriate content");
+
+        verify(moderationRepository).save(any(Moderation.class));
+        verify(postRepository).deleteAll(List.of(post));
+        verify(threadRepository).deleteById(10L);
+    }
+
+    @Test
+    void testDeletePost_Success() {
+        when(postRepository.findById(100L)).thenReturn(Optional.of(post));
+
+        moderationService.deletePost(100L, 88L, "Spam");
+
+        verify(postRepository).deleteById(100L);
+        verify(moderationRepository).save(any(Moderation.class));
+    }
+
+    @Test
+    void testDeletePost_NotFound() {
+        when(postRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                moderationService.deletePost(100L, 88L, "Spam"));
+    }
+
+    @Test
+    void testBanUser_Success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        moderationService.banUser(1L, "Toxic behavior");
+
+        assertTrue(user.getBanned());
+        verify(userRepository).save(user);
+        verify(moderationRepository).save(any(Moderation.class));
+    }
+
+    @Test
+    void testBanUser_NotFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                moderationService.banUser(1L, "Toxic behavior"));
+    }
+
+    @Test
+    void testGetModerationHistory() {
+        Moderation moderation = Moderation.builder()
+                                          .id(1L)
+                                          .action("DELETE_POST")
+                                          .reason("Bad content")
+                                          .createdAt(LocalDateTime.now())
+                                          .user(user)
+                                          .thread(thread)
+                                          .build();
+
+        when(moderationRepository.findByUserId(1L)).thenReturn(List.of(moderation));
+
+        List<ModerationDTO> result = moderationService.getModerationHistory(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("DELETE_POST", result.get(0).getAction());
+        assertEquals(user.getId(), result.get(0).getUserId());
+    }
+}
+
+```
+###   `NotificationServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Notification;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.NotificationRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class NotificationServiceTest {
+
+    @Mock private NotificationRepository notificationRepo;
+    @Mock private NotificationRepository notificationRepository;
+    @Mock private UserRepository userRepository;
+
+    @InjectMocks private NotificationService notificationService;
+
+    private User user;
+    private Notification notification;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        user = User.builder().id(1L).username("testUser").build();
+        notification = Notification.builder()
+                                   .id(10L)
+                                   .recipient(user)
+                                   .message("Test Message")
+                                   .isRead(false)
+                                   .build();
+    }
+
+//    @Test
+    void sendNotification_ByUserId_Success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        notificationService.sendNotification(1L, "Hello!");
+
+        verify(notificationRepository).save(any(Notification.class));
+    }
+
+    @Test
+    void sendNotification_ByUserId_ThrowsIfUserNotFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                notificationService.sendNotification(1L, "Hello"));
+    }
+
+    //@Test
+    void sendNotification_ByUserObject_Success() {
+        notificationService.sendNotification(user, "Welcome");
+        verify(notificationRepo).save(any(Notification.class));
+    }
+
+   // @Test
+    void markAsRead_Success() {
+        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification));
+
+        notificationService.markAsRead(10L);
+
+        assertTrue(notification.getIsRead());
+        verify(notificationRepository).save(notification);
+    }
+
+    @Test
+    void markAsRead_ThrowsIfNotFound() {
+        when(notificationRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                notificationService.markAsRead(10L));
+    }
+
+    //@Test
+    void deleteNotification_Success() {
+        when(notificationRepository.existsById(10L)).thenReturn(true);
+
+        notificationService.deleteNotification(10L);
+
+        verify(notificationRepository).deleteById(10L);
+    }
+
+    @Test
+    void deleteNotification_NotFound() {
+        when(notificationRepository.existsById(10L)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                notificationService.deleteNotification(10L));
+    }
+
+    //@Test
+    void getNotificationsForUser() {
+        when(notificationRepository.findByRecipientId(1L)).thenReturn(List.of(notification));
+
+        List<Notification> result = notificationService.getNotificationsForUser(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("Test Message", result.get(0).getMessage());
+    }
+}
+
+```
+###   `PostServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.dto.PostDto;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class PostServiceTest {
+
+    @Mock private PostRepository postRepository;
+    @Mock private ThreadRepository threadRepository;
+    @Mock private UserRepository userRepository;
+
+    @InjectMocks private PostService postService;
+
+    private Threads thread;
+    private User user;
+    private Post post;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        user = User.builder().id(1L).username("user1").build();
+        thread = Threads.builder().id(1L).title("Thread Title").build();
+        post = Post.builder().id(100L).content("Sample post").user(user).thread(thread).createdAt(LocalDateTime.now()).build();
+    }
+
+    @Test
+    void testCreatePost_Success() {
+        when(threadRepository.findById(1L)).thenReturn(Optional.of(thread));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+
+        Post inputPost = new Post();
+        inputPost.setContent("Sample post");
+        inputPost.setUser(user);
+
+        Post saved = postService.createPost(inputPost, 1L);
+
+        assertNotNull(saved);
+        assertEquals("Sample post", saved.getContent());
+        verify(postRepository).save(any(Post.class));
+    }
+
+    @Test
+    void testCreatePost_ThreadNotFound() {
+        when(threadRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Post inputPost = new Post();
+        inputPost.setUser(user);
+        inputPost.setContent("X");
+
+        assertThrows(ResourceNotFoundException.class,
+                     () -> postService.createPost(inputPost, 99L));
+    }
+
+    @Test
+    void testCreatePost_UserNotFound() {
+        when(threadRepository.findById(1L)).thenReturn(Optional.of(thread));
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Post inputPost = new Post();
+        inputPost.setContent("Hello");
+        inputPost.setUser(User.builder().id(99L).build());
+
+        assertThrows(ResourceNotFoundException.class,
+                     () -> postService.createPost(inputPost, 1L));
+    }
+
+    @Test
+    void testGetPostsByThread() {
+        when(postRepository.findByThreadId(1L)).thenReturn(List.of(post));
+
+        List<PostDto> dtos = postService.getPostsByThread(1L);
+
+        assertEquals(1, dtos.size());
+        assertEquals(post.getContent(), dtos.get(0).getContent());
+    }
+
+    @Test
+    void testDeletePostsByThread() {
+        when(postRepository.findByThreadId(1L)).thenReturn(List.of(post));
+
+        postService.deletePostsByThread(1L);
+
+        verify(postRepository).deleteAll(List.of(post));
+    }
+}
+
+```
+###   `ThreadServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class ThreadServiceTest {
+
+    @Mock
+    private ThreadRepository threadRepository;
+
+    @InjectMocks
+    private ThreadService threadService;
+
+    private Threads thread;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        thread = Threads.builder()
+                        .id(1L)
+                        .title("Sample Thread")
+                        .content("Sample Content")
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+    }
+
+    @Test
+    void testCreateThread_Success() {
+        when(threadRepository.save(any(Threads.class))).thenReturn(thread);
+
+        Threads result = threadService.createThread(new Threads());
+
+        assertNotNull(result);
+        assertEquals("Sample Thread", result.getTitle());
+        verify(threadRepository).save(any(Threads.class));
+    }
+
+    @Test
+    void testUpdateThread_Success() {
+        Threads updated = Threads.builder()
+                                 .title("Updated Title")
+                                 .content("Updated Content")
+                                 .build();
+
+        when(threadRepository.findById(1L)).thenReturn(Optional.of(thread));
+        when(threadRepository.save(any(Threads.class))).thenReturn(thread);
+
+        Threads result = threadService.updateThread(1L, updated);
+
+        assertNotNull(result);
+        assertEquals(thread.getId(), result.getId());
+        verify(threadRepository).save(any(Threads.class));
+    }
+
+    @Test
+    void testUpdateThread_NotFound() {
+        when(threadRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Threads updated = Threads.builder().title("T").content("C").build();
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            threadService.updateThread(99L, updated);
+        });
+    }
+
+    @Test
+    void testDeleteThread_Success() {
+        when(threadRepository.existsById(1L)).thenReturn(true);
+        doNothing().when(threadRepository).deleteById(1L);
+
+        threadService.deleteThread(1L);
+
+        verify(threadRepository).deleteById(1L);
+    }
+
+    @Test
+    void testDeleteThread_NotFound() {
+        when(threadRepository.existsById(99L)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            threadService.deleteThread(99L);
+        });
+    }
+
+    @Test
+    void testGetThread_Success() {
+        when(threadRepository.findById(1L)).thenReturn(Optional.of(thread));
+
+        Threads result = threadService.getThread(1L);
+
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+    }
+
+    @Test
+    void testGetThread_NotFound() {
+        when(threadRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            threadService.getThread(999L);
+        });
+    }
+
+    @Test
+    void testGetAllThreads() {
+        when(threadRepository.findAll()).thenReturn(List.of(thread));
+
+        List<Threads> result = threadService.getAllThreads();
+
+        assertEquals(1, result.size());
+        verify(threadRepository).findAll();
+    }
+}
+
+```
+###   `UserServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepo;
+
+    @InjectMocks
+    private UserService userService;
+
+    private User mockUser;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        mockUser = User.builder()
+                       .id(1L)
+                       .username("testuser")
+                       .email("test@example.com")
+                       .build();
+    }
+
+    @Test
+    void testGetUserById_Success() {
+        when(userRepo.findById(1L)).thenReturn(Optional.of(mockUser));
+
+        User result = userService.getUserById(1L);
+
+        assertNotNull(result);
+        assertEquals("testuser", result.getUsername());
+        verify(userRepo).findById(1L);
+    }
+
+    @Test
+    void testGetUserById_NotFound() {
+        when(userRepo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.getUserById(99L));
+    }
+
+    @Test
+    void testUpdateUserProfile_Success() {
+        User updatedUser = User.builder().username("updated").email("updated@example.com").build();
+        when(userRepo.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(userRepo.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUserProfile(1L, updatedUser);
+
+        assertNotNull(result);
+        assertEquals("updated", result.getUsername());
+        assertEquals("updated@example.com", result.getEmail());
+        verify(userRepo).save(any(User.class));
+    }
+
+    @Test
+    void testFindById() {
+        when(userRepo.findById(1L)).thenReturn(Optional.of(mockUser));
+
+        Optional<User> result = userService.findById(1L);
+
+        assertTrue(result.isPresent());
+        assertEquals("testuser", result.get().getUsername());
+    }
+
+    @Test
+    void testFindAll() {
+        when(userRepo.findAll()).thenReturn(Arrays.asList(mockUser));
+
+        List<User> result = userService.findAll();
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testSaveUser() {
+        when(userRepo.save(mockUser)).thenReturn(mockUser);
+
+        User result = userService.save(mockUser);
+
+        assertEquals("testuser", result.getUsername());
+        verify(userRepo).save(mockUser);
+    }
+}
+
+```
+###   `PostServiceTest`
+```java
+
+```
 
 ---
 
