@@ -3402,5 +3402,70 @@ curl --location 'http://localhost:8080/api/search/threads?q=message' \
 
 ---
 
+Here's a detailed **Time and Space Complexity Analysis** tailored for your **Spring Boot Online Forum System** with discussion threads, messaging, moderation, notifications, and user interactions:
+
+---
+
+## ✅ 5. Time and Space Complexity Analysis
+
+---
+
+### 🧵 **Thread and Post Operations**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Create Thread / Post              | O(1)             | O(1)             | Basic entity insert with no heavy computation |
+| Fetch All Threads / Posts         | O(n)             | O(n)             | `n` = number of threads/posts |
+| Update Thread / Post              | O(1)             | O(1)             | Simple update using ID |
+| Delete Thread with Posts          | O(p)             | O(p)             | `p` = number of posts under thread |
+
+---
+
+### 💬 **Private Messaging**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Send Message                       | O(1)             | O(1)             | Save + optional notification creation |
+| Get Chat History (User1 ↔ User2)  | O(m)             | O(m)             | `m` = number of messages exchanged |
+
+---
+
+### 🔔 **Notifications**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Send Notification                  | O(1)             | O(1)             | Single DB insert |
+| Get All Notifications (user)      | O(k)             | O(k)             | `k` = number of notifications for user |
+| Mark as Read/Delete Notification  | O(1)             | O(1)             | Lookup by ID and update/delete |
+
+---
+
+### 🛡️ **Moderation**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Ban User / Delete Post / Thread   | O(1) - O(p)      | O(p)             | O(p) if multiple posts deleted |
+| Get Moderation History (user)     | O(h)             | O(h)             | `h` = moderation logs for user |
+
+---
+
+### 👥 **User & Community**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Follow/Unfollow User              | O(1)             | O(1)             | Insert/Delete follow relation |
+| Get Following List                | O(f)             | O(f)             | `f` = number of followed users |
+| Search Users / Threads            | O(n)             | O(r)             | `n` = total records, `r` = results |
+
+---
+
+## 📌 Conclusion
+
+The **Spring Boot Online Forum System** demonstrates efficient **constant to linear time complexity** across all core operations. The system:
+
+- Handles user interaction at scale with optimized DB queries.
+- Uses **lazy loading** and **pagination** where applicable to prevent memory bloat.
+- Guarantees **data consistency** and **low latency** through minimal joins and eager moderation logging.
+- Provides real-time communication and notification delivery with negligible overhead via **WebSocket** and **event-driven triggers**.
+
+With good database indexing, caching (optional Redis), and async logging or messaging, this architecture ensures **scalability and performance** for high-traffic production environments.
+
+---
+
 
 
