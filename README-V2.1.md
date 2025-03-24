@@ -2141,6 +2141,386 @@ public class ModerationService {
 
 
 
+## 📣 **19. NotificationService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/NotificationService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Notification;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.NotificationRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 📣 NotificationService
+ *
+ * This service handles operations related to notifications for users in the
+ * Turing Online Forum System. It includes sending, marking as read, deleting, and fetching notifications.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Marks this class as a service bean for business logic handling.
+ * - @Slf4j: Lombok annotation for logging within the class.
+ * - @RequiredArgsConstructor: Lombok annotation for generating a constructor to inject final fields.
+ *
+ * 🧩 Features Configured:
+ * - Send notifications to users.
+ * - Mark notifications as read.
+ * - Delete notifications.
+ * - Fetch all notifications for a specific user.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class NotificationService {
+
+    private final NotificationRepository notificationRepo;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * 📩 sendNotification
+     *
+     * Sends a notification to a user with a given message.
+     *
+     * @param recipientId The ID of the user receiving the notification.
+     * @param message     The content of the notification message.
+     *
+     * 🧠 Creates a new `Notification` entity, saves it to the database, and logs the action.
+     */
+    public void sendNotification(Long recipientId, String message) {
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Recipient not found"));
+
+        Notification notification = Notification.builder()
+                .recipient(recipient)
+                .message(message)
+                .isRead(false)
+                .timestamp(LocalDateTime.now())
+                .build();
+        log.info("Notification sent to user {}: {}", recipientId, message);
+
+        notificationRepository.save(notification);
+        log.info("Notification sent to user {}: {}", recipientId, message);
+    }
+
+    /**
+     * 📝 markAsRead
+     *
+     * Marks a notification as read by its ID.
+     *
+     * @param notificationId The ID of the notification to mark as read.
+     *
+     * 🧠 Updates the `isRead` flag of the notification to `true` and saves the change.
+     */
+    public void markAsRead(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+
+        notification.setIsRead(true);
+        notificationRepository.save(notification);
+        log.info("Notification ID {} marked as read", notificationId);
+    }
+
+    /**
+     * ❌ deleteNotification
+     *
+     * Deletes a notification by its ID.
+     *
+     * @param notificationId The ID of the notification to delete.
+     *
+     * 🧠 Verifies existence of the notification, then deletes it from the database.
+     */
+    public void deleteNotification(Long notificationId) {
+        if (!notificationRepository.existsById(notificationId)) {
+            throw new ResourceNotFoundException("Notification not found");
+        }
+        notificationRepository.deleteById(notificationId);
+        log.info("Notification ID {} deleted", notificationId);
+    }
+
+    /**
+     * 📜 getNotificationsForUser
+     *
+     * Retrieves all notifications for a given user.
+     *
+     * @param userId The ID of the user whose notifications are to be fetched.
+     * @return A list of notifications for the user.
+     */
+    public List<Notification> getNotificationsForUser(Long userId) {
+        return notificationRepository.findByRecipientId(userId);
+    }
+
+    /**
+     * 📩 sendNotification (Overloaded)
+     *
+     * Sends a notification to a user directly via a `User` object.
+     *
+     * @param recipient The user receiving the notification.
+     * @param message   The content of the notification.
+     *
+     * 🧠 Saves the notification to the database and logs the action.
+     */
+    public void sendNotification(User recipient, String message) {
+        Notification notification = Notification.builder()
+                .message(message)
+                .recipient(recipient)
+                .isRead(false)
+                .build();
+
+        notificationRepo.save(notification);
+        log.info("Sent notification to user {}: {}", recipient.getId(), message);
+    }
+}
+```
+
+
+## 👤 **19. UserService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/UserService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 👤 UserService
+ *
+ * This service class handles the core business logic for managing users,
+ * including retrieving, updating, and saving user data.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Marks this class as a service bean for business logic.
+ * - @Slf4j: Enables logging within the class using Lombok.
+ * - @RequiredArgsConstructor: Automatically generates a constructor for final fields.
+ *
+ * 🧩 Features Configured:
+ * - Fetching a user by ID.
+ * - Updating user profiles.
+ * - Saving and retrieving users from the repository.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class UserService {
+
+    private final UserRepository userRepo;
+
+    /**
+     * 📄 getUserById
+     *
+     * Retrieves a user by their unique ID.
+     *
+     * @param id The ID of the user to fetch.
+     * @return The user object if found.
+     *
+     * 🧠 Throws a `ResourceNotFoundException` if no user is found with the given ID.
+     */
+    public User getUserById(Long id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+    }
+
+    /**
+     * ✏️ updateUserProfile
+     *
+     * Updates the profile details of an existing user.
+     *
+     * @param id           The ID of the user to update.
+     * @param updatedUser  The user object containing updated profile details.
+     * @return The updated user object after saving it to the repository.
+     *
+     * 🧠 Fetches the user by ID, updates their `username` and `email`, and saves the updated user.
+     */
+    public User updateUserProfile(Long id, User updatedUser) {
+        User existing = getUserById(id);
+        existing.setUsername(updatedUser.getUsername());
+        existing.setEmail(updatedUser.getEmail());
+        return userRepo.save(existing);
+    }
+
+    /**
+     * 🔍 findById
+     *
+     * Finds a user by their unique ID.
+     *
+     * @param id The ID of the user to find.
+     * @return An `Optional<User>` containing the user if found, or empty if not.
+     */
+    public Optional<User> findById(Long id) {
+        return userRepo.findById(id);
+    }
+
+    /**
+     * 📚 findAll
+     *
+     * Retrieves all users in the system.
+     *
+     * @return A list of all users.
+     */
+    public List<User> findAll() {
+        return userRepo.findAll();
+    }
+
+    /**
+     * ➕ save
+     *
+     * Saves a new user or updates an existing one.
+     *
+     * @param user The user object to save.
+     * @return The saved user object.
+     */
+    public User save(User user) {
+        return userRepo.save(user);
+    }
+}
+```
+
+
+## 🧵 **20. ThreadService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/ThreadService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.model.Threads;
+
+/**
+ * 🧵 ThreadService
+ *
+ * This service handles operations related to threads in the Turing Online Forum System.
+ * It provides methods to create, update, delete, and retrieve threads.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Marks this class as a Spring service, indicating it contains business logic.
+ * - @RequiredArgsConstructor: Lombok annotation that generates a constructor for required final fields.
+ * - @Slf4j: Lombok annotation for logging support with `log`.
+ *
+ * 🧩 Features Configured:
+ * - Create a new thread.
+ * - Update an existing thread.
+ * - Delete a thread.
+ * - Retrieve a single thread by ID.
+ * - Retrieve all threads.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class ThreadService {
+
+    private final ThreadRepository threadRepository;
+
+    /**
+     * ✨ Create a new thread.
+     *
+     * Creates and saves a new thread in the system with the current timestamp for creation and update.
+     *
+     * @param thread The thread object to be created.
+     * @return The saved thread object with its ID and timestamps.
+     */
+    public Threads createThread(Threads thread) {
+        thread.setCreatedAt(LocalDateTime.now());
+        thread.setUpdatedAt(LocalDateTime.now());
+        Threads saved = threadRepository.save(thread);
+        log.info("Created thread with ID {}", saved.getId());
+        return saved;
+    }
+
+    /**
+     * ✏️ Update an existing thread.
+     *
+     * Updates the title and content of an existing thread and sets a new updated timestamp.
+     *
+     * @param id The ID of the thread to be updated.
+     * @param updatedThread The updated thread object.
+     * @return The updated thread object.
+     * @throws ResourceNotFoundException If the thread with the specified ID is not found.
+     */
+    public Threads updateThread(Long id, Threads updatedThread) {
+        return threadRepository.findById(id).map(thread -> {
+            thread.setTitle(updatedThread.getTitle());
+            thread.setContent(updatedThread.getContent());
+            thread.setUpdatedAt(LocalDateTime.now());
+            Threads saved = threadRepository.save(thread);
+            log.info("Updated thread with ID {}", saved.getId());
+            return saved;
+        }).orElseThrow(() -> {
+            log.error("Thread with ID {} not found", id);
+            return new ResourceNotFoundException("Thread not found");
+        });
+    }
+
+    /**
+     * 🗑️ Delete a thread by its ID.
+     *
+     * Deletes a thread from the system. If the thread doesn't exist, it throws a `ResourceNotFoundException`.
+     *
+     * @param id The ID of the thread to be deleted.
+     * @throws ResourceNotFoundException If the thread with the specified ID is not found.
+     */
+    public void deleteThread(Long id) {
+        if (!threadRepository.existsById(id)) {
+            log.error("Thread with ID {} not found for deletion", id);
+            throw new ResourceNotFoundException("Thread not found");
+        }
+        threadRepository.deleteById(id);
+        log.info("Deleted thread with ID {}", id);
+    }
+
+    /**
+     * 🔍 Get a thread by its ID.
+     *
+     * Retrieves a thread by its ID. If the thread doesn't exist, it throws a `ResourceNotFoundException`.
+     *
+     * @param id The ID of the thread to be retrieved.
+     * @return The thread object.
+     * @throws ResourceNotFoundException If the thread with the specified ID is not found.
+     */
+    public Threads getThread(Long id) {
+        return threadRepository.findById(id).orElseThrow(() -> {
+            log.error("Thread with ID {} not found", id);
+            return new ResourceNotFoundException("Thread not found");
+        });
+    }
+
+    /**
+     * 🔄 Get all threads in the system.
+     *
+     * Fetches and returns all threads stored in the system.
+     *
+     * @return A list of all threads.
+     */
+    public List<Threads> getAllThreads() {
+        log.info("Fetching all threads");
+        return threadRepository.findAll();
+    }
+}
+```
+
+
 ## ⚙️ Features
 
 
