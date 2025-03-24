@@ -1226,26 +1226,96 @@ public class PostController {
 }
 ```
 
----
+## 🔔 **10. NotificationController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/NotificationController.java`
 
-Let me know if you'd like to continue this for:
+```java
+package com.example.turingOnlineForumSystem.controller;
 
-- `PostService`  
-- `PostDto` or `Post` entity  
-- `ThreadController`, `UserController`, or any other controllers or services
+import com.example.turingOnlineForumSystem.model.Notification;
+import com.example.turingOnlineForumSystem.service.NotificationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
-I'm happy to help you keep everything polished and consistently documented!
+import java.util.List;
 
+/**
+ * 🔔 NotificationController
+ *
+ * REST controller that manages user notifications within the Turing Online Forum System.
+ * Handles fetching, updating, and deleting notifications.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Defines this class as a RESTful web controller.
+ * - @RequestMapping("/api/notifications"): Maps requests under `/api/notifications`.
+ * - @RequiredArgsConstructor: Lombok annotation to inject dependencies via constructor.
+ * - @Slf4j: Enables SLF4J-based logging for traceability.
+ *
+ * 🧩 Features Configured:
+ * - Fetch notifications for a given user.
+ * - Mark a specific notification as read.
+ * - Delete a notification by ID.
+ */
+@RestController
+@RequestMapping("/api/notifications")
+@RequiredArgsConstructor
+@Slf4j
+public class NotificationController {
 
+    private final NotificationService notificationService;
 
----
+    /**
+     * 📄 GET `/api/notifications/{userId}`
+     *
+     * Fetches all notifications for a specific user.
+     *
+     * @param userId ID of the user whose notifications are to be retrieved.
+     * @return List of `Notification` objects.
+     *
+     * 🧠 Usage:
+     * GET `/api/notifications/7` will return all notifications for user with ID 7.
+     */
+    @GetMapping("/{userId}")
+    public List<Notification> getUserNotifications(@PathVariable Long userId) {
+        log.info("Fetching notifications for user {}", userId);
+        return notificationService.getNotificationsForUser(userId);
+    }
 
-Let me know if you'd like matching documentation for:
-- `ModerationService`
-- `ModerationDTO`
-- `ThreadController`, `PostController`, `UserController` (if present)
+    /**
+     * ✅ PUT `/api/notifications/read/{notificationId}`
+     *
+     * Marks a specific notification as read.
+     *
+     * @param notificationId ID of the notification to be marked as read.
+     *
+     * 🧠 Usage:
+     * PUT `/api/notifications/read/10` will update notification ID 10 to read status.
+     */
+    @PutMapping("/read/{notificationId}")
+    public void markNotificationAsRead(@PathVariable Long notificationId) {
+        log.info("Marking notification {} as read", notificationId);
+        notificationService.markAsRead(notificationId);
+    }
 
-You're doing a great job keeping your codebase clear and maintainable!
+    /**
+     * ❌ DELETE `/api/notifications/{notificationId}`
+     *
+     * Deletes a specific notification.
+     *
+     * @param notificationId ID of the notification to be deleted.
+     *
+     * 🧠 Usage:
+     * DELETE `/api/notifications/15` will delete notification ID 15.
+     */
+    @DeleteMapping("/{notificationId}")
+    public void deleteNotification(@PathVariable Long notificationId) {
+        log.info("Deleting notification {}", notificationId);
+        notificationService.deleteNotification(notificationId);
+    }
+}
+```
+
 
 ## ⚙️ Features
 
