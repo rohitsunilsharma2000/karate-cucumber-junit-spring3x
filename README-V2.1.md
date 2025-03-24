@@ -627,10 +627,349 @@ public class SecurityConfig {
     }
 }
 ```
+## 🌐 3. `WebSocketConfig` 
+
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/config/WebSocketConfig.java`
+
+```java
+package com.example.turingOnlineForumSystem.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+/**
+ * 📡 WebSocketConfig
+ *
+ * This configuration class enables and sets up the WebSocket messaging capabilities
+ * using STOMP protocol for the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @Configuration: Indicates this is a Spring configuration class.
+ * - @EnableWebSocketMessageBroker: Enables support for WebSocket message handling, backed by a message broker.
+ *
+ * 🧩 Features Configured:
+ * - Defines a STOMP endpoint at `/chat` for client connections.
+ * - Enables a simple in-memory message broker to handle messaging between clients.
+ * - Prefixes destinations with `/app` for messages sent from client to server.
+ */
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    /**
+     * 🔌 Registers the STOMP WebSocket endpoint:
+     * - Path: `/chat`
+     * - Allows connections from all origins (for development ease).
+     * - Enables SockJS fallback for browsers that don't support WebSocket natively.
+     */
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/chat")
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+    }
+
+    /**
+     * 🧭 Configures the message broker:
+     * - Enables a simple in-memory broker with destination prefix `/topic`
+     *   (used for broadcasting messages to subscribed clients).
+     * - Sets the application destination prefix to `/app`, which is used for messages
+     *   sent from client to server-side @MessageMapping handlers.
+     */
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic"); // broker for subscribers
+        registry.setApplicationDestinationPrefixes("/app"); // for message sending
+    }
+}
+
+```
+
+## 💬 **3. ChatViewController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/ChatViewController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+/**
+ * 💬 ChatViewController
+ *
+ * This controller is responsible for rendering the WebSocket-based chat UI
+ * using Thymeleaf templating for the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @Controller: Indicates that this is a Spring MVC controller that returns view templates.
+ *
+ * 🧩 Features Configured:
+ * - Renders the chat interface located at `templates/chat.html`.
+ * - Accepts a `userId` as a query parameter and injects it into the view model.
+ */
+@Controller
+public class ChatViewController {
+
+    /**
+     * 🌐 GET `/chat`
+     *
+     * Endpoint to render the chat UI page using Thymeleaf.
+     *
+     * @param userId The ID of the current user (passed as a query parameter).
+     * @param model  Spring's `Model` object to pass attributes to the view.
+     * @return The name of the Thymeleaf template to be rendered: `chat.html`.
+     *
+     * 🧠 Usage:
+     * Visiting `/chat?userId=123` will render `chat.html` with `userId` available in the frontend.
+     */
+    @GetMapping("/chat")
+    public String chatPage(@RequestParam Long userId, Model model) {
+        model.addAttribute("userId", userId);  // Inject user ID into the frontend
+        return "chat";  // Loads templates/chat.html
+    }
+}
+```
+
+## 📧 **4. EmailController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/EmailController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import com.example.turingOnlineForumSystem.service.EmailService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * 📧 EmailController
+ *
+ * This REST controller handles email-related operations for the
+ * Turing Online Forum System, specifically sending emails via a POST request.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Indicates that this class handles REST requests and returns JSON/XML responses.
+ * - @RequestMapping("/api/email"): Base URL path for all email-related endpoints.
+ *
+ * 🧩 Features Configured:
+ * - Sends email using a service layer.
+ * - Accepts email data in JSON format.
+ * - Returns HTTP response indicating success.
+ */
+@RestController
+@RequestMapping("/api/email")
+public class EmailController {
+
+    /**
+     * 📬 EmailService instance to delegate email sending logic.
+     */
+    @Autowired
+    private EmailService emailService;
+
+    /**
+     * 📤 POST `/api/email/send`
+     *
+     * Endpoint to send an email using the provided request body.
+     *
+     * @param emailRequest A JSON payload containing recipient, subject, and body.
+     * @return HTTP 200 OK response with success message if email is sent.
+     *
+     * 🧠 Example Request:
+     * ```json
+     * {
+     *   "to": "user@example.com",
+     *   "subject": "Welcome!",
+     *   "body": "Thank you for joining the forum."
+     * }
+     * ```
+     */
+    @PostMapping("/send")
+    public ResponseEntity<String> sendEmail(@RequestBody EmailRequest emailRequest) {
+        emailService.sendEmail(emailRequest);
+        return ResponseEntity.ok("Email sent successfully!");
+    }
+}
+```
 
 
 
+## 💬 **5. MessagingController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/MessagingController.java`
 
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.dto.ChatMessageDTO;
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.service.MessagingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 💬 MessagingController
+ *
+ * This controller handles both WebSocket messaging and RESTful endpoints
+ * for chat history retrieval and chat UI rendering in the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Exposes REST endpoints that return JSON responses.
+ * - @RequestMapping("/api/messages"): Base URL for all message-related endpoints.
+ * - @Slf4j: Lombok annotation for logging.
+ * - @RequiredArgsConstructor: Lombok annotation for constructor injection of final fields.
+ *
+ * 🧩 Features Configured:
+ * - Handles real-time message sending via WebSocket.
+ * - Fetches chat history between two users.
+ * - Renders a Thymeleaf-based chat page.
+ */
+@RestController
+@Slf4j
+@RequiredArgsConstructor
+@RequestMapping("/api/messages")
+public class MessagingController {
+
+    private final MessagingService messagingService;
+    private final SimpMessagingTemplate simpMessagingTemplate;
+
+    /**
+     * 📡 WebSocket: `/app/chat.send`
+     *
+     * Handles incoming WebSocket messages from clients.
+     * Converts and forwards the message to a specific `/topic` destination for the receiver.
+     *
+     * @param chatMessage The message DTO containing sender, receiver, and content.
+     *
+     * 🧠 Example Flow:
+     * - Client sends to: `/app/chat.send`
+     * - Server relays to: `/topic/messages/{receiverId}`
+     */
+    @MessageMapping("/chat.send")
+    public void sendMessage(ChatMessageDTO chatMessage) {
+        log.info("WebSocket: Received message {}", chatMessage.getContent());
+
+        Message message = messagingService.sendMessage(chatMessage);
+
+        simpMessagingTemplate.convertAndSend("/topic/messages/" + chatMessage.getReceiverId(), message);
+    }
+
+    /**
+     * 📜 GET `/api/messages/history`
+     *
+     * REST API to retrieve chat message history between two users.
+     *
+     * @param senderId   The ID of the sender.
+     * @param receiverId The ID of the receiver.
+     * @return List of chat messages exchanged between sender and receiver.
+     */
+    @GetMapping("/history")
+    public List<Message> getHistory(@RequestParam Long senderId, @RequestParam Long receiverId) {
+        return messagingService.getChatHistory(senderId, receiverId);
+    }
+
+    /**
+     * 🖥️ GET `/api/messages/chat`
+     *
+     * Renders the chat UI page using Thymeleaf.
+     *
+     * @param userId The ID of the current user (from query param).
+     * @param model  Spring's `Model` to pass attributes to the view.
+     * @return The `chat.html` template from the `templates/` directory.
+     */
+    @GetMapping("/chat")
+    public String chatPage(@RequestParam Long userId, Model model) {
+        model.addAttribute("userId", userId);  // Inject user ID into the frontend
+        return "chat";  // Loads templates/chat.html
+    }
+}
+```
+
+## 👥 **4. FollowController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/FollowController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.service.FollowService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 👥 FollowController
+ *
+ * REST controller responsible for managing "follow" relationships between users
+ * in the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Marks this class as a REST controller for API responses.
+ * - @RequestMapping("/api/follow"): Sets the base URL for all follow-related endpoints.
+ * - @RequiredArgsConstructor: Lombok annotation to generate constructor for `final` fields.
+ * - @Slf4j: Enables logging via `log` object.
+ *
+ * 🧩 Features Configured:
+ * - Allows users to follow other users.
+ * - Retrieves a list of users being followed by a specific user.
+ */
+@RestController
+@RequestMapping("/api/follow")
+@RequiredArgsConstructor
+@Slf4j
+public class FollowController {
+
+    private final FollowService followService;
+
+    /**
+     * ➕ POST `/api/follow`
+     *
+     * Endpoint to follow another user.
+     *
+     * @param followerId  The ID of the user who is following.
+     * @param followingId The ID of the user being followed.
+     * @return A success message as a string response.
+     *
+     * 🧠 Usage:
+     * POST request to `/api/follow?followerId=1&followingId=2` establishes a follow relationship.
+     */
+    @PostMapping
+    public ResponseEntity<String> followUser(@RequestParam Long followerId, @RequestParam Long followingId) {
+        log.info("User {} is attempting to follow User {}", followerId, followingId);
+        followService.followUser(followerId, followingId);
+        return ResponseEntity.ok("Followed successfully");
+    }
+
+    /**
+     * 📄 GET `/api/follow/{userId}/following`
+     *
+     * Retrieves a list of users that the specified user is following.
+     *
+     * @param userId The ID of the user whose "following" list is to be fetched.
+     * @return A list of `User` objects the user is following.
+     *
+     * 🧠 Usage:
+     * GET request to `/api/follow/5/following` returns the list of users followed by user 5.
+     */
+    @GetMapping("/{userId}/following")
+    public ResponseEntity<List<User>> getFollowing(@PathVariable Long userId) {
+        return ResponseEntity.ok(followService.getFollowing(userId));
+    }
+}
+```
 
 ## ⚙️ Features
 
