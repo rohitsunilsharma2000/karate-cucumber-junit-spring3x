@@ -3109,6 +3109,606 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 ```
 
 
+## 🛡️ **30. ModerationRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/ModerationRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Moderation;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * 🛡️ ModerationRepository
+ *
+ * This interface defines methods for interacting with the `Moderation` entity in the database.
+ * It extends `JpaRepository` to provide CRUD operations and custom queries for moderation actions.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<Moderation, Long>`: Provides built-in methods for CRUD operations on the `Moderation` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves all moderation actions for a specific user.
+ */
+@Repository
+public interface ModerationRepository extends JpaRepository<Moderation, Long> {
+
+    /**
+     * 🔍 findByUserId
+     *
+     * Finds all moderation actions performed on a specific user.
+     *
+     * @param userId The ID of the user whose moderation actions are to be fetched.
+     * @return A list of `Moderation` entities related to the specified user.
+     */
+    List<Moderation> findByUserId(Long userId);
+}
+```
+
+---
+
+## 📣 **31. NotificationRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/NotificationRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Notification;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * 📣 NotificationRepository
+ *
+ * This interface defines methods for interacting with the `Notification` entity in the database.
+ * It extends `JpaRepository` to provide CRUD operations and custom queries for notifications.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<Notification, Long>`: Provides built-in methods for CRUD operations on the `Notification` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves notifications for a specific user by their `recipientId`.
+ */
+public interface NotificationRepository extends JpaRepository<Notification, Long> {
+
+    /**
+     * 🔍 findByRecipientId
+     *
+     * Finds all notifications sent to a specific user.
+     *
+     * @param userId The ID of the user whose notifications are to be fetched.
+     * @return A list of `Notification` entities related to the specified user.
+     */
+    List<Notification> findByRecipientId(Long userId);
+}
+```
+
+---
+
+## 📝 **32. PostRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/PostRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Post;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * 📝 PostRepository
+ *
+ * This interface defines methods for interacting with the `Post` entity in the database.
+ * It extends `JpaRepository` to provide CRUD operations and custom queries for posts.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<Post, Long>`: Provides built-in methods for CRUD operations on the `Post` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves all posts for a specific thread by its `threadId`.
+ */
+public interface PostRepository extends JpaRepository<Post, Long> {
+
+    /**
+     * 🔍 findByThreadId
+     *
+     * Finds all posts associated with a specific thread.
+     *
+     * @param threadId The ID of the thread to fetch posts for.
+     * @return A list of `Post` entities associated with the specified thread.
+     */
+    List<Post> findByThreadId(Long threadId);
+}
+```
+
+---
+
+## 🧵 **33. ThreadRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/ThreadRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * 🧵 ThreadRepository
+ *
+ * This interface defines methods for interacting with the `Threads` entity in the database.
+ * It extends `JpaRepository` to provide CRUD operations and custom queries for threads.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<Threads, Long>`: Provides built-in methods for CRUD operations on the `Threads` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves threads by searching their `title` or `content`.
+ */
+public interface ThreadRepository extends JpaRepository<Threads, Long> {
+
+    /**
+     * 🔍 findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase
+     *
+     * Finds threads by searching the title or content for a keyword.
+     *
+     * @param title   The title of the thread to search.
+     * @param content The content of the thread to search.
+     * @return A list of threads that contain the given keyword in the title or content.
+     */
+    List<Threads> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(String title, String content);
+}
+```
+
+---
+
+## 👤 **34. UserRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/UserRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+/**
+ * 👤 UserRepository
+ *
+ * This interface defines methods for interacting with the `User` entity in the database.
+ * It extends `JpaRepository` to provide CRUD operations and custom queries for users.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<User, Long>`: Provides built-in methods for CRUD operations on the `User` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves users by searching their `username`.
+ */
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    /**
+     * 🔍 findByUsernameContainingIgnoreCase
+     *
+     * Finds users by searching their username for a keyword.
+     *
+     * @param keyword The keyword to search for in the username.
+     * @return A list of users whose usernames contain the given keyword.
+     */
+    List<User> findByUsernameContainingIgnoreCase(String keyword);
+}
+```
+
+## 👤 **34. chat.html**  
+📁 **Path:** `/src/main/resources/templates/chat.html`
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Private Messaging</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+      body {
+      font-family: Arial, sans-serif;
+      }
+      #chatBox, #notificationsList {
+      border: 1px solid #ccc;
+      height: 250px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #f9f9f9;
+      }
+      input, button {
+      margin: 5px;
+      padding: 5px;
+      }
+      .message {
+      margin: 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Private Messaging</h2>
+    <!-- Message Form -->
+    <div>
+      <label for="receiverId">Receiver ID:</label>
+      <input id="receiverId" placeholder="Enter Receiver ID" required type="text"/>
+      <input id="messageInput" placeholder="Type your message..." required type="text"/>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <!-- Chat Messages -->
+    <div>
+      <h4>Messages</h4>
+      <div id="chatBox"></div>
+    </div>
+    <!-- Notifications -->
+    <div>
+      <h4>🔔 Notifications</h4>
+      <ul id="notificationsList"></ul>
+    </div>
+    <script type="text/javascript">
+      let stompClient = null;
+      
+      // ✅ Dynamic userId from Thymeleaf
+      const userId = [[${userId}]];
+      /**
+      * Establishes a WebSocket connection using SockJS and STOMP protocol.
+      * - Creates a SockJS connection to '/chat' endpoint
+      * - Wraps it with STOMP client
+      * - Subscribes to user-specific message topic (/topic/messages/{userId})
+      * - Incoming messages are parsed and displayed via showMessage()
+      */
+      function connectWebSocket() {
+          const socket = new SockJS('/chat');
+          stompClient = Stomp.over(socket);
+      
+          stompClient.connect({}, () => {
+              // ✅ Subscribe to messages
+              stompClient.subscribe('/topic/messages/' + userId, (msgOutput) => {
+                  const msg = JSON.parse(msgOutput.body);
+                  showMessage(msg.sender.username, msg.content);
+              });
+          });
+      }
+      /**
+      * Sends a private message to a specified receiver.
+      * - Gets receiver ID and message content from input fields
+      * - Validates both fields are non-empty
+      * - Sends message via STOMP to "/app/chat.send" endpoint
+      * - Displays sent message locally via showMessage()
+      * - Clears message input field after sending
+      */
+      function sendMessage() {
+          const receiverId = document.getElementById("receiverId").value.trim();
+          const content = document.getElementById("messageInput").value.trim();
+      
+          if (!receiverId || !content) {
+              alert("Receiver ID and message are required!");
+              return;
+          }
+      
+          stompClient.send("/app/chat.send", {}, JSON.stringify({
+              senderId: userId,
+              receiverId: receiverId,
+              content: content
+          }));
+      
+          showMessage("You", content);
+          document.getElementById("messageInput").value = '';
+      }
+      /**
+      * Displays a message in the chat box.
+      * @param {string} sender - Name of the message sender
+      * @param {string} content - The message content
+      * - Creates a new paragraph element for the message
+      * - Formats message as "Sender: content"
+      * - Appends to chat box and auto-scrolls to bottom
+      */
+      function showMessage(sender, content) {
+          const chatBox = document.getElementById("chatBox");
+          const msgElem = document.createElement("p");
+          msgElem.classList.add("message");
+          msgElem.innerHTML = `<strong>${sender}:</strong> ${content}`;
+          chatBox.appendChild(msgElem);
+          chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      /**
+      * Loads chat history between current user and specified receiver.
+      * @param {string} receiverId - ID of the message receiver
+      * - Fetches message history from REST API endpoint
+      * - Clears and repopulates chat box with historical messages
+      * - Uses showMessage() to display each historical message
+      */
+      function loadChatHistory(receiverId) {
+          fetch(`/api/messages/history?senderId=${userId}&receiverId=${receiverId}`)
+              .then(response => response.json())
+              .then(messages => {
+                  const chatBox = document.getElementById("chatBox");
+                  chatBox.innerHTML = '';
+                  messages.forEach(msg => {
+                      showMessage(msg.sender.username, msg.content);
+                  });
+              });
+      }
+      /**
+      * Loads and displays notifications for the current user.
+      * - Fetches notifications from REST API endpoint
+      * - Clears and repopulates notifications list
+      * - Formats each notification with timestamp and message
+      */
+      function loadNotifications() {
+          fetch(`/api/notifications/${userId}`)
+              .then(response => response.json())
+              .then(notifications => {
+                  const list = document.getElementById("notificationsList");
+                  list.innerHTML = '';
+                  notifications.forEach(n => {
+                      const li = document.createElement("li");
+                      li.textContent = `[${new Date(n.timestamp).toLocaleTimeString()}] ${n.message}`;
+                      list.appendChild(li);
+                  });
+              });
+      }
+      
+      // Load chat when receiver is entered
+      document.getElementById("receiverId").addEventListener("blur", function () {
+          const receiverId = this.value.trim();
+          if (receiverId) {
+              loadChatHistory(receiverId);
+          }
+      });
+      
+      connectWebSocket();
+      loadNotifications();
+      setInterval(loadNotifications, 15000); // refresh notifications every 15s
+    </script>
+  </body>
+</html>
+
+```
+## 👤 **35. application.properties**  
+📁 **Path:** `src/main/resources/application.properties`
+
+```plaintext
+# ========================
+# Application Information
+# ========================
+spring.application.name=karate-cucumber-junit-spring3x
+
+# ========================
+# Server Configuration
+# ========================
+server.port=8080
+
+# ========================
+# Security Configuration
+# ========================
+# Default in-memory user for basic authentication
+spring.security.user.name=admin
+spring.security.user.password=admin123
+
+
+# Set the active profile
+spring.profiles.active=mysql
+
+# ========================
+# Configure Mail Properties
+# ========================
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=rohitsunilsharma2000@gmail.com
+spring.mail.password=
+
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.debug=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+# ========================
+# mySql database connection (Database Configuration)
+# ========================
+#spring.datasource.url=jdbc:mysql://localhost:3306/turingonlineforumsystem
+spring.datasource.url=jdbc:mysql://localhost:3307/turingonlineforumsystem
+spring.datasource.username=root
+spring.datasource.password=SYSTEM
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+# Automatically create/drop schema at startup
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Enable JPA SQL logging for debugging
+spring.jpa.show-sql=true
+
+
+#spring.jpa.properties.hibernate.format_sql=true
+#logging.level.org.hibernate.SQL=DEBUG
+#logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+
+
+```
+### Unit tests *
+
+
+## 🧪 **1. ChatViewControllerTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/ChatViewControllerTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * 🧪 ChatViewControllerTest
+ *
+ * This test class verifies the functionality of the `ChatViewController`.
+ * It tests the loading of the chat page and ensures that the user ID is correctly passed
+ * into the view template.
+ *
+ * 📌 Annotations Used:
+ * - @WebMvcTest: Used for testing only the web layer of the application (Controller).
+ * - @Import: Imports custom security configuration for testing without real security context.
+ * - @TestConfiguration: Provides a custom security filter configuration for testing.
+ *
+ * 🧩 Features Tested:
+ * - Verifies that the chat page loads correctly with the user ID passed in the model.
+ */
+@WebMvcTest(ChatViewController.class)
+@Import(ChatViewControllerTest.TestSecurityConfig.class)
+public class ChatViewControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    /**
+     * 🧪 Test: Chat page loads with the correct user ID.
+     */
+    @Test
+    void testChatPageLoadsWithUserId() throws Exception {
+        mockMvc.perform(get("/chat")
+                        .param("userId", "123"))
+               .andExpect(status().isOk())
+               .andExpect(view().name("chat"))
+               .andExpect(model().attribute("userId", 123L));
+    }
+
+    /**
+     * 🔒 Test security configuration for tests:
+     * - Disables CSRF and permits all requests.
+     */
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+```
+
+---
+
+## 🧪 **2. EmailControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/EmailControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import com.example.turingOnlineForumSystem.service.EmailService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * 🧪 EmailControllerIntegrationTest
+ *
+ * This integration test class verifies the behavior of the `EmailController`.
+ * It tests the email sending functionality, ensuring that the service method is called
+ * correctly and that the appropriate HTTP response is returned.
+ *
+ * 📌 Annotations Used:
+ * - @WebMvcTest: Used for testing only the web layer of the application (Controller).
+ * - @MockBean: Mocks the `EmailService` to isolate the controller behavior during testing.
+ * - @Import: Imports custom security configuration for testing without actual security.
+ *
+ * 🧩 Features Tested:
+ * - Verifies the email sending process.
+ * - Ensures that the email service method is invoked correctly.
+ */
+@WebMvcTest(EmailController.class)
+@Import(EmailControllerIntegrationTest.TestSecurityConfig.class)
+public class EmailControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private EmailService emailService;
+
+    /**
+     * 🧪 Test: Verifies that sending an email returns the correct response and invokes the service method.
+     */
+    @Test
+    void testSendEmail() throws Exception {
+        String requestJson = """
+                {
+                    "to": "user@example.com",
+                    "subject": "Test Subject",
+                    "body": "This is a test email."
+                }
+                """;
+
+        // Act & Assert
+        mockMvc.perform(post("/api/email/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+               .andExpect(status().isOk())
+               .andExpect(content().string("Email sent successfully!"));
+
+        // Verify the service method was invoked
+        Mockito.verify(emailService, Mockito.times(1)).sendEmail(Mockito.any(EmailRequest.class));
+    }
+
+    /**
+     * 🔒 Test security configuration for tests:
+     * - Disables CSRF and permits all requests.
+     */
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+```
+
 
 ## ⚙️ Features
 
