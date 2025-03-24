@@ -4,9 +4,7 @@ package com.example.turingOnlineForumSystem.controller;
 import com.example.turingOnlineForumSystem.model.Post;
 import com.example.turingOnlineForumSystem.model.Threads;
 import com.example.turingOnlineForumSystem.model.User;
-import com.example.turingOnlineForumSystem.repository.PostRepository;
-import com.example.turingOnlineForumSystem.repository.ThreadRepository;
-import com.example.turingOnlineForumSystem.repository.UserRepository;
+import com.example.turingOnlineForumSystem.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +33,12 @@ public class ModerationControllerIntegrationTest {
 
     @Autowired
     private PostRepository postRepository;
+    @Autowired
+    private ModerationRepository moderationRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
+
 
     private User moderator;
     private User regularUser;
@@ -43,27 +47,40 @@ public class ModerationControllerIntegrationTest {
 
     @BeforeEach
     void setup() {
+        moderationRepository.deleteAll(); // ✅ No more NPE
+        messageRepository.deleteAll(); // <-- Add this line
         postRepository.deleteAll();
         threadRepository.deleteAll();
         userRepository.deleteAll();
 
-        moderator = userRepository.save(User.builder().username("moderator").email("mod@example.com").banned(false).createdAt(LocalDateTime.now()).build());
-        regularUser = userRepository.save(User.builder().username("user").email("user@example.com").banned(false).createdAt(LocalDateTime.now()).build());
+        moderator = userRepository.save(User.builder()
+                                            .username("moderator")
+                                            .email("mod@example.com")
+                                            .banned(false)
+                                            .createdAt(LocalDateTime.now())
+                                            .build());
+
+        regularUser = userRepository.save(User.builder()
+                                              .username("user")
+                                              .email("user@example.com")
+                                              .banned(false)
+                                              .createdAt(LocalDateTime.now())
+                                              .build());
 
         thread = threadRepository.save(Threads.builder()
-                .title("Test Thread")
-                .content("Thread Content")
-                .createdAt(LocalDateTime.now())
-                .user(regularUser)
-                .posts(Collections.emptyList())
-                .build());
+                                              .title("Test Thread")
+                                              .content("Thread Content")
+                                              .createdAt(LocalDateTime.now())
+                                              .user(regularUser)
+                                              .posts(Collections.emptyList())
+                                              .build());
 
         post = postRepository.save(Post.builder()
-                .content("Test Post")
-                .createdAt(LocalDateTime.now())
-                .user(regularUser)
-                .thread(thread)
-                .build());
+                                       .content("Test Post")
+                                       .createdAt(LocalDateTime.now())
+                                       .user(regularUser)
+                                       .thread(thread)
+                                       .build());
     }
 
     @Test

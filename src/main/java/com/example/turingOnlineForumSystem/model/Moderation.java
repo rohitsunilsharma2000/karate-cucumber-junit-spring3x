@@ -28,6 +28,7 @@ public class Moderation {
     // Reference to the user who was moderated
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE) // Hibernate-specific
     private User user;
 
     // 💡 Allow nullable & delete-safe relationship to Threads
