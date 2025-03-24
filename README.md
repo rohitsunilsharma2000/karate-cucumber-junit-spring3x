@@ -3267,8 +3267,551 @@ class UserServiceTest {
 }
 
 ```
-###   `PostServiceTest`
+###   `ChatViewControllerTest`
 ```java
+package com.example.turingOnlineForumSystem.controller;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(ChatViewController.class)
+@Import(ChatViewControllerTest.TestSecurityConfig.class)
+public class ChatViewControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void testChatPageLoadsWithUserId() throws Exception {
+        mockMvc.perform(get("/chat")
+                                .param("userId", "123"))
+               .andExpect(status().isOk())
+               .andExpect(view().name("chat"))
+               .andExpect(model().attribute("userId", 123L));
+    }
+
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+
+```
+
+###   `EmailControllerIntegrationTest`
+```
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import com.example.turingOnlineForumSystem.service.EmailService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(EmailController.class)
+@Import(EmailControllerIntegrationTest.TestSecurityConfig.class) // ⬅ disables Spring Security
+public class EmailControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private EmailService emailService;
+
+    @Test
+    void testSendEmail() throws Exception {
+        String requestJson = """
+                {
+                    "to": "user@example.com",
+                    "subject": "Test Subject",
+                    "body": "This is a test email."
+                }
+                """;
+
+        // Act & Assert
+        mockMvc.perform(post("/api/email/send")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestJson))
+               .andExpect(status().isOk())
+               .andExpect(content().string("Email sent successfully!"));
+
+        // Verify the service method was invoked
+        Mockito.verify(emailService, Mockito.times(1)).sendEmail(Mockito.any(EmailRequest.class));
+    }
+
+    // ✅ Disables security for this test
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+
+
+
+```
+
+
+###   `FollowControllerIntegrationTest`
+```
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(SearchController.class)
+@Import(SearchControllerIntegrationTest.TestSecurityConfig.class)
+class SearchControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserRepository userRepo;
+
+    @MockBean
+    private ThreadRepository threadRepo;
+
+    @Test
+    void testSearchUsers() throws Exception {
+        User user = User.builder().id(1L).username("testuser").email("user@example.com").build();
+        Mockito.when(userRepo.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(user));
+
+        mockMvc.perform(get("/api/search/users")
+                                .param("q", "test"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].username").value("testuser"));
+    }
+
+    @Test
+    void testSearchThreads() throws Exception {
+        Threads thread = Threads.builder().id(1L).title("Interesting Topic").content("Something cool").build();
+        Mockito.when(threadRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase("test", "test"))
+               .thenReturn(List.of(thread));
+
+        mockMvc.perform(get("/api/search/threads")
+                                .param("q", "test"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].title").value("Interesting Topic"));
+    }
+
+    // ✅ Disable security just for tests
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+
+
+```
+
+
+###   `ModerationDTOTest`
+```
+package com.example.turingOnlineForumSystem.dto;
+
+
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class ModerationDTOTest {
+
+    @Test
+    void testAllArgsConstructorAndGetters() {
+        LocalDateTime now = LocalDateTime.now();
+
+        ModerationDTO dto = new ModerationDTO(
+                1L,
+                "DELETE",
+                "Spam content",
+                now,
+                2L,
+                "john_doe",
+                3L
+        );
+
+        assertThat(dto.getId()).isEqualTo(1L);
+        assertThat(dto.getAction()).isEqualTo("DELETE");
+        assertThat(dto.getReason()).isEqualTo("Spam content");
+        assertThat(dto.getCreatedAt()).isEqualTo(now);
+        assertThat(dto.getUserId()).isEqualTo(2L);
+        assertThat(dto.getUsername()).isEqualTo("john_doe");
+        assertThat(dto.getThreadId()).isEqualTo(3L);
+    }
+
+    @Test
+    void testSettersAndNoArgsConstructor() {
+        ModerationDTO dto = new ModerationDTO();
+
+        dto.setId(10L);
+        dto.setAction("BAN");
+        dto.setReason("Toxic behavior");
+        dto.setCreatedAt(LocalDateTime.of(2024, 1, 1, 12, 0));
+        dto.setUserId(100L);
+        dto.setUsername("alice");
+        dto.setThreadId(200L);
+
+        assertThat(dto.getId()).isEqualTo(10L);
+        assertThat(dto.getAction()).isEqualTo("BAN");
+        assertThat(dto.getReason()).isEqualTo("Toxic behavior");
+        assertThat(dto.getCreatedAt()).isEqualTo("2024-01-01T12:00");
+        assertThat(dto.getUserId()).isEqualTo(100L);
+        assertThat(dto.getUsername()).isEqualTo("alice");
+        assertThat(dto.getThreadId()).isEqualTo(200L);
+    }
+}
+
+
+```
+
+###   `PostDtoTest`
+```
+
+package com.example.turingOnlineForumSystem.dto;
+
+
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class PostDtoTest {
+
+    @Test
+    void testAllArgsConstructor() {
+        LocalDateTime now = LocalDateTime.now();
+
+        PostDto dto = new PostDto(1L, "This is a post", 2L, 3L, now);
+
+        assertThat(dto.getId()).isEqualTo(1L);
+        assertThat(dto.getContent()).isEqualTo("This is a post");
+        assertThat(dto.getUserId()).isEqualTo(2L);
+        assertThat(dto.getThreadId()).isEqualTo(3L);
+        assertThat(dto.getCreatedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void testNoArgsConstructorAndSetters() {
+        LocalDateTime created = LocalDateTime.of(2024, 5, 1, 10, 0);
+
+        PostDto dto = new PostDto();
+        dto.setId(100L);
+        dto.setContent("Test content");
+        dto.setUserId(10L);
+        dto.setThreadId(20L);
+        dto.setCreatedAt(created);
+
+        assertThat(dto.getId()).isEqualTo(100L);
+        assertThat(dto.getContent()).isEqualTo("Test content");
+        assertThat(dto.getUserId()).isEqualTo(10L);
+        assertThat(dto.getThreadId()).isEqualTo(20L);
+        assertThat(dto.getCreatedAt()).isEqualTo(created);
+    }
+
+    @Test
+    void testBuilder() {
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        PostDto dto = PostDto.builder()
+                             .id(5L)
+                             .content("Hello builder")
+                             .userId(55L)
+                             .threadId(77L)
+                             .createdAt(timestamp)
+                             .build();
+
+        assertThat(dto.getId()).isEqualTo(5L);
+        assertThat(dto.getContent()).isEqualTo("Hello builder");
+        assertThat(dto.getUserId()).isEqualTo(55L);
+        assertThat(dto.getThreadId()).isEqualTo(77L);
+        assertThat(dto.getCreatedAt()).isEqualTo(timestamp);
+    }
+}
+
+
+```
+###   `GlobalExceptionHandlerTest`
+```java
+package com.example.turingOnlineForumSystem.exception;
+
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class GlobalExceptionHandlerTest {
+
+    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+    @Test
+    void testHandleResourceNotFound() {
+        // Given
+        ResourceNotFoundException ex = new ResourceNotFoundException("User not found");
+
+        // When
+        ResponseEntity<?> response = handler.handleResourceNotFound(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isEqualTo("User not found");
+    }
+
+    @Test
+    void testHandleGenericException() {
+        // Given
+        Exception ex = new RuntimeException("Something went wrong");
+
+        // When
+        ResponseEntity<?> response = handler.handleGeneric(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody()).isEqualTo("Internal server error");
+    }
+}
+
+
+```
+###   `EmailServiceTest`
+```java
+package com.example.turingOnlineForumSystem.service;
+
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+@SpringBootTest
+class EmailServiceTest {
+
+    @MockBean
+    private JavaMailSender mailSender;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Test
+    void testSendEmail() {
+        EmailRequest emailRequest = new EmailRequest();
+        emailRequest.setTo("recipient@example.com");
+        emailRequest.setSubject("Unit Test");
+        emailRequest.setBody("Unit test email body");
+
+        emailService.sendEmail(emailRequest);
+
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(messageCaptor.capture());
+
+        SimpleMailMessage msg = messageCaptor.getValue();
+        assertThat(msg.getTo()).contains("recipient@example.com");
+        assertThat(msg.getSubject()).isEqualTo("Unit Test");
+        assertThat(msg.getText()).isEqualTo("Unit test email body");
+    }
+}
+
+
+```
+
+###   `NotificationServiceTest`
+```java
+
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Notification;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.NotificationRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
+public class NotificationServiceTest {
+
+    @Mock
+    private NotificationRepository notificationRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private NotificationService notificationService;
+
+    private AutoCloseable closeable;
+
+    @BeforeEach
+    void setup() {
+        closeable = MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testSendNotificationById_Success() {
+        User user = User.builder().id(1L).username("bob").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        notificationService.sendNotification(1L, "Test message");
+
+        verify(notificationRepository, times(1)).save(argThat(notification ->
+                                                                      notification.getRecipient().getId().equals(1L) &&
+                                                                              notification.getMessage().equals("Test message")
+        ));
+    }
+
+    @Test
+    void testSendNotificationById_UserNotFound() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.sendNotification(99L, "Hello"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Recipient not found");
+    }
+
+    @Test
+    void testMarkAsRead_Success() {
+        Notification notification = Notification.builder().id(10L).isRead(false).build();
+        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification));
+
+        notificationService.markAsRead(10L);
+
+        verify(notificationRepository).save(notification);
+        assert notification.getIsRead();
+    }
+
+    @Test
+    void testMarkAsRead_NotFound() {
+        when(notificationRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.markAsRead(100L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Notification not found");
+    }
+
+    @Test
+    void testDeleteNotification_Success() {
+        when(notificationRepository.existsById(5L)).thenReturn(true);
+
+        notificationService.deleteNotification(5L);
+
+        verify(notificationRepository).deleteById(5L);
+    }
+
+    @Test
+    void testDeleteNotification_NotFound() {
+        when(notificationRepository.existsById(50L)).thenReturn(false);
+
+        assertThatThrownBy(() -> notificationService.deleteNotification(50L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Notification not found");
+    }
+
+    @Test
+    void testSendNotificationWithUserObject() {
+        User user = User.builder().id(2L).build();
+
+        notificationService.sendNotification(user, "Direct notification");
+
+        verify(notificationRepository).save(argThat(notification ->
+                                                            notification.getMessage().equals("Direct notification") &&
+                                                                    notification.getRecipient().getId().equals(2L)
+        ));
+    }
+}
+
+
+```
+
+
+###   `TuringOnlineForumSystemTest`
+```java
+package com.example.turingOnlineForumSystem;
+
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class TuringOnlineForumSystemTest {
+
+    @Test
+    void contextLoads() {
+        // If the application context fails to load, this test will fail.
+    }
+}
 
 ```
 
