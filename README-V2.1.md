@@ -895,7 +895,7 @@ public class MessagingController {
 }
 ```
 
-## 👥 **4. FollowController**  
+## 👥 **6. FollowController**  
 📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/FollowController.java`
 
 ```java
@@ -970,6 +970,84 @@ public class FollowController {
     }
 }
 ```
+
+## 👥 **7. FollowController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/FollowController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.service.FollowService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 👥 FollowController
+ *
+ * REST controller responsible for managing "follow" relationships between users
+ * in the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Marks this class as a REST controller for API responses.
+ * - @RequestMapping("/api/follow"): Sets the base URL for all follow-related endpoints.
+ * - @RequiredArgsConstructor: Lombok annotation to generate constructor for `final` fields.
+ * - @Slf4j: Enables logging via `log` object.
+ *
+ * 🧩 Features Configured:
+ * - Allows users to follow other users.
+ * - Retrieves a list of users being followed by a specific user.
+ */
+@RestController
+@RequestMapping("/api/follow")
+@RequiredArgsConstructor
+@Slf4j
+public class FollowController {
+
+    private final FollowService followService;
+
+    /**
+     * ➕ POST `/api/follow`
+     *
+     * Endpoint to follow another user.
+     *
+     * @param followerId  The ID of the user who is following.
+     * @param followingId The ID of the user being followed.
+     * @return A success message as a string response.
+     *
+     * 🧠 Usage:
+     * POST request to `/api/follow?followerId=1&followingId=2` establishes a follow relationship.
+     */
+    @PostMapping
+    public ResponseEntity<String> followUser(@RequestParam Long followerId, @RequestParam Long followingId) {
+        log.info("User {} is attempting to follow User {}", followerId, followingId);
+        followService.followUser(followerId, followingId);
+        return ResponseEntity.ok("Followed successfully");
+    }
+
+    /**
+     * 📄 GET `/api/follow/{userId}/following`
+     *
+     * Retrieves a list of users that the specified user is following.
+     *
+     * @param userId The ID of the user whose "following" list is to be fetched.
+     * @return A list of `User` objects the user is following.
+     *
+     * 🧠 Usage:
+     * GET request to `/api/follow/5/following` returns the list of users followed by user 5.
+     */
+    @GetMapping("/{userId}/following")
+    public ResponseEntity<List<User>> getFollowing(@PathVariable Long userId) {
+        return ResponseEntity.ok(followService.getFollowing(userId));
+    }
+}
+```
+
+
 
 ## ⚙️ Features
 
