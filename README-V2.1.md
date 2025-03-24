@@ -2519,6 +2519,595 @@ public class ThreadService {
     }
 }
 ```
+Here's the structured documentation for your `EmailRequest` model, following the same professional format as the previous ones:
+
+---
+
+## 📧 **21. EmailRequest**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/EmailRequest.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * 📧 EmailRequest
+ *
+ * This class serves as a data transfer object (DTO) to represent an email
+ * request, containing the recipient's email, subject, and body content.
+ *
+ * 📌 Annotations Used:
+ * - @Getter: Lombok annotation to generate getter methods for all fields.
+ * - @Setter: Lombok annotation to generate setter methods for all fields.
+ *
+ * 🧩 Features Configured:
+ * - Stores email details: recipient (`to`), subject, and body.
+ */
+@Getter
+@Setter
+public class EmailRequest {
+    private String to;       // The recipient's email address
+    private String subject;  // The subject of the email
+    private String body;     // The body/content of the email
+}
+```
+
+
+## 🔄 **22. Follow**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/Follow.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+/**
+ * 🔄 Follow
+ *
+ * This entity represents a "follow" relationship between two users in the system:
+ * one user following another.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity to be persisted in the database.
+ * - @Table(name = "follow"): Specifies the name of the table in the database.
+ * - @Data: Lombok annotation that generates getters, setters, toString, equals, and hashCode methods.
+ * - @NoArgsConstructor: Lombok annotation to generate a no-argument constructor.
+ * - @AllArgsConstructor: Lombok annotation to generate a constructor with all fields.
+ * - @Builder: Lombok annotation to implement the builder pattern for object creation.
+ *
+ * 🧩 Features Configured:
+ * - Represents the "follower" and "following" relationship between users.
+ * - Cascades delete action to the follower entity when a follow relationship is deleted.
+ */
+@Entity
+@Table(name = "follow")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Follow {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;  // Unique identifier for the follow relationship
+
+    // @ManyToOne: Maps to the "following" user entity.
+    @ManyToOne
+    private User following;  // The user who is being followed
+
+    // @ManyToOne and @JoinColumn: Maps to the "follower" user entity.
+    @ManyToOne
+    @JoinColumn(name = "follower_id")
+    @OnDelete(action = OnDeleteAction.CASCADE) // Hibernate-specific annotation to cascade delete
+    private User follower;  // The user who is following
+}
+```
+
+
+
+## 📣 **23. Notification**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/Notification.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * 📣 Notification
+ *
+ * This entity represents a notification sent to a user. It stores the message content, 
+ * the recipient user, the read status, and the timestamp when the notification was created.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity to be persisted in the database.
+ * - @Data: Lombok annotation to automatically generate getters, setters, toString, equals, and hashCode methods.
+ * - @NoArgsConstructor: Lombok annotation to generate a no-argument constructor.
+ * - @AllArgsConstructor: Lombok annotation to generate a constructor with all fields.
+ * - @Builder: Lombok annotation to implement the builder pattern for object creation.
+ * - @PrePersist: Specifies a method to run before persisting the entity, setting the timestamp.
+ *
+ * 🧩 Features Configured:
+ * - Stores the notification's message content.
+ * - Links each notification to a user (recipient).
+ * - Tracks if the notification has been read.
+ * - Automatically sets the timestamp before saving to the database.
+ */
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Notification {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;  // Unique identifier for the notification
+
+    private String message;  // The content/message of the notification
+
+    // @ManyToOne: Maps to the recipient user who will receive the notification
+    @ManyToOne
+    private User recipient;  // The user who will receive the notification
+
+    private Boolean isRead;  // The read status of the notification (true or false)
+
+    private LocalDateTime timestamp;  // Timestamp when the notification was created
+
+    /**
+     * @PrePersist: Sets the timestamp field to the current time before persisting the entity.
+     * Ensures the notification has a timestamp when created.
+     */
+    @PrePersist
+    public void prePersist() {
+        if (timestamp == null) {
+            timestamp = LocalDateTime.now();  // Automatically sets the timestamp to the current time
+        }
+    }
+}
+```
+
+
+## 👤 **24. User**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/User.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+/**
+ * 👤 User
+ *
+ * This entity represents a user in the Turing Online Forum System.
+ * It stores essential user details like username, password, email, role, account creation time, 
+ * and banned status.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity to be persisted in the database.
+ * - @Table(name = "user"): Specifies the name of the table in the database.
+ * - @Getter: Lombok annotation to automatically generate getter methods for all fields.
+ * - @Setter: Lombok annotation to automatically generate setter methods for all fields.
+ * - @Builder: Lombok annotation to implement the builder pattern for object creation.
+ * - @AllArgsConstructor: Lombok annotation to generate a constructor with all fields.
+ * - @NoArgsConstructor: Lombok annotation to generate a no-argument constructor.
+ *
+ * 🧩 Features Configured:
+ * - Stores user information: `username`, `password`, `email`, `role`, `createdAt`, and `is_banned`.
+ * - Automatically sets the `createdAt` field to the current time when the user is created.
+ */
+@Getter
+@Setter
+@Entity
+@Table(name = "user")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;  // Unique identifier for the user
+
+    private String username;  // The username of the user
+
+    private String password;  // The user's password (likely hashed in a real system)
+
+    private String email;  // The user's email address
+
+    private String role;  // The role of the user (e.g., "USER", "ADMIN")
+
+    private LocalDateTime createdAt = LocalDateTime.now();  // Timestamp for when the user account was created
+
+    @Column(name = "is_banned")
+    private Boolean banned = false;  // Whether the user is banned or not (default is false)
+
+    // Getters and setters are generated by Lombok
+}
+```
+
+
+
+## 📩 **25. Message**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/Message.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+/**
+ * 📩 Message
+ *
+ * This entity represents a message in the Turing Online Forum System. It is used to store
+ * the content of the message, the sender and receiver, and the timestamp when the message
+ * was sent.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity that will be mapped to a table in the database.
+ * - @Getter, @Setter: Lombok annotations that automatically generate getter and setter methods.
+ * - @NoArgsConstructor, @AllArgsConstructor: Lombok annotations to generate constructors.
+ * - @Builder: Lombok annotation to provide a builder pattern for constructing `Message` objects.
+ * - @PrePersist: JPA annotation that allows the setting of values before persisting the entity.
+ *
+ * 🧩 Features Configured:
+ * - Represents a message between two users with a sender and receiver.
+ * - Stores the message content and the timestamp of when the message was created.
+ * - Supports lazy fetching for sender and receiver relationships.
+ */
+@Getter
+@Setter
+@Entity
+@NoArgsConstructor   // ✅ Required for JPA
+@AllArgsConstructor
+@Builder
+public class Message {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String content;
+
+    private LocalDateTime timestamp;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
+    private User sender;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiver_id")
+    private User receiver;
+
+    /**
+     * 🕒 PrePersist method to automatically set the timestamp before persisting.
+     *
+     * This method is triggered before the entity is persisted to the database.
+     * It sets the timestamp of the message to the current time.
+     */
+    @PrePersist
+    public void prePersist() {
+        this.timestamp = LocalDateTime.now();
+    }
+}
+```
+
+
+## ⚖️ **25. Moderation**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/Moderation.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.LocalDateTime;
+
+/**
+ * ⚖️ Moderation
+ *
+ * This entity represents a moderation action taken on a user or thread in the Turing Online Forum System.
+ * It logs actions such as deleting a post, banning a user, or deleting a thread, along with the reason
+ * and timestamp of when the action occurred.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity that will be mapped to a table in the database.
+ * - @Getter, @Setter: Lombok annotations that automatically generate getter and setter methods.
+ * - @NoArgsConstructor, @AllArgsConstructor: Lombok annotations for generating constructors.
+ * - @Builder: Lombok annotation to provide a builder pattern for constructing `Moderation` objects.
+ * - @ManyToOne: Indicates that the `Moderation` entity has many-to-one relationships with `User` and `Thread`.
+ * - @OnDelete: Specifies how to handle deletions for related entities in Hibernate.
+ * - @PrePersist: JPA annotation to allow automatic population of the `createdAt` field before persistence.
+ *
+ * 🧩 Features Configured:
+ * - Logs actions related to users (e.g., banning or moderating posts).
+ * - Allows nullable and delete-safe relationships with the `Threads` entity.
+ * - Automatically sets the timestamp for the moderation action before persisting the entity.
+ */
+@Getter
+@Setter
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Moderation {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String action;
+    private String reason;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    // Reference to the user who was moderated
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE) // Hibernate-specific
+    private User user;
+
+    // 💡 Allow nullable & delete-safe relationship to Threads
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "thread_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL) // ← key fix
+    private Threads thread;
+
+    /**
+     * 🕒 PrePersist method to automatically set the createdAt field before persisting.
+     *
+     * This method ensures that the `createdAt` field is always populated with the current timestamp
+     * when a new `Moderation` entity is created.
+     */
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+}
+```
+
+
+## 📝 **26. Post**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/Post.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+/**
+ * 📝 Post
+ *
+ * This entity represents a post in the Turing Online Forum System. A post is created by a user,
+ * and it is associated with a specific thread. It contains the post's content, creation timestamp,
+ * and references to the thread and the user who created the post.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity to be mapped to a table in the database.
+ * - @Getter, @Setter: Lombok annotations to automatically generate getter and setter methods.
+ * - @Builder: Lombok annotation to provide a builder pattern for constructing `Post` objects.
+ * - @NoArgsConstructor, @AllArgsConstructor: Lombok annotations for generating constructors.
+ * - @ManyToOne: Specifies that `Post` has a many-to-one relationship with both `Threads` and `User` entities.
+ * - @JsonBackReference: Prevents infinite recursion in the JSON serialization process for bidirectional relationships.
+ *
+ * 🧩 Features Configured:
+ * - Represents a post under a specific thread.
+ * - Associates the post with a user who created it.
+ * - Contains a `createdAt` timestamp that is set automatically when the post is created.
+ */
+@Getter
+@Setter
+@Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class Post {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String content;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "thread_id", nullable = false)
+    @JsonBackReference
+    private Threads thread;
+
+    @ManyToOne
+    private User user;
+
+    // Getters and setters generated by Lombok
+}
+```
+
+
+
+## 🧵 **27. Threads**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/model/Threads.java`
+
+```java
+package com.example.turingOnlineForumSystem.model;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 🧵 Threads
+ *
+ * This entity represents a thread in the Turing Online Forum System. A thread contains a title,
+ * content, and is associated with a user who created it. It also has a list of posts that belong to
+ * that thread. The thread is stored with timestamps for when it was created and last updated.
+ *
+ * 📌 Annotations Used:
+ * - @Entity: Marks this class as a JPA entity to be mapped to a table in the database.
+ * - @Table: Specifies the exact table name in the database schema.
+ * - @Getter, @Setter: Lombok annotations to automatically generate getter and setter methods.
+ * - @Builder: Lombok annotation for the builder pattern to easily create `Thread` objects.
+ * - @NoArgsConstructor, @AllArgsConstructor: Lombok annotations to generate constructors.
+ * - @ManyToOne: Specifies that a thread is related to one user (creator of the thread).
+ * - @OneToMany: Indicates that a thread has many posts, and these posts are automatically deleted if the thread is deleted.
+ * - @JsonManagedReference: Used for bidirectional relationships to avoid infinite recursion during JSON serialization.
+ *
+ * 🧩 Features Configured:
+ * - Represents a thread with a title and content.
+ * - Associates the thread with the user who created it.
+ * - Contains timestamps for creation and updates.
+ * - Contains a list of posts associated with the thread, with automatic cascading on delete.
+ */
+@Getter
+@Setter
+@Entity
+@Table(name = "thread")  // <-- match the table name EXACTLY as in your DB schema
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class Threads {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String content;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
+
+    @ManyToOne
+    private User user;
+
+    /**
+     * 💬 One-to-many relationship with `Post` entity.
+     *
+     * Represents a list of posts that belong to this thread. The cascade option ensures that posts
+     * are deleted when the thread is deleted, and orphanRemoval ensures that posts are removed from
+     * the database when they are disassociated from the thread.
+     */
+    @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Post> posts;
+}
+```
+
+
+## 🔄 **28. FollowRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/FollowRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Follow;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * 🔄 FollowRepository
+ *
+ * This interface defines methods for interacting with the "follow" relationship data in the database.
+ * It extends `JpaRepository` to provide CRUD operations and custom queries for managing follow relationships.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<Follow, Long>`: Provides built-in methods for CRUD operations on the `Follow` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves a list of `Follow` records by the follower's ID.
+ */
+@Repository
+public interface FollowRepository extends JpaRepository<Follow, Long> {
+
+    /**
+     * 🔍 findByFollowerId
+     *
+     * Finds all follow relationships where the given user is the follower.
+     *
+     * @param followerId The ID of the follower.
+     * @return A list of `Follow` entities where the given user is the follower.
+     */
+    List<Follow> findByFollowerId(Long followerId);
+}
+```
+
+---
+
+## 💬 **29. MessageRepository**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/repository/MessageRepository.java`
+
+```java
+package com.example.turingOnlineForumSystem.repository;
+
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * 💬 MessageRepository
+ *
+ * This interface provides methods for interacting with the `Message` entity in the database.
+ * It extends `JpaRepository` to handle CRUD operations and custom queries for message data.
+ *
+ * 📌 Annotations Used:
+ * - @Repository: Marks this interface as a Spring Data repository for DAO operations.
+ * - Extends `JpaRepository<Message, Long>`: Provides built-in methods for CRUD operations on the `Message` entity.
+ *
+ * 🧩 Features Configured:
+ * - Retrieves a list of messages sent from one user to another.
+ */
+@Repository
+public interface MessageRepository extends JpaRepository<Message, Long> {
+
+    /**
+     * 🔍 findBySenderAndReceiver
+     *
+     * Retrieves all messages exchanged between two users.
+     *
+     * @param sender The sender user.
+     * @param receiver The receiver user.
+     * @return A list of `Message` entities exchanged between the sender and receiver.
+     */
+    List<Message> findBySenderAndReceiver(User sender, User receiver);
+}
+```
+
 
 
 ## ⚙️ Features
