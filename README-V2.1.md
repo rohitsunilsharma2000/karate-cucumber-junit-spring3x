@@ -5278,4 +5278,3 @@ With good database indexing, caching (optional Redis), and async logging or mess
 ---
 ```
 
-Let me know if you'd like this saved as a downloadable `.md` file or want a version tailored for GitHub README style.
