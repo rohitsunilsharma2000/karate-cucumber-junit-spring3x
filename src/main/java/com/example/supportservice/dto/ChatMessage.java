@@ -23,6 +23,16 @@ public class ChatMessage {
         this.timestamp = timestamp;
         this.type = type;
     }
+
+    public ChatMessage(String sender, String receiver,  String content){
+        this.sender = sender;
+        this.receiver = receiver;
+        this.content = content;
+
+    }
+
+
+
     public enum MessageType {
         CHAT, JOIN, LEAVE
     }

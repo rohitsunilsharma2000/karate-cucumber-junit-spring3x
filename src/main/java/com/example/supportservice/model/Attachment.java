@@ -12,6 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = "ticket") // ✅ Add this!
 public class Attachment {
 
     @Id
