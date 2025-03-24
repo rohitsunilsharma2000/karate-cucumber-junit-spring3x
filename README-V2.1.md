@@ -1860,6 +1860,286 @@ public class FollowService {
 ```
 
 
+## 💬 **17. MessagingService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/MessagingService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.ChatMessageDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.MessageRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+ * 💬 MessagingService
+ *
+ * This service handles the core messaging logic, including sending messages,
+ * fetching chat history, and notifying users when they receive new messages.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Marks this class as a Spring service bean to handle business logic.
+ * - @Slf4j: Enables logging for the class using Lombok's logging utility.
+ * - @RequiredArgsConstructor: Generates constructor-based dependency injection for final fields.
+ *
+ * 🧩 Features Configured:
+ * - Sending and saving messages between users.
+ * - Retrieving chat history between two users.
+ * - Creating notifications for users when they receive new messages.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MessagingService {
+
+    private final MessageRepository messageRepo;
+    private final UserRepository userRepo;
+    private final NotificationService notificationService;
+
+    /**
+     * 📩 sendMessage
+     *
+     * This method persists a new message and sends a notification to the receiver.
+     *
+     * @param dto The data transfer object containing the message content and recipient information.
+     * @return The saved message object.
+     * 
+     * 🧠 Steps:
+     * - Fetches sender and receiver from the database using their IDs.
+     * - Saves the message to the database.
+     * - Sends a notification to the receiver about the new message.
+     */
+    public Message sendMessage(ChatMessageDTO dto) {
+        log.info("Sending message from {} to {}", dto.getSenderId(), dto.getReceiverId());
+
+        User sender = userRepo.findById(dto.getSenderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Sender not found"));
+        User receiver = userRepo.findById(dto.getReceiverId())
+                .orElseThrow(() -> new ResourceNotFoundException("Receiver not found"));
+
+        Message message = Message.builder()
+                .content(dto.getContent())
+                .sender(sender)
+                .receiver(receiver)
+                .build();
+
+        Message saved = messageRepo.save(message);
+        log.info("Message saved: ID {}", saved.getId());
+
+        // 🔔 Create Notification
+        notificationService.sendNotification(receiver, "📩 New message from " + sender.getUsername());
+
+        return saved;
+    }
+
+    /**
+     * 📜 getChatHistory
+     *
+     * This method retrieves the chat history between two users.
+     *
+     * @param user1Id The ID of the first user.
+     * @param user2Id The ID of the second user.
+     * @return A list of message objects exchanged between the two users.
+     *
+     * 🧠 Steps:
+     * - Fetches both users from the database by their IDs.
+     * - Retrieves all messages sent between the two users.
+     */
+    public List<Message> getChatHistory(Long user1Id, Long user2Id) {
+        log.info("Fetching chat history between {} and {}", user1Id, user2Id);
+        User u1 = userRepo.findById(user1Id)
+                .orElseThrow(() -> new ResourceNotFoundException("User 1 not found"));
+        User u2 = userRepo.findById(user2Id)
+                .orElseThrow(() -> new ResourceNotFoundException("User 2 not found"));
+        return messageRepo.findBySenderAndReceiver(u1, u2);
+    }
+}
+```
+
+## ⚖️ **18. ModerationService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/ModerationService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Moderation;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ModerationRepository;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * ⚖️ ModerationService
+ *
+ * This service handles moderation operations, including deleting threads or posts,
+ * banning users, and logging the moderation actions in the system.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Declares this class as a Spring service.
+ * - @RequiredArgsConstructor: Lombok annotation to generate constructor for final fields.
+ * - @Slf4j: Lombok annotation to enable logging with `log`.
+ * - @Transactional: Ensures that database operations within this service are atomic.
+ *
+ * 🧩 Features Configured:
+ * - Delete threads and posts with moderation logging.
+ * - Ban users from posting and log the actions.
+ * - Retrieve moderation history for users.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class ModerationService {
+
+    private final ModerationRepository moderationRepository;
+    private final ThreadRepository threadsRepository;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * 🧵 Delete a thread and log moderation action.
+     *
+     * Deletes a thread and all associated posts, while logging the moderation action.
+     *
+     * @param threadId The ID of the thread to be deleted.
+     * @param moderatorId The ID of the moderator performing the action.
+     * @param reason The reason for deleting the thread.
+     */
+    @Transactional
+    public void deleteThread(Long threadId, Long moderatorId, String reason) {
+        // Use proxy reference to avoid TransientObjectException
+        Threads threadRef = threadsRepository.getReferenceById(threadId);
+
+        // Fetch thread owner safely
+        User threadOwner = userRepository.getReferenceById(threadRef.getUser().getId());
+
+        // Save moderation log BEFORE deleting thread
+        Moderation moderation = Moderation.builder()
+                .action("DELETE_THREAD")
+                .reason(reason)
+                .user(threadOwner)
+                .thread(threadRef)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        moderationRepository.save(moderation);
+        moderationRepository.flush(); // ensure it persists before delete
+
+        // Delete posts
+        List<Post> posts = postRepository.findByThreadId(threadId);
+        postRepository.deleteAll(posts);
+
+        // Delete the thread
+        threadsRepository.deleteById(threadId);
+
+        log.info("Deleted thread ID {} by moderator {}", threadId, moderatorId);
+    }
+
+    /**
+     * 📝 Delete a post and log moderation action.
+     *
+     * Deletes a post and logs the action taken by the moderator.
+     *
+     * @param postId The ID of the post to be deleted.
+     * @param moderatorId The ID of the moderator performing the action.
+     * @param reason The reason for deleting the post.
+     */
+    public void deletePost(Long postId, Long moderatorId, String reason) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> {
+            log.error("Post with ID {} not found for moderation", postId);
+            return new ResourceNotFoundException("Post not found");
+        });
+
+        postRepository.deleteById(postId);
+
+        Moderation moderation = Moderation.builder()
+                .action("DELETE_POST")
+                .reason(reason)
+                .user(post.getUser())
+                .thread(post.getThread())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        moderationRepository.save(moderation);
+        log.info("Moderator {} deleted post ID {} with reason: {}", moderatorId, postId, reason);
+    }
+
+    /**
+     * 🚫 Ban a user from posting and log moderation action.
+     *
+     * Bans a user from posting and logs the moderation action.
+     *
+     * @param userId The ID of the user to be banned.
+     * @param reason The reason for banning the user.
+     */
+    public void banUser(Long userId, String reason) {
+        User user = userRepository.findById(userId).orElseThrow(() -> {
+            log.error("User with ID {} not found for banning", userId);
+            return new ResourceNotFoundException("User not found");
+        });
+
+        user.setBanned(true);
+        userRepository.save(user);
+
+        Moderation moderation = Moderation.builder()
+                .action("BAN_USER")
+                .reason(reason)
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        moderationRepository.save(moderation);
+        log.info("User ID {} has been banned for reason: {}", userId, reason);
+    }
+
+    /**
+     * 🏛️ Get moderation history for a user.
+     *
+     * Retrieves and returns the moderation history for a specific user.
+     *
+     * @param userId The ID of the user whose moderation history is to be fetched.
+     * @return A list of moderation actions performed on the user.
+     */
+    public List<ModerationDTO> getModerationHistory(Long userId) {
+        log.info("Fetching moderation history for user ID {}", userId);
+
+        List<Moderation> moderationList = moderationRepository.findByUserId(userId);
+
+        return moderationList.stream().map(m -> new ModerationDTO(
+                m.getId(),
+                m.getAction(),
+                m.getReason(),
+                m.getCreatedAt(),
+                m.getUser().getId(),
+                m.getUser().getUsername(),
+                m.getThread() != null ? m.getThread().getId() : null
+        )).collect(Collectors.toList());
+    }
+
+}
+```
+
+
 
 ## ⚙️ Features
 
