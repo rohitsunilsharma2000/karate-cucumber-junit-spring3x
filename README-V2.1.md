@@ -1,4 +1,4 @@
-# Spring Boot Modular Caching Service with Redis
+# 6874: Build a complete Spring Boot online forum with discussion threads, user moderation tools, private messaging, and community features.
 
 ---
 
@@ -3708,15 +3708,1135 @@ public class EmailControllerIntegrationTest {
     }
 }
 ```
-
-
-## ⚙️ Features
-
-
-
-Sure! Here's the full list of features for your **Spring Boot Online Forum System** in the requested format:
+Here’s the formatted documentation for the remaining test classes:
 
 ---
+
+## 🧪 **3. FollowControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/FollowControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.service.FollowService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * 🧪 FollowControllerIntegrationTest
+ *
+ * This test class verifies the functionality of the `FollowController`.
+ * It tests the follow functionality, retrieving the list of followed users, and ensuring
+ * the proper HTTP responses are returned and service methods are invoked.
+ *
+ * 📌 Annotations Used:
+ * - @WebMvcTest: Used for testing only the web layer (Controller) of the application.
+ * - @MockBean: Mocks the `FollowService` to isolate controller behavior during testing.
+ * - @Import: Imports custom security configuration to disable real security for tests.
+ *
+ * 🧩 Features Tested:
+ * - Verifies that users can follow each other.
+ * - Ensures the `FollowService` is called correctly during the follow action.
+ * - Verifies retrieving a list of followed users.
+ */
+@WebMvcTest(FollowController.class)
+@Import(FollowControllerIntegrationTest.TestSecurityConfig.class)
+class FollowControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private FollowService followService;
+
+    /**
+     * 🧪 Test: Verifies that a user can follow another user.
+     */
+    @Test
+    void testFollowUser() throws Exception {
+        mockMvc.perform(post("/api/follow")
+                        .param("followerId", "1")
+                        .param("followingId", "2"))
+               .andExpect(status().isOk())
+               .andExpect(content().string("Followed successfully"));
+
+        Mockito.verify(followService, Mockito.times(1)).followUser(1L, 2L);
+    }
+
+    /**
+     * 🧪 Test: Verifies that the list of followed users can be retrieved correctly.
+     */
+    @Test
+    void testGetFollowing() throws Exception {
+        User user = User.builder().id(2L).username("bob").build();
+        Mockito.when(followService.getFollowing(1L)).thenReturn(List.of(user));
+
+        mockMvc.perform(get("/api/follow/1/following"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].username").value("bob"));
+    }
+
+    /**
+     * 🔒 Test security configuration for tests:
+     * - Disables CSRF and permits all requests.
+     */
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+```
+
+---
+
+## 🧪 **4. ModerationControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/ModerationControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * 🧪 ModerationControllerIntegrationTest
+ *
+ * This integration test class verifies the functionality of the `ModerationController`.
+ * It tests the delete actions for posts and threads, as well as banning users and checking
+ * moderation history.
+ *
+ * 📌 Annotations Used:
+ * - @SpringBootTest: Used for integration testing with the full application context.
+ * - @AutoConfigureMockMvc: Configures `MockMvc` for testing the web layer.
+ * - @Transactional: Ensures that database operations are rolled back after each test.
+ *
+ * 🧩 Features Tested:
+ * - Verifies the ability to delete threads and posts by moderators.
+ * - Ensures the ban functionality works as expected.
+ * - Tests fetching the moderation history of a user.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+public class ModerationControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ThreadRepository threadRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+    @Autowired
+    private ModerationRepository moderationRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
+
+    private User moderator;
+    private User regularUser;
+    private Threads thread;
+    private Post post;
+
+    @BeforeEach
+    void setup() {
+        moderationRepository.deleteAll();
+        messageRepository.deleteAll();
+        postRepository.deleteAll();
+        threadRepository.deleteAll();
+        userRepository.deleteAll();
+
+        moderator = userRepository.save(User.builder()
+                                            .username("moderator")
+                                            .email("mod@example.com")
+                                            .banned(false)
+                                            .createdAt(LocalDateTime.now())
+                                            .build());
+
+        regularUser = userRepository.save(User.builder()
+                                              .username("user")
+                                              .email("user@example.com")
+                                              .banned(false)
+                                              .createdAt(LocalDateTime.now())
+                                              .build());
+
+        thread = threadRepository.save(Threads.builder()
+                                              .title("Test Thread")
+                                              .content("Thread Content")
+                                              .createdAt(LocalDateTime.now())
+                                              .user(regularUser)
+                                              .posts(Collections.emptyList())
+                                              .build());
+
+        post = postRepository.save(Post.builder()
+                                       .content("Test Post")
+                                       .createdAt(LocalDateTime.now())
+                                       .user(regularUser)
+                                       .thread(thread)
+                                       .build());
+    }
+
+    /**
+     * 🧪 Test: Verifies that a post can be deleted by a moderator.
+     */
+    @Test
+    void testDeletePost() throws Exception {
+        mockMvc.perform(delete("/api/moderation/post/" + post.getId())
+                        .param("moderatorId", moderator.getId().toString())
+                        .param("reason", "Violation of rules"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * 🧪 Test: Verifies that a thread can be deleted by a moderator.
+     */
+    @Test
+    void testDeleteThread() throws Exception {
+        mockMvc.perform(delete("/api/moderation/thread/" + thread.getId())
+                        .param("moderatorId", moderator.getId().toString())
+                        .param("reason", "Duplicate content"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * 🧪 Test: Verifies that a user can be banned by a moderator.
+     */
+    @Test
+    void testBanUser() throws Exception {
+        mockMvc.perform(post("/api/moderation/ban-user/" + regularUser.getId())
+                        .param("reason", "Spamming"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * 🧪 Test: Verifies that a user's moderation history can be retrieved.
+     */
+    @Test
+    void testGetModerationHistory() throws Exception {
+        mockMvc.perform(get("/api/moderation/history/" + regularUser.getId()))
+                .andExpect(status().isOk());
+    }
+}
+```
+
+---
+
+## 🧪 **5. NotificationControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/NotificationControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Notification;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.NotificationRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * 🧪 NotificationControllerIntegrationTest
+ *
+ * This integration test class verifies the functionality of the `NotificationController`.
+ * It tests retrieving, marking as read, and deleting notifications for a user.
+ *
+ * 📌 Annotations Used:
+ * - @SpringBootTest: Used for integration testing with the full application context.
+ * - @AutoConfigureMockMvc: Configures `MockMvc` for testing the web layer.
+ * - @Transactional: Ensures that database operations are rolled back after each test.
+ *
+ * 🧩 Features Tested:
+ * - Verifies retrieving user notifications.
+ * - Tests marking notifications as read.
+ * - Verifies that notifications can be deleted correctly.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+public class NotificationControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    private User user;
+
+    @BeforeEach
+    public void setUp() {
+        user = new User();
+        user.setUsername("testuser");
+        user.setEmail("testuser@example.com");
+        user.setPassword("password");
+        user.setCreatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        Notification notification = Notification.builder()
+                .message("Test Notification")
+                .recipient(user)
+                .isRead(false)
+                .timestamp(LocalDateTime.now())
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * 🧪 Test: Verifies retrieving notifications for a user.
+     */
+    @Test
+    public void testGetUserNotifications() throws Exception {
+        mockMvc.perform(get("/api/notifications/" + user.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].message").value("Test Notification"));
+    }
+
+    /**
+     * 🧪 Test: Verifies marking a notification as read.
+     */
+    @Test
+    public void testMarkNotificationAsRead() throws Exception {
+        Notification notification = notificationRepository.findByRecipientId(user.getId()).get(0);
+        mockMvc.perform(put("/api/notifications/read/" + notification.getId()))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * 🧪 Test: Verifies deleting a notification.
+     */
+    @Test
+    public void testDeleteNotification() throws Exception {
+        Notification notification = notificationRepository.findByRecipientId(user.getId()).get(0);
+        mockMvc.perform(delete("/api/notifications/" + notification.getId()))
+                .andExpect(status().isOk());
+    }
+}
+```
+Here is the professional documentation for the provided classes:
+
+---
+
+## 📝 **6. PostControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/PostControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.PostRepository;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class PostControllerIntegrationTest {
+
+    @LocalServerPort
+    private int port;
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    private String url(String path) {
+        return "http://localhost:" + port + path;
+    }
+
+    @Test
+    void testFullForumFlow() {
+        // Step 1: Create User
+        User newUser = new User();
+        newUser.setUsername("alice");
+        newUser.setPassword("secret");
+        newUser.setEmail("alice@example.com");
+        newUser.setRole("USER");
+
+        ResponseEntity<User> userResponse = restTemplate.postForEntity(
+                url("/api/users"),
+                newUser,
+                User.class
+        );
+
+        assertThat(userResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        User createdUser = userResponse.getBody();
+        assertThat(createdUser).isNotNull();
+        assertThat(createdUser.getId()).isNotNull();
+
+        // Step 2: Create Thread with that user
+        Threads thread = new Threads();
+        thread.setTitle("Spring Boot Tips");
+        thread.setContent("Let's discuss Spring Boot best practices.");
+        thread.setUser(createdUser);
+
+        ResponseEntity<Threads> threadResponse = restTemplate.postForEntity(
+                url("/api/threads"),
+                thread,
+                Threads.class
+        );
+
+        assertThat(threadResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Threads createdThread = threadResponse.getBody();
+        assertThat(createdThread).isNotNull();
+        assertThat(createdThread.getId()).isNotNull();
+
+        // Step 3: Create Post in that thread
+        Post post = new Post();
+        post.setContent("I love using @Slf4j in services!");
+        post.setUser(createdUser);
+
+        ResponseEntity<Post> postResponse = restTemplate.postForEntity(
+                url("/api/posts/thread/" + createdThread.getId()),
+                post,
+                Post.class
+        );
+
+        assertThat(postResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Post createdPost = postResponse.getBody();
+        assertThat(createdPost).isNotNull();
+        assertThat(createdPost.getId()).isNotNull();
+
+        // Step 4: Fetch Posts by thread
+        ResponseEntity<Post[]> getPostsResponse = restTemplate.getForEntity(
+                url("/api/posts/thread/" + createdThread.getId()),
+                Post[].class
+        );
+
+        assertThat(getPostsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Post[] posts = getPostsResponse.getBody();
+        assertThat(posts).isNotNull();
+        assertThat(posts.length).isGreaterThanOrEqualTo(1);
+    }
+}
+```
+
+---
+
+## 🔍 **7. SearchControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/SearchControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(SearchController.class)
+@Import(SearchControllerIntegrationTest.TestSecurityConfig.class)
+class SearchControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserRepository userRepo;
+
+    @MockBean
+    private ThreadRepository threadRepo;
+
+    @Test
+    void testSearchUsers() throws Exception {
+        User user = User.builder().id(1L).username("testuser").email("user@example.com").build();
+        Mockito.when(userRepo.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(user));
+
+        mockMvc.perform(get("/api/search/users")
+                                .param("q", "test"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].username").value("testuser"));
+    }
+
+    @Test
+    void testSearchThreads() throws Exception {
+        Threads thread = Threads.builder().id(1L).title("Interesting Topic").content("Something cool").build();
+        Mockito.when(threadRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase("test", "test"))
+               .thenReturn(List.of(thread));
+
+        mockMvc.perform(get("/api/search/threads")
+                                .param("q", "test"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].title").value("Interesting Topic"));
+    }
+
+    // ✅ Disable security just for tests
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+```
+
+---
+
+## 🧵 **8. ThreadControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/ThreadControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class ThreadControllerIntegrationTest {
+
+    private static User testUser;
+    private static Long createdThreadId;
+    private final RestTemplate restTemplate = new RestTemplate();
+    @LocalServerPort
+    private int port;
+    private String baseUrl;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ThreadRepository threadRepository;
+
+    @BeforeEach
+    void setUp() {
+        baseUrl = "http://localhost:" + port + "/api/threads";
+
+        if (testUser == null) {
+            testUser = userRepository.save(User.builder()
+                    .username("testUser")
+                    .email("test@example.com")
+                    .password("pass123")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+        }
+    }
+
+    @Test
+    @Order(1)
+    void testCreateThread() {
+        Threads thread = Threads.builder()
+                .title("Test Thread")
+                .content("Thread content here.")
+                .createdAt(LocalDateTime.now())
+                .user(testUser)
+                .build();
+
+        ResponseEntity<Threads> response = restTemplate.postForEntity(baseUrl, thread, Threads.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getId());
+
+        createdThreadId = response.getBody().getId();
+    }
+
+    @Test
+    @Order(2)
+    void testGetThreadById() {
+        ResponseEntity<Threads> response = restTemplate.getForEntity(baseUrl + "/" + createdThreadId, Threads.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Test Thread", response.getBody().getTitle());
+    }
+
+    @Test
+    @Order(3)
+    void testUpdateThread() {
+        Threads updated = Threads.builder()
+                .title("Updated Thread Title")
+                .content("Updated content")
+                .user(testUser)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Threads> entity = new HttpEntity<>(updated, headers);
+
+        ResponseEntity<Threads> response = restTemplate.exchange(
+                baseUrl + "/" + createdThreadId,
+                HttpMethod.PUT,
+                entity,
+                Threads.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("Updated Thread Title", response.getBody().getTitle());
+    }
+
+    @Test
+    @Order(4)
+    void testGetAllThreads() {
+        ResponseEntity<Threads[]> response = restTemplate.getForEntity(baseUrl, Threads[].class);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody().length > 0);
+    }
+
+    @Test
+    @Order(5)
+    void testDeleteThread() {
+        restTemplate.delete(baseUrl + "/" + createdThreadId);
+        boolean exists = threadRepository.existsById(createdThreadId);
+        assertFalse(exists);
+    }
+}
+```
+
+---
+
+## 👤 **9. UserControllerIntegrationTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/controller/UserControllerIntegrationTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class UserControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Test
+    void testCreateUser() throws Exception {
+        User user = User.builder()
+                .username("john_doe")
+                .email("john@example.com")
+                .password("password123")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.username").value("john_doe"));
+    }
+
+    @Test
+    void testGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    void testGetUserById() throws Exception {
+        User user = User.builder()
+                .username("alice")
+                .email("alice@example.com")
+                .password("alicepass")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        String response = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long userId = objectMapper.readTree(response).get("id").asLong();
+
+        mockMvc.perform(get("/api/users/" + userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("alice"));
+    }
+
+    @Test
+    void testUpdateUser() throws Exception {
+        User user = User.builder()
+                .username("mike")
+                .email("mike@example.com")
+                .password("mikepass")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        String response = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long userId = objectMapper.readTree(response).get("id").asLong();
+
+        User updatedUser = User.builder()
+                .username("mike_updated")
+                .email("mike_new@example.com")
+                .password("newpass")
+                .build();
+
+        mockMvc.perform(put("/api/users/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("mike_updated"));
+    }
+}
+
+```
+## Iteration number 2(for better coverage)
+
+
+## ⚖️ **1. GlobalExceptionHandlerTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/exception/GlobalExceptionHandlerTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.exception;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class GlobalExceptionHandlerTest {
+
+    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+    /**
+     * Test handling of ResourceNotFoundException.
+     */
+    @Test
+    void testHandleResourceNotFound() {
+        // Given
+        ResourceNotFoundException ex = new ResourceNotFoundException("User not found");
+
+        // When
+        ResponseEntity<?> response = handler.handleResourceNotFound(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isEqualTo("User not found");
+    }
+
+    /**
+     * Test handling of generic exceptions.
+     */
+    @Test
+    void testHandleGenericException() {
+        // Given
+        Exception ex = new RuntimeException("Something went wrong");
+
+        // When
+        ResponseEntity<?> response = handler.handleGeneric(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody()).isEqualTo("Internal server error");
+    }
+}
+```
+
+---
+
+## 📧 **2. EmailServiceTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/service/EmailServiceTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+/**
+ * 📧 EmailServiceTest
+ *
+ * This class tests the EmailService for sending emails using mock data.
+ *
+ * 🧩 Features Configured:
+ * - Tests the email sending functionality by verifying the content and recipient.
+ */
+@SpringBootTest
+class EmailServiceTest {
+
+    @MockBean
+    private JavaMailSender mailSender;
+
+    @Autowired
+    private EmailService emailService;
+
+    /**
+     * Test sending an email through the email service.
+     */
+    @Test
+    void testSendEmail() {
+        EmailRequest emailRequest = new EmailRequest();
+        emailRequest.setTo("recipient@example.com");
+        emailRequest.setSubject("Unit Test");
+        emailRequest.setBody("Unit test email body");
+
+        emailService.sendEmail(emailRequest);
+
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(messageCaptor.capture());
+
+        SimpleMailMessage msg = messageCaptor.getValue();
+        assertThat(msg.getTo()).contains("recipient@example.com");
+        assertThat(msg.getSubject()).isEqualTo("Unit Test");
+        assertThat(msg.getText()).isEqualTo("Unit test email body");
+    }
+}
+```
+
+---
+
+## 🔄 ** 3. FollowServiceTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/service/FollowServiceTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.model.Follow;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.FollowRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * 🔄 FollowServiceTest
+ *
+ * This class tests the FollowService for following users and retrieving the list of users that a user is following.
+ *
+ * 🧩 Features Configured:
+ * - Tests following a user, fetching the list of followed users, and error handling for user not found.
+ */
+class FollowServiceTest {
+
+    @Mock
+    private FollowRepository followRepo;
+
+    @Mock
+    private UserRepository userRepo;
+
+    @InjectMocks
+    private FollowService followService;
+
+    private User follower;
+    private User following;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        follower = new User();
+        follower.setId(1L);
+        follower.setUsername("user1");
+
+        following = new User();
+        following.setId(2L);
+        following.setUsername("user2");
+    }
+
+    /**
+     * Test following a user successfully.
+     */
+    @Test
+    void testFollowUser_Success() {
+        when(userRepo.findById(1L)).thenReturn(Optional.of(follower));
+        when(userRepo.findById(2L)).thenReturn(Optional.of(following));
+
+        followService.followUser(1L, 2L);
+
+        verify(followRepo, times(1)).save(any(Follow.class));
+    }
+
+    /**
+     * Test fetching users that a user is following.
+     */
+    @Test
+    void testGetFollowing_ReturnsListOfUsers() {
+        Follow follow = new Follow(1L, follower, following);
+        when(followRepo.findByFollowerId(1L)).thenReturn(List.of(follow));
+
+        List<User> result = followService.getFollowing(1L);
+
+        assertEquals(1, result.size());
+    }
+
+    /**
+     * Test following a user when user not found.
+     */
+    @Test
+    void testFollowUser_UserNotFound() {
+        when(userRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(Exception.class, () -> followService.followUser(1L, 2L));
+    }
+}
+```
+
+---
+
+## 💬 **3. MessagingServiceTest**  
+📁 **Path:** `src/test/java/com/example/turingOnlineForumSystem/service/MessagingServiceTest.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.dto.ChatMessageDTO;
+import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
+import com.example.turingOnlineForumSystem.model.Message;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.MessageRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * 💬 MessagingServiceTest
+ *
+ * This class tests the MessagingService for sending and retrieving messages between users.
+ *
+ * 🧩 Features Configured:
+ * - Tests sending messages, retrieving chat history, and error handling for user not found.
+ */
+class MessagingServiceTest {
+
+    @Mock
+    private MessageRepository messageRepo;
+
+    @Mock
+    private UserRepository userRepo;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @InjectMocks
+    private MessagingService messagingService;
+
+    private User sender;
+    private User receiver;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        sender = new User();
+        sender.setId(1L);
+        sender.setUsername("Alice");
+
+        receiver = new User();
+        receiver.setId(2L);
+        receiver.setUsername("Bob");
+    }
+
+    /**
+     * Test sending a message successfully.
+     */
+    @Test
+    void testSendMessage_Success() {
+        ChatMessageDTO dto = new ChatMessageDTO();
+        dto.setSenderId(1L);
+        dto.setReceiverId(2L);
+        dto.setContent("Hello!");
+
+        when(userRepo.findById(1L)).thenReturn(Optional.of(sender));
+        when(userRepo.findById(2L)).thenReturn(Optional.of(receiver));
+
+        Message saved = Message.builder()
+                               .id(10L)
+                               .content("Hello!")
+                               .sender(sender)
+                               .receiver(receiver)
+                               .build();
+
+        when(messageRepo.save(any(Message.class))).thenReturn(saved);
+
+        Message result = messagingService.sendMessage(dto);
+
+        assertNotNull(result);
+        assertEquals("Hello!", result.getContent());
+        assertEquals("Alice", result.getSender().getUsername());
+
+        verify(notificationService).sendNotification(receiver, "📩 New message from Alice");
+    }
+
+    /**
+     * Test sending a message when sender is not found.
+     */
+    @Test
+    void testSendMessage_SenderNotFound() {
+        ChatMessageDTO dto = new ChatMessageDTO();
+        dto.setSenderId(99L);
+        dto.setReceiverId(2L);
+        dto.setContent("Hi");
+
+        when(userRepo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> messagingService.sendMessage(dto));
+    }
+
+    /**
+     * Test retrieving chat history successfully.
+     */
+    @Test
+    void testGetChatHistory_ReturnsMessages() {
+        when(userRepo.findById(1L)).thenReturn(Optional.of(sender));
+        when(userRepo.findById(2L)).thenReturn(Optional.of(receiver));
+
+        Message msg = Message.builder()
+                             .id(1L)
+                             .content("Hey Bob")
+                             .sender(sender)
+                             .receiver(receiver)
+                             .build();
+
+        when(messageRepo.findBySenderAndReceiver(sender, receiver)).thenReturn(List.of(msg));
+
+        List<Message> history = messagingService.getChatHistory(1L, 2L);
+
+        assertEquals(1, history.size());
+        assertEquals("Hey Bob", history.get(0).getContent());
+    }
+
+    /**
+     * Test retrieving chat history when user is not found.
+     */
+    @Test
+    void testGetChatHistory_UserNotFound() {
+        when(userRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> messagingService.getChatHistory(1L, 2L));
+    }
+}
+```
+
+
+
+
 
 ## ⚙️ Features
 
@@ -3757,7 +4877,7 @@ git clone <your-repo-url>
 cd online-forum-system
 ```
 
-### 3. Configure `docker-compose.yaml`
+### 3. Configure `docker-compose.yml`
 
 ```yml
 services:
@@ -3782,131 +4902,173 @@ networks:
   springboot-mysql-net:
     driver: bridge
 ```
-
-### 4. Build and Run the App
-
+### 3.  Run `docker-compose.yml`
 ```bash
-./docker-compose up
-./mvn clean install
-./mvn spring-boot:run
+docker compose up
 ```
 
+### 4.  `pom.yml`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.2</version>
+        <relativePath/>
+    </parent>
+    <groupId>com.example</groupId>
+    <artifactId>turingOnlineForumSystem</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>Turing online forum system</name>
+    <description>
+        Build a complete Spring Boot online forum with discussion threads, user moderation tools, private messaging, and
+        community features.
+    </description>
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.24</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>sockjs-client</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>stomp-websocket</artifactId>
+            <version>2.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>5.1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+```
+
+### 5. Build & Test the Application
+
+From the root directory, run:
+```bash
+./mvn clean install
+
+
+```
+
+To run unit tests:
+```bash
+./mvn clean test
+./mvn verify
+```
+Ensure test coverage meets 90%+.
+
+### 5. Start the Application
+
+Run the Spring Boot service:
+
+```bash
+./mvn spring-boot:run
+```
+By default, the service runs on port 8080.
+
 ---
 
-## 🚀 API Endpoints
+## 5.🚀 Access the API Endpoints
 
-Here’s the list of **API endpoints** for your **Spring Boot Online Forum System** in the format you requested:
-
-
-### 🔐 Authentication
-
-| Method | Endpoint                 | Description                           |
-|--------|--------------------------|---------------------------------------|
-| POST   | `/api/auth/register`     | Register a new user                   |
-| POST   | `/api/auth/login`        | Authenticate user and return JWT      |
-| GET    | `/api/auth/profile`      | Get profile of logged-in user         |
-| PUT    | `/api/auth/profile`      | Update profile of logged-in user      |
-
----
-
-### 👤 Users
-
-| Method | Endpoint           | Description                     |
-|--------|--------------------|---------------------------------|
-| GET    | `/api/users`       | Get all users                   |
-| GET    | `/api/users/{id}`  | Get user by ID                  |
-| POST   | `/api/users`       | Create a new user               |
-| PUT    | `/api/users/{id}`  | Update user info                |
-
----
-
-### 💬 Threads
-
-| Method | Endpoint               | Description                         |
-|--------|------------------------|-------------------------------------|
-| GET    | `/api/threads`         | Get all threads                     |
-| GET    | `/api/threads/{id}`    | Get a thread by ID                  |
-| POST   | `/api/threads`         | Create a new thread                 |
-| PUT    | `/api/threads/{id}`    | Update an existing thread           |
-| DELETE | `/api/threads/{id}`    | Delete a thread                     |
-
----
-
-### 🧵 Posts
-
-| Method | Endpoint                         | Description                         |
-|--------|----------------------------------|-------------------------------------|
-| GET    | `/api/posts/thread/{threadId}`   | Get posts under a thread            |
-| POST   | `/api/posts/thread/{threadId}`   | Create post under a thread          |
-
----
-
-### 🔧 Moderation
-
-| Method | Endpoint                          | Description                          |
-|--------|-----------------------------------|--------------------------------------|
-| DELETE | `/api/moderation/thread/{id}`     | Delete a thread (moderator only)     |
-| DELETE | `/api/moderation/post/{id}`       | Delete a post (moderator only)       |
-| POST   | `/api/moderation/ban-user/{id}`   | Ban a user from posting              |
-| GET    | `/api/moderation/history/{id}`    | Get moderation history of a user     |
-
----
-
-### 📥 Messaging
-
-| Method | Endpoint                        | Description                              |
-|--------|----------------------------------|------------------------------------------|
-| GET    | `/api/messages/history`         | Get chat history between two users       |
-| GET    | `/api/messages/chat`            | Render chat UI (Thymeleaf-based)         |
-| WS     | `/chat`                         | WebSocket endpoint (SockJS)              |
-| SEND   | `/app/chat.send`                | Send message via WebSocket               |
-| SUB    | `/topic/messages/{userId}`      | Subscribe to receive messages (STOMP)    |
-
----
-
-### 🔔 Notifications
-
-| Method | Endpoint                              | Description                             |
-|--------|---------------------------------------|-----------------------------------------|
-| GET    | `/api/notifications/{userId}`         | Get notifications for a user            |
-| PUT    | `/api/notifications/read/{id}`        | Mark notification as read               |
-| DELETE | `/api/notifications/{id}`             | Delete a notification                   |
-
----
-
-### 👥 Follow System
-
-| Method | Endpoint                         | Description                          |
-|--------|----------------------------------|--------------------------------------|
-| POST   | `/api/follow`                    | Follow another user                  |
-| GET    | `/api/follow/{id}/following`     | Get users followed by the user       |
-
----
-
-### 🔎 Search
-
-| Method | Endpoint                   | Description                          |
-|--------|----------------------------|--------------------------------------|
-| GET    | `/api/search/users`        | Search users by username             |
-| GET    | `/api/search/threads`      | Search threads by title/content      |
-
----
-
-### 📧 Email
-
-| Method | Endpoint           | Description                |
-|--------|--------------------|----------------------------|
-| POST   | `/api/email/send`  | Send email to user         |
-
----
-
-
-### Example Request
-
-
----
-
-## 🧪  `curl` Commands for above API
+> Use cURL or Postman to interact with the cache API:
 
 > Replace `localhost:8080` with your running host.
 
@@ -3923,13 +5085,13 @@ curl --location 'http://localhost:8080/api/users' \
 }'
 ```
 
-### 🔹 1.1.View User Profile
+### 🔹 View User Profile
 ```bash
 curl --location 'http://localhost:8080/api/users/1' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 1.2.Update User Profile
+### 🔹 Update User Profile
 ```bash
 curl --location --request PUT 'http://localhost:8080/api/users/1' \
 --header 'Content-Type: application/json' \
@@ -3940,7 +5102,7 @@ curl --location --request PUT 'http://localhost:8080/api/users/1' \
 }'
 ```
 
-### 🔹 2. Create a Thread (Requires user ID — e.g. user with id: 1)
+### 🔹 Create a Thread (Requires user ID — e.g. user with id: 1)
 ```bash
 curl --location 'http://localhost:8080/api/threads' \
 --header 'Content-Type: application/json' \
@@ -3954,7 +5116,7 @@ curl --location 'http://localhost:8080/api/threads' \
 }'
 ```
 
-### 🔹 3. Create a Post for that Thread (Assuming thread with id: 1 and user with id: 1
+### 🔹  Create a Post for that Thread (Assuming thread with id: 1 and user with id: 1
 ```bash
 curl --location 'http://localhost:8080/api/posts/thread/1' \
 --header 'Content-Type: application/json' \
@@ -3967,66 +5129,66 @@ curl --location 'http://localhost:8080/api/posts/thread/1' \
 }'
 ```
 
-### 🔹 4. Get Posts of a Thread 
+### 🔹  Get Posts of a Thread 
 ```bash
 curl --location 'http://localhost:8080/api/posts/thread/1' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 5.Ban User bash not working
+### 🔹 Ban User bash not working
 ```bash
 curl --location --request POST 'http://localhost:8080/api/moderation/ban-user/1?reason=Spamming' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 6.Delete Thread
+### 🔹Delete Thread
 ```bash
 curl --location --request DELETE 'http://localhost:8080/api/moderation/thread/1?moderatorId=99&reason=Duplicate%20Topic' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 6.View moderation history
+### 🔹 View moderation history
 ```bash
 curl --location 'http://localhost:8080/api/moderation/history/1' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 7.Get Message History
+### 🔹 Get Message History
 ```bash
 curl --location 'http://localhost:8080/api/messages/history?senderId=1&receiverId=2' \
 --header 'Accept: application/json' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 8.Send Message via WebSocket (STOMP)
+### 🔹 Send Message via WebSocket (STOMP)
 ```bash
 curl --location 'http://localhost:8080/api/messages/history?senderId=1&receiverId=2' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 9.Following Other Users
+### 🔹 Following Other Users
 ```bash
 curl --location --request POST 'http://localhost:8080/api/follow?followerId=1&followingId=2' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 10.Get Following List of a User
+### 🔹 1Get Following List of a User
 ```bash
 curl --location 'http://localhost:8080/api/follow/1/following' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
 
-### 🔹 11.Get Notifications for a User
+### 🔹 Get Notifications for a User
 ```bash
 curl --location 'http://localhost:8080/api/follow/1/following' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
-### 🔹 12. Search Users by Keyword 
+### 🔹  Search Users by Keyword 
 ```bash
 curl --location 'http://localhost:8080/api/search/users?q=al' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
 ```
-### 🔹 13.Search Threads by Title or Content
+### 🔹 Search Threads by Title or Content
 ```bash
 curl --location 'http://localhost:8080/api/search/threads?q=message' \
 --header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
@@ -4034,57 +5196,84 @@ curl --location 'http://localhost:8080/api/search/threads?q=message' \
 
 ---
 
-## ✅ Unit & Integration Testing
 
-Run tests:
-```bash
-./gradlew test
-```
 
-- Tested components:
-    - Services (CRUD logic)
-    - Controller (REST APIs + validations)
-    - Exception handling
-    - Utility methods
-    - Rate limiting
+###  Time and Space Complexity Analysis
 
 ---
 
-## 📈 Performance Considerations
+### 🧵 **Thread and Post Operations**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Create Thread / Post              | O(1)             | O(1)             | Basic entity insert with no heavy computation |
+| Fetch All Threads / Posts         | O(n)             | O(n)             | `n` = number of threads/posts |
+| Update Thread / Post              | O(1)             | O(1)             | Simple update using ID |
+| Delete Thread with Posts          | O(p)             | O(p)             | `p` = number of posts under thread |
 
-| Operation          | Time Complexity |
-|-------------------|-----------------|
-| Get / Set          | `O(1)`          |
-| Invalidate (key)   | `O(1)`          |
-| Clear all          | `O(n)`          |
+---
 
-Redis is inherently fast and supports thousands of operations per second.
+### 💬 **Private Messaging**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Send Message                       | O(1)             | O(1)             | Save + optional notification creation |
+| Get Chat History (User1 ↔ User2)  | O(m)             | O(m)             | `m` = number of messages exchanged |
+
+---
+
+### 🔔 **Notifications**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Send Notification                  | O(1)             | O(1)             | Single DB insert |
+| Get All Notifications (user)      | O(k)             | O(k)             | `k` = number of notifications for user |
+| Mark as Read/Delete Notification  | O(1)             | O(1)             | Lookup by ID and update/delete |
+
+---
+
+### 🛡️ **Moderation**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Ban User / Delete Post / Thread   | O(1) - O(p)      | O(p)             | O(p) if multiple posts deleted |
+| Get Moderation History (user)     | O(h)             | O(h)             | `h` = moderation logs for user |
+
+---
+
+### 👥 **User & Community**
+| Operation                          | Time Complexity | Space Complexity | Notes |
+|-----------------------------------|------------------|------------------|-------|
+| Follow/Unfollow User              | O(1)             | O(1)             | Insert/Delete follow relation |
+| Get Following List                | O(f)             | O(f)             | `f` = number of followed users |
+| Search Users / Threads            | O(n)             | O(r)             | `n` = total records, `r` = results |
+
+
+
 
 ---
 
 ## 📊 Code Coverage Reports
 
-- ✅ 1st Iteration: [Coverage Screenshot](https://drive.google.com/file/d/1IzGuO5mnlXnDNSw1JV6TfV1CYvv7ZyRb/view?usp=drive_link)
-- ✅ 2nd Iteration: [Coverage Screenshot](https://drive.google.com/file/d/1P4AxTTKwBcM12m9zRKK8MuYqmG7JZ8gy/view?usp=drive_link)
+- ✅ 1st Iteration: [Coverage Screenshot](https://drive.google.com/file/d/13MWnsCL0vlw0rJE0hk-3QoZIbeBy_f3c/view?usp=drive_link)
+- ✅ 2nd Iteration: [Coverage Screenshot](https://drive.google.com/file/d/1OAdCQviFS3kqaEiYiVLRZz7ssyCpW3hO/view?usp=drive_link)
 
 ---
 
 ## 📦 Download Code
 
-[👉 Click to Download the Project Source Code](https://drive.google.com/file/d/14AN3SJFyM61_6aBwRYmmNC4iQsjdeUC_/view?usp=drive_link)
+[👉 Click to Download the Project Source Code](https://drive.google.com/file/d/18x1FymwcoO10PyiZMMKr_-PO1GdYMXbC/view?usp=drive_link)
 
 ---
 
+
 ## 🧠 Conclusion
+---
 
-This Spring Boot caching service provides:
-- High-performance data retrieval
-- Low database dependency
-- Scalable modular design
-- Reliable Redis integration
-- Production-grade error handling & observability
+The **Spring Boot Online Forum System** demonstrates efficient **constant to linear time complexity** across all core operations. The system:
 
-> A great foundational microservice for caching in distributed applications.
+- Handles user interaction at scale with optimized DB queries.
+- Uses **lazy loading** and **pagination** where applicable to prevent memory bloat.
+- Guarantees **data consistency** and **low latency** through minimal joins and eager moderation logging.
+- Provides real-time communication and notification delivery with negligible overhead via **WebSocket** and **event-driven triggers**.
+
+With good database indexing, caching (optional Redis), and async logging or messaging, this architecture ensures **scalability and performance** for high-traffic production environments.
 
 ---
 ```
