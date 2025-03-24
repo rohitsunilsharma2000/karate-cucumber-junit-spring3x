@@ -1317,6 +1317,550 @@ public class NotificationController {
 ```
 
 
+## 🔍 **11. SearchController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/SearchController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * 🔍 SearchController
+ *
+ * This REST controller handles search functionality for users and threads in the
+ * Turing Online Forum System. It provides endpoints to perform case-insensitive
+ * keyword-based searches.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Declares this as a RESTful controller.
+ * - @RequestMapping("/api/search"): Base path for all search-related endpoints.
+ * - @Slf4j: Lombok annotation to enable logging with `log`.
+ * - @RequiredArgsConstructor: Lombok annotation to generate constructor for final fields.
+ *
+ * 🧩 Features Configured:
+ * - Search users by username.
+ * - Search threads by title or content.
+ */
+@RestController
+@RequestMapping("/api/search")
+@RequiredArgsConstructor
+@Slf4j
+public class SearchController {
+
+    private final UserRepository userRepo;
+    private final ThreadRepository threadRepo;
+
+    /**
+     * 🔎 GET `/api/search/users`
+     *
+     * Searches users by a keyword in their username (case-insensitive).
+     *
+     * @param q The search query string.
+     * @return A list of users whose usernames contain the given keyword.
+     *
+     * 🧠 Example: `/api/search/users?q=alice`
+     */
+    @GetMapping("/users")
+    public List<User> searchUsers(@RequestParam String q) {
+        log.info("Searching users with keyword: {}", q);
+        return userRepo.findByUsernameContainingIgnoreCase(q);
+    }
+
+    /**
+     * 🧵 GET `/api/search/threads`
+     *
+     * Searches threads by keyword in either the title or content (case-insensitive).
+     *
+     * @param q The search query string.
+     * @return A list of threads where title or content matches the keyword.
+     *
+     * 🧠 Example: `/api/search/threads?q=springboot`
+     */
+    @GetMapping("/threads")
+    public List<Threads> searchThreads(@RequestParam String q) {
+        log.info("Searching threads with keyword: {}", q);
+        return threadRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(q, q);
+    }
+}
+```
+
+## 🧵 **12. ThreadController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/ThreadController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.service.ThreadService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 🧵 ThreadController
+ *
+ * This REST controller manages CRUD operations for forum threads
+ * in the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Indicates this is a REST controller returning JSON.
+ * - @RequestMapping("/api/threads"): Sets the base URI path for thread endpoints.
+ * - @Slf4j: Enables logging via Lombok.
+ * - @RequiredArgsConstructor: Auto-generates constructor for final fields.
+ *
+ * 🧩 Features Configured:
+ * - Create, retrieve, update, and delete threads.
+ * - List all threads in the system.
+ */
+@RestController
+@RequestMapping("/api/threads")
+@RequiredArgsConstructor
+@Slf4j
+public class ThreadController {
+
+    private final ThreadService threadsService;
+
+    /**
+     * ➕ POST `/api/threads`
+     *
+     * Creates a new thread with provided details.
+     *
+     * @param Threads The thread object to create.
+     * @return The created thread with generated ID.
+     */
+    @PostMapping
+    public Threads createThreads(@RequestBody Threads Threads) {
+        log.debug("Request to create Threads: {}", Threads.getTitle());
+        return threadsService.createThread(Threads);
+    }
+
+    /**
+     * 📄 GET `/api/threads/{id}`
+     *
+     * Retrieves a thread by its ID.
+     *
+     * @param id The ID of the thread to retrieve.
+     * @return The thread object if found.
+     */
+    @GetMapping("/{id}")
+    public Threads getThreads(@PathVariable Long id) {
+        return threadsService.getThread(id);
+    }
+
+    /**
+     * 📚 GET `/api/threads`
+     *
+     * Retrieves all threads.
+     *
+     * @return A list of all thread objects.
+     */
+    @GetMapping
+    public List<Threads> getAllThreadss() {
+        return threadsService.getAllThreads();
+    }
+
+    /**
+     * ✏️ PUT `/api/threads/{id}`
+     *
+     * Updates an existing thread by ID.
+     *
+     * @param id      The ID of the thread to update.
+     * @param Threads The updated thread data.
+     * @return The updated thread object.
+     */
+    @PutMapping("/{id}")
+    public Threads updateThreads(@PathVariable Long id, @RequestBody Threads Threads) {
+        return threadsService.updateThread(id, Threads);
+    }
+
+    /**
+     * ❌ DELETE `/api/threads/{id}`
+     *
+     * Deletes a thread by ID.
+     *
+     * @param id The ID of the thread to delete.
+     */
+    @DeleteMapping("/{id}")
+    public void deleteThreads(@PathVariable Long id) {
+        threadsService.deleteThread(id);
+    }
+}
+```
+
+
+## 👤 **13. UserController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/UserController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.service.UserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 👤 UserController
+ *
+ * This REST controller provides endpoints for user management in the
+ * Turing Online Forum System. It supports user creation, retrieval, and profile updates.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Declares this class as a RESTful web controller.
+ * - @RequestMapping("/api/users"): Base path for all user-related endpoints.
+ * - @Slf4j: Lombok annotation to enable logging.
+ * - @RequiredArgsConstructor: Generates constructor for final fields.
+ *
+ * 🧩 Features Configured:
+ * - Create a new user with timestamp.
+ * - Fetch all users or a specific user by ID.
+ * - Update user profile information.
+ */
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+@Slf4j
+public class UserController {
+
+    private final UserService userService;
+
+    /**
+     * ➕ POST `/api/users`
+     *
+     * Creates a new user in the system.
+     *
+     * @param user The user object to be created.
+     * @return The saved user object with ID and timestamp.
+     *
+     * 🧠 Automatically sets the `createdAt` timestamp at creation.
+     */
+    @PostMapping
+    public User createUser(@RequestBody User user) {
+        user.setCreatedAt(LocalDateTime.now());
+        User saved = userService.save(user);
+        log.info("Created user with ID {}", saved.getId());
+        return saved;
+    }
+
+    /**
+     * 📄 GET `/api/users`
+     *
+     * Fetches a list of all users in the system.
+     *
+     * @return A list of user objects.
+     */
+    @GetMapping
+    public List<User> getAllUsers() {
+        log.info("Fetching all users");
+        return userService.findAll();
+    }
+
+    /**
+     * 🔍 GET `/api/users/{id}`
+     *
+     * Retrieves a single user by their unique ID.
+     *
+     * @param id The ID of the user to fetch.
+     * @return The user object, if found.
+     *
+     * @throws RuntimeException if the user is not found.
+     */
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable Long id) {
+        log.info("Fetching profile for user ID {}", id);
+        return userService.findById(id)
+                .orElseThrow(() -> {
+                    log.error("User with ID {} not found", id);
+                    return new RuntimeException("User not found");
+                });
+    }
+
+    /**
+     * ✏️ PUT `/api/users/{id}`
+     *
+     * Updates an existing user's profile.
+     *
+     * @param id           The ID of the user to update.
+     * @param updatedUser  The new user data.
+     * @return The updated user wrapped in a ResponseEntity.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        log.info("Updating profile for user ID {}", id);
+        return ResponseEntity.ok(userService.updateUserProfile(id, updatedUser));
+    }
+}
+```
+
+## ❗ **14. GlobalExceptionHandler**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/exception/GlobalExceptionHandler.java`
+
+```java
+package com.example.turingOnlineForumSystem.exception;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * ❗ GlobalExceptionHandler
+ *
+ * A centralized exception handler for the Turing Online Forum System. It captures
+ * application-wide exceptions and ensures meaningful and consistent responses are returned
+ * to the client.
+ *
+ * 📌 Annotations Used:
+ * - @RestControllerAdvice: A combination of @ControllerAdvice and @ResponseBody. Handles
+ *   exceptions across the whole application and automatically serializes responses.
+ * - @Slf4j: Lombok annotation for logging exceptions.
+ *
+ * 🧩 Features Configured:
+ * - Handles resource-not-found scenarios with `ResourceNotFoundException`.
+ * - Handles all other uncaught exceptions generically with logging.
+ */
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    /**
+     * 🛑 Handles `ResourceNotFoundException`
+     *
+     * Logs and returns a 404 response when a specific resource (like User, Thread, etc.)
+     * is not found.
+     *
+     * @param ex The thrown ResourceNotFoundException.
+     * @return HTTP 404 with error message as the response body.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.error("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(404).body(ex.getMessage());
+    }
+
+    /**
+     * 💥 Handles all other unhandled exceptions
+     *
+     * Logs unexpected exceptions and returns a generic 500 Internal Server Error response.
+     *
+     * @param ex The thrown Exception.
+     * @return HTTP 500 with a generic error message.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGeneric(Exception ex) {
+        log.error("Unhandled error: ", ex);
+        return ResponseEntity.status(500).body("Internal server error");
+    }
+}
+```
+
+## ❗ **14. ResourceNotFoundException**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/exception/ResourceNotFoundException.java`
+
+```java
+package com.example.turingOnlineForumSystem.exception;
+
+/**
+ * ❗ ResourceNotFoundException
+ *
+ * This is a custom runtime exception used throughout the Turing Online Forum System
+ * to indicate that a requested resource (e.g., User, Thread, etc.) could not be found.
+ *
+ * ⚙️ Extends:
+ * - RuntimeException: Makes this an unchecked exception, which can be thrown without requiring explicit try-catch blocks.
+ *
+ * 🔧 Usage:
+ * - Commonly thrown in service or controller layers when a database query returns empty
+ *   for a requested resource by ID, username, or other identifiers.
+ *
+ * 📌 Example:
+ * ```java
+ * userRepository.findById(id)
+ *     .orElseThrow(() -> new ResourceNotFoundException("User with ID " + id + " not found"));
+ * ```
+ */
+public class ResourceNotFoundException extends RuntimeException {
+
+    /**
+     * Constructs a new ResourceNotFoundException with a given message.
+     *
+     * @param message Detailed message about the resource that was not found.
+     */
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+Here’s the well-structured and professionally formatted documentation for your `EmailService` class, consistent with the style of the `SearchController` documentation:
+
+---
+
+## 📧 **15. EmailService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/EmailService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+/**
+ * 📧 EmailService
+ *
+ * This service handles sending plain text emails using the Spring Boot
+ * `JavaMailSender`. It encapsulates the logic required to send simple
+ * email messages such as notifications, alerts, or general correspondence.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Indicates this class is a service component in the Spring context.
+ * - @Autowired: Injects the configured JavaMailSender bean.
+ *
+ * 🧩 Features:
+ * - Send plain text emails using recipient address, subject, and body.
+ *
+ * 📨 Dependencies:
+ * - `JavaMailSender`: Spring’s interface for sending emails.
+ * - `EmailRequest`: A custom model encapsulating email parameters (to, subject, body).
+ */
+@Service
+public class EmailService {
+
+    @Autowired
+    JavaMailSender mailSender;
+
+    /**
+     * ✉️ sendEmail()
+     *
+     * Sends an email using the provided `EmailRequest` data.
+     *
+     * @param emailRequest An object containing `to`, `subject`, and `body` fields.
+     *
+     * 🧠 Example:
+     * ```json
+     * {
+     *   "to": "user@example.com",
+     *   "subject": "Welcome to Turing Forum",
+     *   "body": "Thanks for joining our platform!"
+     * }
+     * ```
+     */
+    public void sendEmail(EmailRequest emailRequest) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(emailRequest.getTo());
+        message.setSubject(emailRequest.getSubject());
+        message.setText(emailRequest.getBody());
+        mailSender.send(message);
+    }
+}
+```
+
+
+## 🤝 **16. FollowService**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/service/FollowService.java`
+
+```java
+package com.example.turingOnlineForumSystem.service;
+
+import com.example.turingOnlineForumSystem.model.Follow;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.FollowRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 🤝 FollowService
+ *
+ * This service class provides functionality related to the "follow" feature
+ * within the Turing Online Forum System. It allows users to follow other users
+ * and retrieve the list of users they are following.
+ *
+ * 📌 Annotations Used:
+ * - @Service: Indicates that this class is a service component in the Spring context.
+ * - @RequiredArgsConstructor: Lombok annotation to auto-generate constructor for final fields.
+ * - @Slf4j: Lombok annotation to enable logging using the `log` object.
+ *
+ * 🧩 Core Responsibilities:
+ * - Follow a user by storing a `Follow` relation.
+ * - Fetch the list of users a given user is following.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class FollowService {
+
+    private final FollowRepository followRepo;
+    private final UserRepository userRepo;
+
+    /**
+     * ➕ followUser
+     *
+     * Creates a follow relationship between the follower and the following user.
+     *
+     * @param followerId  The ID of the user who wants to follow.
+     * @param followingId The ID of the user to be followed.
+     * @throws NoSuchElementException if either user does not exist.
+     *
+     * 🧠 Example Use: Called when a user clicks "Follow" on another user's profile.
+     */
+    public void followUser(Long followerId, Long followingId) {
+        User follower = userRepo.findById(followerId).orElseThrow();
+        User following = userRepo.findById(followingId).orElseThrow();
+
+        Follow follow = new Follow(null, follower, following);
+        followRepo.save(follow);
+
+        log.info("User {} followed user {}", followerId, followingId);
+    }
+
+    /**
+     * 📜 getFollowing
+     *
+     * Retrieves a list of users that the given user is following.
+     *
+     * @param userId The ID of the user whose following list is to be fetched.
+     * @return A list of `User` entities that the user is following.
+     *
+     * 🧠 Example Use: Displayed on the "Following" tab of a user's profile.
+     */
+    public List<User> getFollowing(Long userId) {
+        List<User> followingList = followRepo.findByFollowerId(userId).stream()
+                .map(Follow::getFollowing)
+                .collect(Collectors.toList());
+
+        log.info("Retrieved following list for user {}: {} users", userId, followingList.size());
+        return followingList;
+    }
+}
+```
+
+
+
 ## ⚙️ Features
 
 
