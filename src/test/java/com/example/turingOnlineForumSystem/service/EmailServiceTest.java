@@ -3,35 +3,40 @@ package com.example.turingOnlineForumSystem.service;
 
 import com.example.turingOnlineForumSystem.model.EmailRequest;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-public class EmailServiceTest {
-
-    @Autowired
-    private EmailService emailService;
+class EmailServiceTest {
 
     @MockBean
     private JavaMailSender mailSender;
 
-//    @Test
-    void sendEmail_shouldSendMail() {
-        // Arrange
-        EmailRequest request = new EmailRequest();
-        request.setTo("test@example.com");
-        request.setSubject("Test Subject");
-        request.setBody("Test Body");
+    @Autowired
+    private EmailService emailService;
 
-        // Act
-        emailService.sendEmail(request);
+    @Test
+    void testSendEmail() {
+        EmailRequest emailRequest = new EmailRequest();
+        emailRequest.setTo("recipient@example.com");
+        emailRequest.setSubject("Unit Test");
+        emailRequest.setBody("Unit test email body");
 
-        // Assert
-        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+        emailService.sendEmail(emailRequest);
+
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(messageCaptor.capture());
+
+        SimpleMailMessage msg = messageCaptor.getValue();
+        assertThat(msg.getTo()).contains("recipient@example.com");
+        assertThat(msg.getSubject()).isEqualTo("Unit Test");
+        assertThat(msg.getText()).isEqualTo("Unit test email body");
     }
 }

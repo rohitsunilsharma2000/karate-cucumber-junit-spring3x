@@ -1,6 +1,5 @@
 package com.example.turingOnlineForumSystem.service;
 
-
 import com.example.turingOnlineForumSystem.exception.ResourceNotFoundException;
 import com.example.turingOnlineForumSystem.model.Notification;
 import com.example.turingOnlineForumSystem.model.User;
@@ -10,100 +9,98 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
-import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-class NotificationServiceTest {
+public class NotificationServiceTest {
 
-    @Mock private NotificationRepository notificationRepo;
-    @Mock private NotificationRepository notificationRepository;
-    @Mock private UserRepository userRepository;
+    @Mock
+    private NotificationRepository notificationRepository;
 
-    @InjectMocks private NotificationService notificationService;
+    @Mock
+    private UserRepository userRepository;
 
-    private User user;
-    private Notification notification;
+    @InjectMocks
+    private NotificationService notificationService;
+
+    private AutoCloseable closeable;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        user = User.builder().id(1L).username("testUser").build();
-        notification = Notification.builder()
-                                   .id(10L)
-                                   .recipient(user)
-                                   .message("Test Message")
-                                   .isRead(false)
-                                   .build();
-    }
-
-//    @Test
-    void sendNotification_ByUserId_Success() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        notificationService.sendNotification(1L, "Hello!");
-
-        verify(notificationRepository).save(any(Notification.class));
+    void setup() {
+        closeable = MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void sendNotification_ByUserId_ThrowsIfUserNotFound() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    void testSendNotificationById_Success() {
+        User user = User.builder().id(1L).username("bob").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                notificationService.sendNotification(1L, "Hello"));
+        notificationService.sendNotification(1L, "Test message");
+
+        verify(notificationRepository, times(1)).save(argThat(notification ->
+                                                                      notification.getRecipient().getId().equals(1L) &&
+                                                                              notification.getMessage().equals("Test message")
+        ));
     }
 
-    //@Test
-    void sendNotification_ByUserObject_Success() {
-        notificationService.sendNotification(user, "Welcome");
-        verify(notificationRepo).save(any(Notification.class));
+    @Test
+    void testSendNotificationById_UserNotFound() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.sendNotification(99L, "Hello"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Recipient not found");
     }
 
-   // @Test
-    void markAsRead_Success() {
+    @Test
+    void testMarkAsRead_Success() {
+        Notification notification = Notification.builder().id(10L).isRead(false).build();
         when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification));
 
         notificationService.markAsRead(10L);
 
-        assertTrue(notification.getIsRead());
         verify(notificationRepository).save(notification);
+        assert notification.getIsRead();
     }
 
     @Test
-    void markAsRead_ThrowsIfNotFound() {
-        when(notificationRepository.findById(10L)).thenReturn(Optional.empty());
+    void testMarkAsRead_NotFound() {
+        when(notificationRepository.findById(100L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                notificationService.markAsRead(10L));
-    }
-
-    //@Test
-    void deleteNotification_Success() {
-        when(notificationRepository.existsById(10L)).thenReturn(true);
-
-        notificationService.deleteNotification(10L);
-
-        verify(notificationRepository).deleteById(10L);
+        assertThatThrownBy(() -> notificationService.markAsRead(100L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Notification not found");
     }
 
     @Test
-    void deleteNotification_NotFound() {
-        when(notificationRepository.existsById(10L)).thenReturn(false);
+    void testDeleteNotification_Success() {
+        when(notificationRepository.existsById(5L)).thenReturn(true);
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                notificationService.deleteNotification(10L));
+        notificationService.deleteNotification(5L);
+
+        verify(notificationRepository).deleteById(5L);
     }
 
-    //@Test
-    void getNotificationsForUser() {
-        when(notificationRepository.findByRecipientId(1L)).thenReturn(List.of(notification));
+    @Test
+    void testDeleteNotification_NotFound() {
+        when(notificationRepository.existsById(50L)).thenReturn(false);
 
-        List<Notification> result = notificationService.getNotificationsForUser(1L);
+        assertThatThrownBy(() -> notificationService.deleteNotification(50L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Notification not found");
+    }
 
-        assertEquals(1, result.size());
-        assertEquals("Test Message", result.get(0).getMessage());
+    @Test
+    void testSendNotificationWithUserObject() {
+        User user = User.builder().id(2L).build();
+
+        notificationService.sendNotification(user, "Direct notification");
+
+        verify(notificationRepository).save(argThat(notification ->
+                                                            notification.getMessage().equals("Direct notification") &&
+                                                                    notification.getRecipient().getId().equals(2L)
+        ));
     }
 }
