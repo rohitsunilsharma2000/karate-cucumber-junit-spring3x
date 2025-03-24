@@ -3267,11 +3267,278 @@ class UserServiceTest {
 }
 
 ```
-###   `PostServiceTest`
+###   `ChatViewControllerTest`
 ```java
+package com.example.turingOnlineForumSystem.controller;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(ChatViewController.class)
+@Import(ChatViewControllerTest.TestSecurityConfig.class)
+public class ChatViewControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void testChatPageLoadsWithUserId() throws Exception {
+        mockMvc.perform(get("/chat")
+                                .param("userId", "123"))
+               .andExpect(status().isOk())
+               .andExpect(view().name("chat"))
+               .andExpect(model().attribute("userId", 123L));
+    }
+
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
 
 ```
 
+###   `EmailControllerIntegrationTest`
+```
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.EmailRequest;
+import com.example.turingOnlineForumSystem.service.EmailService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(EmailController.class)
+@Import(EmailControllerIntegrationTest.TestSecurityConfig.class) // ⬅ disables Spring Security
+public class EmailControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private EmailService emailService;
+
+    @Test
+    void testSendEmail() throws Exception {
+        String requestJson = """
+                {
+                    "to": "user@example.com",
+                    "subject": "Test Subject",
+                    "body": "This is a test email."
+                }
+                """;
+
+        // Act & Assert
+        mockMvc.perform(post("/api/email/send")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestJson))
+               .andExpect(status().isOk())
+               .andExpect(content().string("Email sent successfully!"));
+
+        // Verify the service method was invoked
+        Mockito.verify(emailService, Mockito.times(1)).sendEmail(Mockito.any(EmailRequest.class));
+    }
+
+    // ✅ Disables security for this test
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+
+
+
+```
+
+
+###   `FollowControllerIntegrationTest`
+```
+package com.example.turingOnlineForumSystem.controller;
+
+
+import com.example.turingOnlineForumSystem.model.Threads;
+import com.example.turingOnlineForumSystem.model.User;
+import com.example.turingOnlineForumSystem.repository.ThreadRepository;
+import com.example.turingOnlineForumSystem.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(SearchController.class)
+@Import(SearchControllerIntegrationTest.TestSecurityConfig.class)
+class SearchControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserRepository userRepo;
+
+    @MockBean
+    private ThreadRepository threadRepo;
+
+    @Test
+    void testSearchUsers() throws Exception {
+        User user = User.builder().id(1L).username("testuser").email("user@example.com").build();
+        Mockito.when(userRepo.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(user));
+
+        mockMvc.perform(get("/api/search/users")
+                                .param("q", "test"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].username").value("testuser"));
+    }
+
+    @Test
+    void testSearchThreads() throws Exception {
+        Threads thread = Threads.builder().id(1L).title("Interesting Topic").content("Something cool").build();
+        Mockito.when(threadRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase("test", "test"))
+               .thenReturn(List.of(thread));
+
+        mockMvc.perform(get("/api/search/threads")
+                                .param("q", "test"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].title").value("Interesting Topic"));
+    }
+
+    // ✅ Disable security just for tests
+    @TestConfiguration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.csrf().disable()
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
+}
+
+
+```
+
+
+###   `ModerationDTOTest`
+```
+package com.example.turingOnlineForumSystem.dto;
+
+
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class ModerationDTOTest {
+
+    @Test
+    void testAllArgsConstructorAndGetters() {
+        LocalDateTime now = LocalDateTime.now();
+
+        ModerationDTO dto = new ModerationDTO(
+                1L,
+                "DELETE",
+                "Spam content",
+                now,
+                2L,
+                "john_doe",
+                3L
+        );
+
+        assertThat(dto.getId()).isEqualTo(1L);
+        assertThat(dto.getAction()).isEqualTo("DELETE");
+        assertThat(dto.getReason()).isEqualTo("Spam content");
+        assertThat(dto.getCreatedAt()).isEqualTo(now);
+        assertThat(dto.getUserId()).isEqualTo(2L);
+        assertThat(dto.getUsername()).isEqualTo("john_doe");
+        assertThat(dto.getThreadId()).isEqualTo(3L);
+    }
+
+    @Test
+    void testSettersAndNoArgsConstructor() {
+        ModerationDTO dto = new ModerationDTO();
+
+        dto.setId(10L);
+        dto.setAction("BAN");
+        dto.setReason("Toxic behavior");
+        dto.setCreatedAt(LocalDateTime.of(2024, 1, 1, 12, 0));
+        dto.setUserId(100L);
+        dto.setUsername("alice");
+        dto.setThreadId(200L);
+
+        assertThat(dto.getId()).isEqualTo(10L);
+        assertThat(dto.getAction()).isEqualTo("BAN");
+        assertThat(dto.getReason()).isEqualTo("Toxic behavior");
+        assertThat(dto.getCreatedAt()).isEqualTo("2024-01-01T12:00");
+        assertThat(dto.getUserId()).isEqualTo(100L);
+        assertThat(dto.getUsername()).isEqualTo("alice");
+        assertThat(dto.getThreadId()).isEqualTo(200L);
+    }
+}
+
+
+```
+
+###   `ModerationDTOTest`
+```java
+
+```
+###   `ModerationDTOTest`
+```java
+
+```
+###   `ModerationDTOTest`
+```java
+
+```
+###   `ModerationDTOTest`
+```java
+
+```
 ---
 
 ## 🧪  `curl` Commands for above API
