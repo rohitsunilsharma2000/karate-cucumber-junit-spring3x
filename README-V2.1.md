@@ -1049,6 +1049,204 @@ public class FollowController {
 
 
 
+## 🛡️ **8. ModerationController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/ModerationController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.dto.ModerationDTO;
+import com.example.turingOnlineForumSystem.service.ModerationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 🛡️ ModerationController
+ *
+ * This controller provides REST endpoints for forum moderation actions such as
+ * deleting threads or posts, banning users, and viewing moderation history.
+ * It allows moderators to enforce rules and maintain community standards.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Indicates this is a REST controller that returns JSON responses.
+ * - @RequestMapping("/api/moderation"): Base path for all moderation-related endpoints.
+ * - @RequiredArgsConstructor: Lombok annotation for auto-injecting final fields.
+ * - @Slf4j: Enables logging using `log` object.
+ *
+ * 🧩 Features Configured:
+ * - Delete threads and posts by moderators.
+ * - Ban users for violating forum rules.
+ * - Retrieve moderation action history per user.
+ */
+@RestController
+@RequestMapping("/api/moderation")
+@RequiredArgsConstructor
+@Slf4j
+public class ModerationController {
+
+    private final ModerationService moderationService;
+
+    /**
+     * 🧹 DELETE `/api/moderation/thread/{threadId}`
+     *
+     * Deletes a forum thread as a moderation action.
+     *
+     * @param threadId     The ID of the thread to be deleted.
+     * @param moderatorId  The ID of the moderator performing the action.
+     * @param reason       The reason for deleting the thread.
+     */
+    @DeleteMapping("/thread/{threadId}")
+    public void deleteThread(@PathVariable Long threadId,
+                             @RequestParam Long moderatorId,
+                             @RequestParam String reason) {
+        moderationService.deleteThread(threadId, moderatorId, reason);
+    }
+
+    /**
+     * 🧼 DELETE `/api/moderation/post/{postId}`
+     *
+     * Deletes a specific post by a moderator.
+     *
+     * @param postId       The ID of the post to be deleted.
+     * @param moderatorId  The ID of the moderator performing the action.
+     * @param reason       The reason for deleting the post.
+     */
+    @DeleteMapping("/post/{postId}")
+    public void deletePost(@PathVariable Long postId,
+                           @RequestParam Long moderatorId,
+                           @RequestParam String reason) {
+        moderationService.deletePost(postId, moderatorId, reason);
+    }
+
+    /**
+     * 🚫 POST `/api/moderation/ban-user/{userId}`
+     *
+     * Bans a user from posting in the forum.
+     *
+     * @param userId The ID of the user to be banned.
+     * @param reason The reason for banning the user.
+     */
+    @PostMapping("/ban-user/{userId}")
+    public void banUser(@PathVariable Long userId,
+                        @RequestParam String reason) {
+        moderationService.banUser(userId, reason);
+    }
+
+    /**
+     * 📜 GET `/api/moderation/history/{userId}`
+     *
+     * Retrieves a list of all moderation actions performed on a given user.
+     *
+     * @param userId The ID of the user whose moderation history is requested.
+     * @return A list of `ModerationDTO` entries representing each moderation action.
+     */
+    @GetMapping("/history/{userId}")
+    public List<ModerationDTO> getModerationHistory(@PathVariable Long userId) {
+        return moderationService.getModerationHistory(userId);
+    }
+}
+```
+
+
+## 📝 **9. PostController**  
+📁 **Path:** `src/main/java/com/example/turingOnlineForumSystem/controller/PostController.java`
+
+```java
+package com.example.turingOnlineForumSystem.controller;
+
+import com.example.turingOnlineForumSystem.dto.PostDto;
+import com.example.turingOnlineForumSystem.model.Post;
+import com.example.turingOnlineForumSystem.service.PostService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 📝 PostController
+ *
+ * REST controller for managing forum posts within a thread in the Turing Online Forum System.
+ *
+ * 📌 Annotations Used:
+ * - @RestController: Indicates that this class handles RESTful API endpoints.
+ * - @RequestMapping("/api/posts"): Base path for all post-related endpoints.
+ * - @RequiredArgsConstructor: Lombok annotation to generate constructor for `final` dependencies.
+ * - @Slf4j: Enables logging for monitoring and debugging.
+ *
+ * 🧩 Features Configured:
+ * - Create a new post in a discussion thread.
+ * - Fetch all posts for a specific thread.
+ */
+@RestController
+@RequestMapping("/api/posts")
+@RequiredArgsConstructor
+@Slf4j
+public class PostController {
+
+    private final PostService postService;
+
+    /**
+     * ➕ POST `/api/posts/thread/{threadId}`
+     *
+     * Creates a new post in the specified thread.
+     *
+     * @param threadId ID of the thread in which the post is to be added.
+     * @param post     The `Post` object containing post content and metadata.
+     * @return The created `Post` object.
+     *
+     * 🧠 Usage:
+     * POST request to `/api/posts/thread/3` with JSON body creates a new post in thread ID 3.
+     */
+    @PostMapping("/thread/{threadId}")
+    public Post createPost(@PathVariable Long threadId, @RequestBody Post post) {
+        log.info("Creating a new post in thread {}", threadId);
+        return postService.createPost(post, threadId);
+    }
+
+    /**
+     * 📄 GET `/api/posts/thread/{threadId}`
+     *
+     * Retrieves all posts for a specific thread.
+     *
+     * @param threadId ID of the thread whose posts are to be fetched.
+     * @return A list of `PostDto` objects representing posts in the thread.
+     *
+     * 🧠 Usage:
+     * GET `/api/posts/thread/3` returns all posts under thread ID 3.
+     */
+    @GetMapping("/thread/{threadId}")
+    public List<PostDto> getPostsByThread(@PathVariable Long threadId) {
+        log.info("Fetching posts for thread {}", threadId);
+        return postService.getPostsByThread(threadId);
+    }
+}
+```
+
+---
+
+Let me know if you'd like to continue this for:
+
+- `PostService`  
+- `PostDto` or `Post` entity  
+- `ThreadController`, `UserController`, or any other controllers or services
+
+I'm happy to help you keep everything polished and consistently documented!
+
+
+
+---
+
+Let me know if you'd like matching documentation for:
+- `ModerationService`
+- `ModerationDTO`
+- `ThreadController`, `PostController`, `UserController` (if present)
+
+You're doing a great job keeping your codebase clear and maintainable!
+
 ## ⚙️ Features
 
 
