@@ -183,9 +183,26 @@ support-ticket-livechat-email\src
 ## Unit tests
 
 
-**In Iteration number 1( Result:** Total line coverage is 91%
+
+**Result In Iteration number 1** :-
+
+| Coverage Type | Percentage | Details  |
+|---------------|------------|----------|
+| Class         | 100%       | 11/11    |
+| Method        | 85%        | 28/28    |
+| Line          | 93%        | 93/95    |
 
 ## Iteration number 2(for better coverage)
+
+**Result In Iteration number 2** :-
+
+| Coverage Type | Percentage | Details  |
+|---------------|------------|----------|
+| Class         | 100%       | 11/11    |
+| Method        | 85%        | 28/28    |
+| Line          | 93%        | 93/95    |
+
+
 
 
 **In Iteration number 2( Result:** Total line coverage is 91%
