@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.config;
+package com.example.videohosting.config;
 
 
 
@@ -21,17 +21,6 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    //    @Bean
-//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//        http
-//                .cors()  // Enable CORS using our custom configuration
-//                .and()
-//                .csrf().disable()  // Disable CSRF for simplicity
-//                .authorizeHttpRequests(authz -> authz
-//                        .anyRequest().permitAll()  // Allow all requests
-//                );
-//        return http.build();
-//    }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

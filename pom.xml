@@ -9,10 +9,10 @@
 			<relativePath/> <!-- lookup parent from repository -->
 		</parent>
 		<groupId>com.example</groupId>
-		<artifactId>turingLLMTuningSystem</artifactId>
+		<artifactId>videohosting</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<name>Turing LLM Tuning System</name>
-		<description>Turing LLM Tuning System</description>
+		<name>Video Hosting Application</name>
+		<description>A Spring Boot application that manages video hosting, transcoding, streaming endpoints, and user access control.</description>
 		<url/>
 		<licenses>
 			<license/>
