@@ -3,25 +3,29 @@
 
 ## 📌 Use Case
 
-**This online forum system shall be used in community-driven applications where users interact through threads, posts,
-private messages, and social features. The system provides tools for discussion management, real-time messaging,
-moderation, user engagement, and content discovery, making it ideal for:**
+**This Spring Boot microservice handles support tickets, live chat, and email follow-ups. It provides an efficient solution for managing
+customer support requests, enabling real-time communication between users and support agents, while automating follow-up processes to ensure 
+timely responses.**
 
 ## 📌 Prompt Title
 
-**Spring Boot Online Forum System with Moderation, Messaging, and Community Features**
+**Spring Boot Microservice for Support Tickets, Live Chat, and Email Follow-Ups**
 
 ## 📋 High-Level Description
 
-Develop a full-featured online forum system using Spring Boot that supports:
+Develop a Spring Boot microservice that manages support tickets, live chat, and automated email follow-ups. The service will handle:
 
-- User registration and profile management
-- Thread creation and discussion posts
-- User moderation (ban/delete post/thread)
-- Real-time private messaging with WebSocket
-- Notification system for events like new messages or replies
-- Follow system for users
-- Search functionality for threads and users
+- User and agent authentication with role-based access (Admin, Agent, Customer)
+- Ticket creation, status updates, and attachment management
+- Live chat functionality with real-time messaging via WebSocket
+- Automated email notifications for ticket updates, new assignments, and reminders
+- Integration of role-based permissions for agents and admins to manage tickets
+- Real-time notifications for users and agents about ticket updates or new messages
+- Efficient handling of ticket priority and escalation
+- Comprehensive exception handling and logging for auditing purposes
+- Scalability to handle increasing numbers of support tickets and user interactions
+
+
 
 ---
 
@@ -29,246 +33,127 @@ Develop a full-featured online forum system using Spring Boot that supports:
 
 ---
 
-### 1. `UserController.java`
+### 1. `TicketController.java`
 
-**Purpose**: Handle user creation, retrieval, and profile updates.
+**Purpose**: Manage support ticket creation, retrieval, updates, and ticket assignment.
 
-| Method                   | Description               |
-|--------------------------|---------------------------|
-| `createUser(User)`       | Creates a new user        |
-| `getAllUsers()`          | Returns list of all users |
-| `getUserById(Long id)`   | Fetch user details by ID  |
-| `updateUser(Long, User)` | Updates user's profile    |
-
----
-
-### 2. `ThreadController.java`
-
-**Purpose**: Manage discussion threads.
-
-| Method                         | Description                     |
-|--------------------------------|---------------------------------|
-| `createThreads(Threads)`       | Creates a new discussion thread |
-| `getThreads(Long id)`          | Gets thread by ID               |
-| `getAllThreadss()`             | Lists all threads               |
-| `updateThreads(Long, Threads)` | Updates thread title/content    |
-| `deleteThreads(Long)`          | Deletes thread by ID            |
+| Method                          | Description                                       |
+|---------------------------------|---------------------------------------------------|
+| `createTicket(TicketRequest)`   | Creates a new support ticket                     |
+| `getTicketById(Long id)`        | Fetches a ticket's details by its ID             |
+| `updateTicket(Long id, TicketRequest)` | Updates an existing support ticket            |
+| `assignTicketToAgent(Long ticketId, Long agentId)` | Assigns a ticket to an agent               |
+| `autoAssignTicket(Long ticketId)` | Auto-assigns a ticket to an available agent     |
+| `listAllTickets()`              | Returns a list of all tickets                    |
 
 ---
 
-### 3. `PostController.java`
+### 2. `ChatController.java`
 
-**Purpose**: Manage replies/posts in threads.
+**Purpose**: Manages live chat functionalities such as sending and receiving messages.
 
-| Method                            | Description                  |
-|-----------------------------------|------------------------------|
-| `createPost(Long threadId, Post)` | Create a post under a thread |
-| `getPostsByThread(Long threadId)` | Get all posts for a thread   |
-
----
-
-### 4. `MessagingController.java`
-
-**Purpose**: Real-time and historical private messaging.
-
-| Method                                       | Description                        |
-|----------------------------------------------|------------------------------------|
-| `sendMessage(ChatMessageDTO)`                | Sends message via WebSocket        |
-| `getHistory(Long senderId, Long receiverId)` | Fetches chat history between users |
-| `chatPage(Long userId, Model model)`         | Loads Thymeleaf UI page for chat   |
+| Method                   | Description                                            |
+|--------------------------|--------------------------------------------------------|
+| `sendMessage(ChatMessage)` | Sends a new chat message                               |
+| `newUser(ChatMessage)`     | Handles a new user joining the chat                    |
+| `getChatHistory(String sender, String receiver)` | Retrieves the chat history between two users |
 
 ---
 
-### 5. `ModerationController.java`
+### 3. `TicketService.java`
 
-**Purpose**: Handle moderation actions like deletion and banning.
+**Purpose**: Contains business logic for creating, updating, and managing support tickets.
 
-| Method                             | Description                       |
-|------------------------------------|-----------------------------------|
-| `deleteThread(Long, Long, String)` | Delete a thread with moderator ID |
-| `deletePost(Long, Long, String)`   | Delete a post with moderator ID   |
-| `banUser(Long, String)`            | Ban a user with reason            |
-| `getModerationHistory(Long)`       | Get user's moderation history     |
-
----
-
-### 6. `NotificationController.java`
-
-**Purpose**: Manage user notifications.
-
-| Method                         | Description                      |
-|--------------------------------|----------------------------------|
-| `getUserNotifications(Long)`   | Get all notifications for a user |
-| `markNotificationAsRead(Long)` | Mark a notification as read      |
-| `deleteNotification(Long)`     | Delete a notification by ID      |
+| Method                              | Description                                                        |
+|-------------------------------------|--------------------------------------------------------------------|
+| `createTicket(TicketRequest request)` | Creates a new support ticket                                       |
+| `getTicketById(Long id)`            | Retrieves the details of a specific ticket by its ID              |
+| `updateTicket(Long id, TicketRequest request)` | Updates ticket details                                       |
+| `assignTicketToAgent(Long ticketId, Long agentId)` | Assigns a ticket to a specific agent                          |
+| `autoAssignTicket(Long ticketId)`  | Auto-assigns a ticket to an available agent                       |
 
 ---
 
-### 7. `FollowController.java`
+### 4. `ChatService.java`
 
-**Purpose**: Social feature to follow other users.
+**Purpose**: Handles the business logic related to saving messages and fetching chat history.
 
-| Method                                          | Description                               |
-|-------------------------------------------------|-------------------------------------------|
-| `followUser(Long followerId, Long followingId)` | Follower follows another user             |
-| `getFollowing(Long userId)`                     | List of users the given user is following |
-
----
-
-### 8. `SearchController.java`
-
-**Purpose**: Search feature for users and threads.
-
-| Method                    | Description                      |
-|---------------------------|----------------------------------|
-| `searchUsers(String q)`   | Search users by partial username |
-| `searchThreads(String q)` | Search threads by title/content  |
+| Method                          | Description                                       |
+|---------------------------------|---------------------------------------------------|
+| `saveMessage(ChatMessage message)` | Saves a chat message to the database              |
+| `getChatHistory(String sender, String receiver)` | Retrieves chat history between two users |
 
 ---
 
-### 9. `EmailController.java`
+### 5. `EmailService.java`
 
-**Purpose**: Send emails via SMTP.
+**Purpose**: Handles email notifications for various ticket and chat events.
 
-| Method                    | Description              |
-|---------------------------|--------------------------|
-| `sendEmail(EmailRequest)` | Sends a plain text email |
-
----
-
-### 10. `AuthController.java`
-
-**Purpose**: JWT-based authentication & profile endpoints.
-
-| Method                              | Description                      |
-|-------------------------------------|----------------------------------|
-| `register(RegisterRequest)`         | Registers a user                 |
-| `login(LoginRequest)`               | Authenticates and returns JWT    |
-| `profile(Principal)`                | Gets logged-in user's profile    |
-| `updateProfile(Principal, UserDto)` | Updates logged-in user's profile |
+| Method                               | Description                                              |
+|--------------------------------------|----------------------------------------------------------|
+| `sendTicketStatusChangedNotification(Ticket ticket, TicketStatus oldStatus)` | Sends email notification for ticket status updates   |
+| `sendTicketAssignedNotification(Ticket ticket, User agent)` | Sends email notification when a ticket is assigned     |
+| `sendTicketCreatedNotification(Ticket ticket)` | Sends an email notification for newly created tickets  |
 
 ---
 
-### 11. `MessagingService.java`
+### 6. `JwtService.java`
 
-**Purpose**: Business logic for messaging.
+**Purpose**: Handles JWT token validation, extraction, and user authentication.
 
-| Method                        | Description                             |
-|-------------------------------|-----------------------------------------|
-| `sendMessage(ChatMessageDTO)` | Saves message and triggers notification |
-| `getChatHistory(Long, Long)`  | Returns chat messages between 2 users   |
-
----
-
-### 12. `ModerationService.java`
-
-**Purpose**: Handle thread/post deletion and user banning.
-
-| Method                             | Description                        |
-|------------------------------------|------------------------------------|
-| `deleteThread(Long, Long, String)` | Deletes a thread with logging      |
-| `deletePost(Long, Long, String)`   | Deletes a post and logs moderation |
-| `banUser(Long, String)`            | Bans a user                        |
-| `getModerationHistory(Long)`       | Returns user's moderation logs     |
+| Method                          | Description                                       |
+|---------------------------------|---------------------------------------------------|
+| `validateToken(String token, String username)` | Validates the provided JWT token for the specified username |
+| `extractUsername(String token)` | Extracts the username from the JWT token          |
+| `isTokenValid(String token, UserDetails userDetails)` | Validates the token for the user details provided |
 
 ---
 
-### 13. `NotificationService.java`
+### 7. `GlobalExceptionHandler.java`
 
-**Purpose**: Business logic for notifications.
+**Purpose**: Handles global exceptions and provides custom responses.
 
-| Method                           | Description                             |
-|----------------------------------|-----------------------------------------|
-| `sendNotification(Long, String)` | Sends notification to a user            |
-| `sendNotification(User, String)` | Overloaded version to send using object |
-| `getNotificationsForUser(Long)`  | Returns notifications for user          |
-| `markAsRead(Long)`               | Marks notification as read              |
-| `deleteNotification(Long)`       | Deletes notification                    |
-
----
-
-### 14. `PostService.java`
-
-**Purpose**: Business logic for posts.
-
-| Method                               | Description                   |
-|--------------------------------------|-------------------------------|
-| `createPost(Post, Long threadId)`    | Creates a post under a thread |
-| `getPostsByThread(Long threadId)`    | Returns posts as PostDto list |
-| `deletePostsByThread(Long threadId)` | Deletes all posts of a thread |
+| Method                          | Description                                           |
+|---------------------------------|-------------------------------------------------------|
+| `handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request)` | Handles ResourceNotFoundException                    |
+| `handleAccessDeniedException(AccessDeniedException ex, WebRequest request)` | Handles AccessDeniedException                       |
+| `handleHttpClientErrorException(HttpClientErrorException ex, WebRequest request)` | Handles HttpClientErrorException                   |
+| `handleHttpServerErrorException(HttpServerErrorException ex, WebRequest request)` | Handles HttpServerErrorException                   |
+| `handleTicketNotFound(TicketNotFoundException ex)` | Handles TicketNotFoundException                     |
 
 ---
 
-### 15. `ThreadService.java`
+### 8. `JwtAuthenticationFilter.java`
 
-**Purpose**: Thread operations including timestamps.
+**Purpose**: Filters incoming HTTP requests to authenticate JWT tokens.
 
-| Method                        | Description          |
-|-------------------------------|----------------------|
-| `createThread(Threads)`       | Saves a new thread   |
-| `updateThread(Long, Threads)` | Updates thread by ID |
-| `deleteThread(Long)`          | Deletes thread by ID |
-| `getThread(Long)`             | Fetch single thread  |
-| `getAllThreads()`             | Get all threads      |
+| Method                             | Description                                      |
+|------------------------------------|--------------------------------------------------|
+| `doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)` | Filters requests to check for JWT token and authenticate |
 
 ---
 
-### 16. `UserService.java`
+### 9. `TicketRepository.java`
 
-**Purpose**: User profile and registration logic.
+**Purpose**: Provides data access functionality for `Ticket` entities.
 
-| Method                          | Description           |
-|---------------------------------|-----------------------|
-| `getUserById(Long)`             | Get user by ID        |
-| `updateUserProfile(Long, User)` | Update user's profile |
-| `findById(Long)`                | Optional fetch by ID  |
-| `findAll()`                     | Fetch all users       |
-| `save(User)`                    | Create/save new user  |
-
----
-
-### 17. `GlobalExceptionHandler.java`
-
-**Purpose**: Catch and map exceptions globally.
-
-| Method                        | Description                       |
-|-------------------------------|-----------------------------------|
-| `handleResourceNotFound(...)` | Returns 404 for missing resources |
-| `handleGenericException(...)` | Catches generic exceptions        |
+| Method                           | Description                                  |
+|----------------------------------|----------------------------------------------|
+| `save(Ticket ticket)`            | Saves a ticket to the database               |
+| `findById(Long id)`              | Retrieves a ticket by its ID                 |
+| `findAll()`                      | Retrieves all tickets                        |
+| `findByStatusAndUpdatedAtBefore(TicketStatus status, LocalDateTime date)` | Finds tickets with specific status and older than a certain date |
 
 ---
 
-### 18. `WebSocketConfig.java`
+### 10. `MessageRepository.java`
 
-**Purpose**: WebSocket configuration for chat.
+**Purpose**: Provides data access functionality for `MessageEntity` entities.
 
-| Method                     | Description                            |
-|----------------------------|----------------------------------------|
-| `registerStompEndpoints()` | Define `/chat` WebSocket endpoint      |
-| `configureMessageBroker()` | Enable message broker `/topic`, `/app` |
-
----
-
-### 19. `SecurityConfig.java`
-
-**Purpose**: Open endpoints for development (override later).
-
-| Method                      | Description                            |
-|-----------------------------|----------------------------------------|
-| `filterChain(HttpSecurity)` | Disable CSRF, allow all URLs (initial) |
-| `corsConfigurationSource()` | Allow CORS from localhosts             |
-
----
-
-### 20. `TuringOnlineForumSystemApplication.java`
-
-**Purpose**: Main Spring Boot application class.
-
-| Method                | Description                |
-|-----------------------|----------------------------|
-| `main(String[] args)` | Bootstraps Spring Boot app |
-
----
+| Method                                | Description                             |
+|---------------------------------------|-----------------------------------------|
+| `save(MessageEntity messageEntity)`   | Saves a message to the database         |
+| `findBySenderAndReceiver(String sender, String receiver)` | Retrieves chat history between sender and receiver |
 
 ## 📦 Dependencies to Use
 
@@ -288,211 +173,198 @@ Develop a full-featured online forum system using Spring Boot that supports:
 - `spring-boot-devtools` – Enables hot reloading and dev-time conveniences
 
 ---
-
 ## ✅ Testing the Whole Function
 
 ### 🧪 Unit Tests
 
 #### Services:
 
-- Mock database repositories (UserRepository, ThreadRepository, etc.) using **Mockito**.
+- Mock database repositories (e.g., `TicketRepository`, `MessageRepository`, etc.) using **Mockito** to isolate the service layer.
 - Test service methods in:
-    - `UserService` – CRUD operations and validations
-    - `PostService` – Post creation and retrieval
-    - `ThreadService` – Thread operations
-    - `NotificationService` – Notification logic
-    - `MessagingService` – Message sending & chat history
-    - `ModerationService` – Ban/delete operations and audit logging
-- Simulate and assert expected outcomes and exception flows (`ResourceNotFoundException`, etc.).
+  - `TicketService` – Test CRUD operations for tickets, auto-assign functionality, and validation for updates and assignments.
+  - `ChatService` – Test saving chat messages and retrieving chat history.
+  - `EmailService` – Test email notifications for ticket updates, assignments, and creation.
+  - `JwtService` – Validate JWT token generation, validation, and username extraction.
+  - `UserService` – Test user creation, updating, and profile retrieval.
+  - `ModerationService` – Test moderation logic like banning a user or deleting posts.
+
+- Simulate and assert expected outcomes and exception flows (e.g., `TicketNotFoundException`, `ResourceNotFoundException`, etc.).
 
 #### Controllers:
 
 - Use **MockMvc** to simulate HTTP requests to REST controllers:
-    - Validate status codes (`200 OK`, `404 Not Found`, `400 Bad Request`, etc.)
-    - Check input validation (e.g. required fields, invalid types)
-    - Ensure proper payloads (JSON structure, missing attributes)
+  - Validate status codes (`200 OK`, `404 Not Found`, `400 Bad Request`, etc.).
+  - Check input validation (e.g., required fields, invalid types).
+  - Ensure proper payloads (e.g., JSON structure, missing attributes).
+  - Test methods in:
+    - `TicketController` – Ensure tickets are created, updated, and assigned properly.
+    - `ChatController` – Test message sending and retrieval of chat history.
+    - `UserController` – Test user profile creation and updates.
+    - `ModerationController` – Ensure post deletion and user bans are handled correctly.
 
 #### Exception Handler:
 
 - Verify responses from `GlobalExceptionHandler`:
-    - Return correct HTTP codes and error messages for:
-        - Resource not found
-        - Invalid input
-        - Unexpected server errors
+  - Ensure correct HTTP codes and error messages for:
+    - `ResourceNotFoundException` – Return HTTP `404 Not Found` and appropriate error messages.
+    - `AccessDeniedException` – Return HTTP `403 Forbidden` and appropriate error message.
+    - `TicketNotFoundException` – Return `404 Not Found` with the error message indicating no ticket found.
+    - Unexpected errors – Return HTTP `500 Internal Server Error` for unhandled exceptions.
 
 ---
 
 ### 🔗 Integration Tests
 
-- Use **@SpringBootTest + @AutoConfigureMockMvc** to wire up the entire Spring context.
-- Set up **H2 in-memory DB** for isolated database interactions.
-- Test end-to-end flow:
-    - Create users, threads, and posts
-    - Send private messages over REST/WebSocket
-    - Fetch notification feeds
-    - Test moderation actions (ban/delete)
-- Simulate multiple user interactions and verify persistence and real-time communication.
+- Use **@SpringBootTest + @AutoConfigureMockMvc** to wire up the entire Spring context for integration testing.
+- Set up **H2 in-memory DB** for isolated and repeatable tests.
+- Test end-to-end flows:
+  - Create users, tickets, and messages using the REST API.
+  - Test ticket CRUD operations, including status changes and assigning tickets to agents.
+  - Test private messaging functionality with WebSocket, ensuring that messages are sent and received in real-time.
+  - Fetch and validate notifications on ticket updates or new messages.
+  - Test user profile creation, editing, and fetching.
+  - Simulate ticket assignment to different agents and validate email notifications sent.
 
 ---
 
 ### 🚀 Performance Testing (Optional)
 
 - Measure response times using **Apache JMeter** or **Postman Collection Runner**.
-- Simulate high-traffic scenarios with concurrent user/message requests.
-- Track latency and DB query reduction by caching popular threads/posts (if added).
-- Evaluate WebSocket messaging throughput.
+- Simulate high-traffic scenarios with concurrent users performing actions such as:
+  - Creating tickets and messages.
+  - Fetching ticket details and chat history.
+  - Sending private messages through WebSocket.
+  - Handling multiple user interactions simultaneously.
+- Track system performance under load:
+  - Evaluate response times for ticket creation, message sending, and ticket updates.
+  - Analyze WebSocket message throughput and latency.
+  - Test for database query optimization using caching mechanisms for popular tickets and messages.
 
 ---
 
 ## 📘 Plan
 
-I will implement a **complete online forum system** using **Spring Boot**, adhering to clean architecture principles and
-modular MVCS (Model-View-Controller-Service) design. The platform will support core community features including *
-*discussion threads**, **user profile management**, **moderation tools**, **private messaging**, and **notifications**.
+I will implement a **complete support service platform** using **Spring Boot** with core features including **ticket management**, **real-time chat**, **email follow-ups**, and **moderation tools**. This microservice will help organizations handle customer support tickets, communicate with users via live chat, and send email notifications for follow-ups.
 
 I will create core modules such as:
 
-- `ThreadService`, `PostService`, `UserService` – to handle CRUD logic for content and users.
-- `ModerationService` – to support thread/post deletion and user bans with audit logging.
-- `MessagingService` – for real-time WebSocket-based private chat between users.
-- `NotificationService` – to deliver alerts (e.g. new messages, replies) to users.
+- `TicketService`, `ChatService`, `UserService` – to handle CRUD operations for tickets, users, and chat messages.
+- `ModerationService` – to support ticket closures, deletion, and user bans with audit logging.
+- `EmailService` – for sending email notifications related to ticket updates, assignments, and reminders.
+- `NotificationService` – to alert users about ticket changes or new messages.
 
-The application will expose REST APIs for interacting with all modules and a WebSocket endpoint (`/chat`) for messaging.
-I will use **Thymeleaf** to build a lightweight UI for features like chat, notifications, and profiles.
+The application will expose REST APIs for interacting with all modules (e.g., ticket creation, chat management) and a WebSocket endpoint (`/chat`) for real-time private messaging.
 
-I will enforce **input validation** using `@Valid` and DTOs where applicable. A centralized `GlobalExceptionHandler`
-will handle all exceptions, returning meaningful messages and status codes. Logging will be implemented using `Slf4j`,
-with care taken to avoid logging sensitive user data.
+I will use **Thymeleaf** to build a lightweight UI for features like live chat, notifications, and user profile management. The UI will also support dynamic real-time updates using WebSocket.
 
-Security will be enforced via **Spring Security**, supporting **JWT-based login/registration**, **role-based access
-control**, and **CORS configuration**. Admin-only routes (e.g. banning, ticket assignment) will be protected.
+I will enforce **input validation** using `@Valid` and DTOs where applicable, ensuring that only valid data is processed. A centralized `GlobalExceptionHandler` will handle all exceptions, providing meaningful messages and appropriate HTTP status codes for various error scenarios. Logging will be implemented using **Slf4j**, ensuring that sensitive user data is not logged.
 
-I will write **unit tests** using **JUnit 5 + Mockito** for all services and repositories. **Integration tests** will be
-developed using **Spring Boot Test + MockMvc**, simulating complete flows including user interactions, post/thread
-creation, moderation, and messaging.
+Security will be enforced via **Spring Security**, supporting **JWT-based login/registration**, **role-based access control**, and **CORS configuration**. Sensitive endpoints like ticket assignment, ticket closure, and user moderation will be restricted to authorized roles (Admin, Agent).
 
-The codebase will follow clean coding standards and all classes/methods will be documented for easy maintainability and
-scalability.
+I will write **unit tests** using **JUnit 5 + Mockito** for all services and repositories to ensure business logic correctness. **Integration tests** will be developed using **Spring Boot Test + MockMvc**, simulating end-to-end flows like ticket creation, messaging, email notifications, and moderation actions.
+
+The codebase will follow clean architecture principles, maintaining a modular structure and ensuring the application is easily maintainable and scalable. All methods and classes will be documented for future readability and extension.
+
+---
 
 ## Folder Structure
 
 ```plaintext
 support-ticket-livechat-email\src
-+---main
-|   +---java
-|   |   \---com
-|   |       \---example
-|   |           \---supportservice
-|   |               |   TuringLLMTuningSystem.java
-|   |               |   
-|   |               +---config
-|   |               |       SecurityConfig.java
-|   |               |       WebSocketConfig.java
-|   |               |       WebSocketJwtInterceptor.java
-|   |               |       
-|   |               +---controller
-|   |               |       AuthController.java
-|   |               |       ChatController.java
-|   |               |       ChatRestController.java
-|   |               |       TicketController.java
-|   |               |       
-|   |               +---dto
-|   |               |       ChatMessage.java
-|   |               |       LoginRequest.java
-|   |               |       RegisterRequest.java
-|   |               |       TicketRequest.java
-|   |               |       TicketResponse.java
-|   |               |       UserDto.java
-|   |               |       UserResponseDTO.java
-|   |               |       
-|   |               +---enums
-|   |               |       Priority.java
-|   |               |       Role.java
-|   |               |       TicketStatus.java
-|   |               |       
-|   |               +---exception
-|   |               |       GlobalExceptionHandler.java
-|   |               |       ResourceNotFoundException.java
-|   |               |       TicketNotFoundException.java
-|   |               |       
-|   |               +---filter
-|   |               |       JwtAuthenticationFilter.java
-|   |               |       
-|   |               +---model
-|   |               |       Attachment.java
-|   |               |       MessageEntity.java
-|   |               |       Ticket.java
-|   |               |       User.java
-|   |               |       UserRole.java
-|   |               |       
-|   |               +---repository
-|   |               |       MessageRepository.java
-|   |               |       TicketRepository.java
-|   |               |       UserRepository.java
-|   |               |       
-|   |               +---service
-|   |               |       ChatService.java
-|   |               |       CustomUserDetailsService.java
-|   |               |       EmailService.java
-|   |               |       JwtService.java
-|   |               |       TicketReminderScheduler.java
-|   |               |       TicketService.java
-|   |               |       UserService.java
-|   |               |       
-|   |               \---utils
-|   |                       FileStorageUtil.java
-|   |                       JwtUtil.java
-|   |                       
-|   \---resources
-|       |   application-mysql.properties
-|       |   application.properties
-|       |   
-|       \---templates
-|               index.html
-|               
-\---test
-    \---java
-        \---com
-            \---example
-                \---supportservice
-                    |   TuringLLMTuningSystem.java
-                    |   
-                    +---config
-                    |       SecurityConfigTest.java
-                    |       WebSocketConfigTest.java
-                    |       WebSocketJwtInterceptorTest.java
-                    |       
-                    +---controller
-                    |       AuthControllerIntegrationTest.java
-                    |       ChatControllerMockTest.java
-                    |       ChatRestControllerTest.java
-                    |       TicketControllerIntegrationTest.java
-                    |       WebSocketIntegrationTest.java
-                    |       
-                    +---dto
-                    |       ChatMessageTest.java
-                    |       LoginRequestTest.java
-                    |       RegisterRequestTest.java
-                    |       TicketRequestTest.java
-                    |       TicketResponseTest.java
-                    |       UserDtoTest.java
-                    |       UserResponseDTOTest.java
-                    |       
-                    +---exception
-                    |       GlobalExceptionHandlerTest.java
-                    |       
-                    +---model
-                    |       AttachmentTest.java
-                    |       UserRoleTest.java
-                    |       
-                    +---service
-                    |       ChatServiceTest.java
-                    |       CustomUserDetailsServiceTest.java
-                    |       JwtServiceTest.java
-                    |       TicketReminderScheduler.java
-                    |       
-                    \---utils
-                            JwtUtilTest.java
+|-- main
+|   |-- java
+|   |   `-- com
+|   |       `-- example
+|   |           `-- supportservice
+|   |               |-- TuringLLMTuningSystem.java
+|   |               |-- config
+|   |               |   |-- SecurityConfig.java
+|   |               |   |-- WebSocketConfig.java
+|   |               |   `-- WebSocketJwtInterceptor.java
+|   |               |-- controller
+|   |               |   |-- AuthController.java
+|   |               |   |-- ChatController.java
+|   |               |   |-- ChatRestController.java
+|   |               |   `-- TicketController.java
+|   |               |-- dto
+|   |               |   |-- ChatMessage.java
+|   |               |   |-- LoginRequest.java
+|   |               |   |-- RegisterRequest.java
+|   |               |   |-- TicketRequest.java
+|   |               |   |-- TicketResponse.java
+|   |               |   |-- UserDto.java
+|   |               |   `-- UserResponseDTO.java
+|   |               |-- enums
+|   |               |   |-- Priority.java
+|   |               |   |-- Role.java
+|   |               |   `-- TicketStatus.java
+|   |               |-- exception
+|   |               |   |-- GlobalExceptionHandler.java
+|   |               |   |-- ResourceNotFoundException.java
+|   |               |   `-- TicketNotFoundException.java
+|   |               |-- filter
+|   |               |   `-- JwtAuthenticationFilter.java
+|   |               |-- model
+|   |               |   |-- Attachment.java
+|   |               |   |-- MessageEntity.java
+|   |               |   |-- Ticket.java
+|   |               |   |-- User.java
+|   |               |   `-- UserRole.java
+|   |               |-- repository
+|   |               |   |-- MessageRepository.java
+|   |               |   |-- TicketRepository.java
+|   |               |   `-- UserRepository.java
+|   |               |-- service
+|   |               |   |-- ChatService.java
+|   |               |   |-- CustomUserDetailsService.java
+|   |               |   |-- EmailService.java
+|   |               |   |-- JwtService.java
+|   |               |   |-- TicketReminderScheduler.java
+|   |               |   |-- TicketService.java
+|   |               |   `-- UserService.java
+|   |               `-- utils
+|   |                   |-- FileStorageUtil.java
+|   |                   `-- JwtUtil.java
+|   `-- resources
+|       `-- templates
+`-- test
+    `-- java
+        `-- com
+            `-- example
+                `-- supportservice
+                    |-- TuringLLMTuningSystem.java
+                    |-- config
+                    |   |-- SecurityConfigTest.java
+                    |   |-- WebSocketConfigTest.java
+                    |   `-- WebSocketJwtInterceptorTest.java
+                    |-- controller
+                    |   |-- AuthControllerIntegrationTest.java
+                    |   |-- ChatControllerMockTest.java
+                    |   |-- ChatRestControllerTest.java
+                    |   |-- TicketControllerIntegrationTest.java
+                    |   `-- WebSocketIntegrationTest.java
+                    |-- dto
+                    |   |-- ChatMessageTest.java
+                    |   |-- LoginRequestTest.java
+                    |   |-- RegisterRequestTest.java
+                    |   |-- TicketRequestTest.java
+                    |   |-- TicketResponseTest.java
+                    |   |-- UserDtoTest.java
+                    |   `-- UserResponseDTOTest.java
+                    |-- exception
+                    |   `-- GlobalExceptionHandlerTest.java
+                    |-- model
+                    |   |-- AttachmentTest.java
+                    |   `-- UserRoleTest.java
+                    |-- service
+                    |   |-- ChatServiceTest.java
+                    |   |-- CustomUserDetailsServiceTest.java
+                    |   |-- JwtServiceTest.java
+                    |   `-- TicketReminderScheduler.java
+                    `-- utils
+                        `-- JwtUtilTest.java
+
+
                             
 
 ```
@@ -1101,8 +973,6 @@ public class EmailService {
 }
 ```
 
-Here is the documentation for the classes you provided:
-
 ---
 
 ## 🔒 **8. JwtService** : `src\main\java\com\example\supportservice\service\JwtService.java`
@@ -1436,222 +1306,6 @@ public class TicketService {
 
 ## Unit tests
 
----
-
-### Iteration number 2(for better coverage)
-
----
-
-## ⚙️ Features
-
-- **REST APIs** for user management, threads, posts, moderation, messaging, notifications, search, follow, and email
-- **JWT Authentication** for secure login, registration, and role-based access
-- **Docker** compose support
-- **Real-time messaging** using **WebSocket (SockJS + STOMP)**
-- **Thymeleaf-based chat UI** for private messaging between users
-- **User moderation tools** – delete posts/threads, ban users with audit logs
-- **Notification system** for new messages, replies, and admin actions
-- **Search functionality** for users and threads (title/content)
-- **User following system** to build a social connection
-- **Email sending support** via configured SMTP server
-- **DTO-based request/response models** for clean API contracts
-- **Global exception handling** with custom messages and error logging
-- **Role-based authorization** using `@PreAuthorize` and security filters
-- **Threaded discussion support** with comments (posts) under each thread
-- **Input validation** using `@Valid` and manual checks
-- **Modular layered architecture (Controller, Service, Repository)**
-- **Logging** throughout controllers and services using `@Slf4j`
-- **Custom exception classes** like `ResourceNotFoundException`
-- **Unit and Integration Tests** with MockMvc, Mockito, and JUnit
-- **Dynamic WebSocket routing** for user-specific subscriptions
-- **H2/Embedded DB** for testing and in-memory persistence
-- **CORS support** and security configuration via `SecurityConfig`
-- **Builder patterns and Lombok** for boilerplate reduction
-- **Extensive logging**
-- **Unit + Integration testing with 90%+ coverage**
-
----
-
-## 🔨 How to Run
-
-### 1. Clone and Navigate
-
-```bash
-git clone <your-repo-url>
-cd online-forum-system
-```
-
-### 3. Configure `docker-compose.yml`
-
-```yml
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql-container
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: SYSTEM
-      MYSQL_DATABASE: turingonlineforumsystem
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - springboot-mysql-net
-
-volumes:
-  mysql_data:
-
-networks:
-  springboot-mysql-net:
-    driver: bridge
-```
-
-### 3. Run `docker-compose.yml`
-
-```bash
-docker compose up
-```
-
-### 4.  `pom.yml`
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.2</version>
-        <relativePath/>
-    </parent>
-    <groupId>com.example</groupId>
-    <artifactId>turingOnlineForumSystem</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>Turing online forum system</name>
-    <description>
-        Build a complete Spring Boot online forum with discussion threads, user moderation tools, private messaging, and
-        community features.
-    </description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
-    <properties>
-        <java.version>17</java.version>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.24</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <version>3.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
-            <version>3.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>sockjs-client</artifactId>
-            <version>1.5.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>stomp-websocket</artifactId>
-            <version>2.3.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>bootstrap</artifactId>
-            <version>5.1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-        </plugins>
-    </build>
-
-</project>
-```
-
-### 5. Build & Test the Application
-
-Here is the documentation for the test classes:
-
----
-
 ## 🧪 **11. SecurityConfigTest** : `src\main\java\com\example\supportservice\config\SecurityConfigTest.java`
 
 ```java
@@ -1771,8 +1425,7 @@ class WebSocketConfigTest {
 
 ---
 
-## 🧪 **13. WebSocketJwtInterceptorTest
-** : `src\main\java\com\example\supportservice\config\WebSocketJwtInterceptorTest.java`
+## 🧪 **13. WebSocketJwtInterceptorTest** : `src\main\java\com\example\supportservice\config\WebSocketJwtInterceptorTest.java`
 
 ```java
 package com.example.supportservice.config;
@@ -1893,12 +1546,10 @@ public class WebSocketJwtInterceptorTest {
 }
 ```
 
-Here is the documentation for the test class:
 
 ---
 
-## 🧪 **14. AuthControllerIntegrationTest
-** : `src\main\java\com\example\supportservice\controller\AuthControllerIntegrationTest.java`
+## 🧪 **14. AuthControllerIntegrationTest** : `src\main\java\com\example\supportservice\controller\AuthControllerIntegrationTest.java`
 
 ```java
 package com.example.supportservice.controller;
@@ -2059,8 +1710,6 @@ public class AuthControllerIntegrationTest {
   }
 }
 ```
-
-Here's the documentation for the code provided:
 
 ---
 
@@ -2237,8 +1886,7 @@ class ChatRestControllerTest {
 
 ---
 
-### 🧪17 **TicketControllerIntegrationTest
-** : `src\main\java\com\example\supportservice\controller\TicketControllerIntegrationTest.java`
+### 🧪17 **TicketControllerIntegrationTest** : `src\main\java\com\example\supportservice\controller\TicketControllerIntegrationTest.java`
 
 ```java
 package com.example.supportservice.controller;
@@ -2472,7 +2120,6 @@ public class TicketControllerIntegrationTest {
 }
 ```
 
-Here is the documentation for the code provided:
 
 ---
 
@@ -2862,7 +2509,6 @@ public class TicketResponseTest {
 }
 ```
 
-Here is the documentation for the code provided (included within the code itself):
 
 ---
 
@@ -2989,6 +2635,8 @@ class GlobalExceptionHandlerTest {
 ```
 
 ---
+
+### Iteration number 2(for better coverage)
 
 ### 🧪24 **AttachmentTest** : `src\main\java\com\example\supportservice\model\AttachmentTest.java`
 
@@ -3360,7 +3008,6 @@ class JwtServiceTest {
 }
 ```
 
-Here is the documentation for the provided code, included inside the code itself:
 
 ---
 
@@ -3445,16 +3092,277 @@ class TuringLLMTuningSystemTests {
 }
 ```
 
----
 
----
-
-
----
 
 
 ---
+## ⚙️ Features
 
+- **REST APIs** for ticket management, user management, chat, notifications, and email follow-ups
+- **JWT Authentication** for secure login, registration, and role-based access control (Admin, Agent, Customer)
+- **Docker Compose** support for easy deployment with a MySQL database
+- **Real-time messaging** using **WebSocket (SockJS + STOMP)** for private chat between users
+- **Thymeleaf-based UI** for chat, notifications, and user profiles
+- **Ticket CRUD operations** – create, view, update, and delete support tickets
+- **Email notifications** for ticket updates, new messages, ticket assignment, and reminders
+- **Ticket assignment logic** – manual and auto-assignment of tickets to agents
+- **Global exception handling** with meaningful error messages and HTTP status codes
+- **Role-based authorization** using `@PreAuthorize` for controlling access to endpoints based on user roles
+- **Real-time ticket and message status updates** for better user engagement
+- **Input validation** using `@Valid` and manual validation checks for clean data processing
+- **Modular layered architecture** with Controller, Service, and Repository layers for clean code separation
+- **Logging** throughout controllers and services using `@Slf4j`
+- **Custom exception classes** such as `TicketNotFoundException`, `ResourceNotFoundException` for specific error handling
+- **Unit and Integration Tests** with MockMvc, Mockito, and JUnit for testing various functionalities and ensuring code quality
+- **Dynamic WebSocket routing** for user-specific subscriptions in the chat system
+- **H2/Embedded DB** for testing and in-memory persistence during development and CI/CD processes
+- **CORS support** and security configuration via `SecurityConfig` to allow cross-origin requests
+- **Builder patterns and Lombok** for reducing boilerplate code in entities and DTOs
+- **Comprehensive email sending support** via configured SMTP servers like Gmail, SendGrid, or Mailgun
+- **Threaded conversation support** for ticket discussions and real-time chat messages
+- **High-level modularity** with clean separation of concerns (Services, Controllers, Repositories)
+- **Extensive logging** for debugging and tracking issues with detailed logs for operations
+- **Unit and Integration tests** with over 90% test coverage for service and controller layers to ensure robustness
+
+
+## 🔨 How to Run
+
+### 1. Clone and Navigate
+
+```bash
+git clone <your-repo-url>
+cd online-forum-system
+```
+
+### 3. Configure `docker-compose.yml`
+
+```yml
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: SYSTEM
+      MYSQL_DATABASE: turingonlineforumsystem
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - springboot-mysql-net
+
+volumes:
+  mysql_data:
+
+networks:
+  springboot-mysql-net:
+    driver: bridge
+```
+
+### 3. Run `docker-compose.yml`
+
+```bash
+docker compose up
+```
+
+### 4.  `pom.yml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.2</version>
+        <relativePath/>
+    </parent>
+    <groupId>com.example</groupId>
+    <artifactId>turingOnlineForumSystem</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>Support tickets, live chat, and email follow-ups</name>
+    <description>
+      Build a Spring Boot microservice that handles support tickets, live chat, and email follow-ups.
+    </description>
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.24</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>sockjs-client</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>stomp-websocket</artifactId>
+            <version>2.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>5.1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+```
+
+---
+
+## 🎫 **11. application.properties** : `src/main/resources/application.properties`
+```plantext 
+# ========================
+# Application Information
+# ========================
+spring.application.name=karate-cucumber-junit-spring3x
+
+# ========================
+# Server Configuration
+# ========================
+server.port=8080
+
+# ========================
+# Security Configuration
+# ========================
+# Default in-memory user for basic authentication
+spring.security.user.name=admin
+spring.security.user.password=admin123
+
+
+# Set the active profile
+spring.profiles.active=mysql
+
+# ========================
+# Configure Mail Properties
+# ========================
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=rohitsunilsharma2000@gmail.com
+spring.mail.password=hckdwhvnewkfvnilewhvhewofvnlrew
+
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.debug=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+# ========================
+# mySql database connection (Database Configuration)
+# ========================
+#spring.datasource.url=jdbc:mysql://localhost:3306/turingonlineforumsystem
+spring.datasource.url=jdbc:mysql://localhost:3307/turingonlineforumsystem
+spring.datasource.username=root
+spring.datasource.password=SYSTEM
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+# Automatically create/drop schema at startup
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Enable JPA SQL logging for debugging
+spring.jpa.show-sql=true
+
+
+spring.jpa.properties.hibernate.format_sql=true
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+```
+---
+
+### 5. Build & Test the Application
 
 
 From the root directory, run:
@@ -3474,6 +3382,7 @@ To run unit tests:
 
 Ensure test coverage meets 90%+.
 
+
 ### 6. Start the Application
 
 Run the Spring Boot service:
@@ -3484,241 +3393,342 @@ Run the Spring Boot service:
 
 By default, the service runs on port 8080.
 
+
 ---
 
-## 7.🚀 Access the API Endpoints
+## 7. 🚀 Access the API Endpoints
 
-> Use cURL or Postman to interact with the cache API:
+> Use cURL or Postman to interact with the API:  
+> Replace `localhost:8080` with your running host.  
+> Include your JWT token using `--header 'Authorization: Bearer {{your_token}}'`
 
-> Replace `localhost:8080` with your running host.
+---
 
-### 🔹 1.Create a User
+### 🔹 1. Register a User
 
 ```bash
-curl --location 'http://localhost:8080/api/users' \
+curl --location 'http://localhost:8080/api/auth/register' \
 --header 'Content-Type: application/json' \
---header 'Cookie: JSESSIONID=65F781753C8BF95C3E32E9ED40FC1BB9' \
 --data-raw '{
-  "username": "alice",
-  "password": "secret",
-  "email": "alice@example.com",
-  "role": "USER"
+  "username": "admin_user",
+  "email": "admin@example.com",
+  "password": "admin123",
+  "role": "ADMIN"
 }'
 ```
 
-### 🔹 View User Profile
+---
+
+### 🔹 2. Login a User
 
 ```bash
-curl --location 'http://localhost:8080/api/users/1' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Update User Profile
-
-```bash
-curl --location --request PUT 'http://localhost:8080/api/users/1' \
+curl --location 'http://localhost:8080/api/auth/login' \
 --header 'Content-Type: application/json' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF' \
 --data-raw '{
-    "username": "newUsername",
-    "email": "newemail@example.com"
+  "username": "admin@example.com",
+  "password": "admin123"
 }'
 ```
 
-### 🔹 Create a Thread (Requires user ID — e.g. user with id: 1)
+---
+
+### 🔹 3. Get User Profile
 
 ```bash
-curl --location 'http://localhost:8080/api/threads' \
+curl --location 'http://localhost:8080/api/auth/profile' \
+--header 'Authorization: Bearer {{your_token}}'
+```
+
+---
+
+### 🔹 4. Update User Profile
+
+```bash
+curl --location --request PUT 'http://localhost:8080/api/auth/profile' \
 --header 'Content-Type: application/json' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF' \
+--header 'Authorization: Bearer {{your_token}}' \
+--data-raw '{
+  "username": "updated_name",
+  "email": "updated_email@example.com"
+}'
+```
+
+---
+
+### 🔹 5. Create a Ticket
+
+```bash
+curl --location 'http://localhost:8080/api/tickets' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer {{your_token}}' \
 --data '{
-    "title": "Spring Boot Tips",
-    "content": "Let'\''s discuss Spring Boot best practices.",
-    "user": {
-        "id": 1
-    }
+  "subject": "App crash on startup",
+  "description": "The app crashes every time I try to open it.",
+  "priority": "HIGH"
 }'
 ```
 
-### 🔹 Create a Post for that Thread (Assuming thread with id: 1 and user with id: 1
+---
+
+### 🔹 6. Get a Ticket by ID
 
 ```bash
-curl --location 'http://localhost:8080/api/posts/thread/1' \
---header 'Content-Type: application/json' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF' \
---data-raw '{
-    "content": "I love using @Slf4j in services!",
-    "user": {
-        "id": 1
-    }
-}'
-```
-
-### 🔹 Get Posts of a Thread
-
-```bash
-curl --location 'http://localhost:8080/api/posts/thread/1' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Ban User bash not working
-
-```bash
-curl --location --request POST 'http://localhost:8080/api/moderation/ban-user/1?reason=Spamming' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹Delete Thread
-
-```bash
-curl --location --request DELETE 'http://localhost:8080/api/moderation/thread/1?moderatorId=99&reason=Duplicate%20Topic' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 View moderation history
-
-```bash
-curl --location 'http://localhost:8080/api/moderation/history/1' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Get Message History
-
-```bash
-curl --location 'http://localhost:8080/api/messages/history?senderId=1&receiverId=2' \
---header 'Accept: application/json' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Send Message via WebSocket (STOMP)
-
-```bash
-curl --location 'http://localhost:8080/api/messages/history?senderId=1&receiverId=2' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Following Other Users
-
-```bash
-curl --location --request POST 'http://localhost:8080/api/follow?followerId=1&followingId=2' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 1Get Following List of a User
-
-```bash
-curl --location 'http://localhost:8080/api/follow/1/following' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Get Notifications for a User
-
-```bash
-curl --location 'http://localhost:8080/api/follow/1/following' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Search Users by Keyword
-
-```bash
-curl --location 'http://localhost:8080/api/search/users?q=al' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
-```
-
-### 🔹 Search Threads by Title or Content
-
-```bash
-curl --location 'http://localhost:8080/api/search/threads?q=message' \
---header 'Cookie: JSESSIONID=D4BBB3AAE9742E64C1E8F3B18EB149DF'
+curl --location 'http://localhost:8080/api/tickets/1' \
+--header 'Authorization: Bearer {{your_token}}'
 ```
 
 ---
 
-### Time and Space Complexity Analysis
+### 🔹 7. Upload File Attachment to a Ticket
+
+```bash
+curl --location --request POST 'http://localhost:8080/api/tickets/1/attachments' \
+--header 'Authorization: Bearer {{your_token}}' \
+--form 'file=@"path/to/your/file.png"'
+```
 
 ---
 
-### 🧵 **Thread and Post Operations**
+### 🔹 8. Manual Assignment API (Admin Only)
 
-| Operation                 | Time Complexity | Space Complexity | Notes                                         |
-|---------------------------|-----------------|------------------|-----------------------------------------------|
-| Create Thread / Post      | O(1)            | O(1)             | Basic entity insert with no heavy computation |
-| Fetch All Threads / Posts | O(n)            | O(n)             | `n` = number of threads/posts                 |
-| Update Thread / Post      | O(1)            | O(1)             | Simple update using ID                        |
-| Delete Thread with Posts  | O(p)            | O(p)             | `p` = number of posts under thread            |
+```bash
+curl --location --request POST 'http://localhost:8080/api/tickets/1/assign?agentId=2' \
+--header 'Authorization: Bearer {{your_token}}'
+```
 
 ---
 
-### 💬 **Private Messaging**
+### 🔹 9. Auto Assignment API (Admin Only)
 
-| Operation                        | Time Complexity | Space Complexity | Notes                                 |
-|----------------------------------|-----------------|------------------|---------------------------------------|
-| Send Message                     | O(1)            | O(1)             | Save + optional notification creation |
-| Get Chat History (User1 ↔ User2) | O(m)            | O(m)             | `m` = number of messages exchanged    |
-
----
-
-### 🔔 **Notifications**
-
-| Operation                        | Time Complexity | Space Complexity | Notes                                  |
-|----------------------------------|-----------------|------------------|----------------------------------------|
-| Send Notification                | O(1)            | O(1)             | Single DB insert                       |
-| Get All Notifications (user)     | O(k)            | O(k)             | `k` = number of notifications for user |
-| Mark as Read/Delete Notification | O(1)            | O(1)             | Lookup by ID and update/delete         |
+```bash
+curl --location --request POST 'http://localhost:8080/api/tickets/1/auto-assign' \
+--header 'Authorization: Bearer {{your_token}}'
+```
 
 ---
 
-### 🛡️ **Moderation**
-
-| Operation                       | Time Complexity | Space Complexity | Notes                          |
-|---------------------------------|-----------------|------------------|--------------------------------|
-| Ban User / Delete Post / Thread | O(1) - O(p)     | O(p)             | O(p) if multiple posts deleted |
-| Get Moderation History (user)   | O(h)            | O(h)             | `h` = moderation logs for user |
+ 🎯 **WebSocket Chat API Endpoints** :-
 
 ---
 
-### 👥 **User & Community**
+## 8. 🔌 WebSocket Chat Endpoints
 
-| Operation              | Time Complexity | Space Complexity | Notes                              |
-|------------------------|-----------------|------------------|------------------------------------|
-| Follow/Unfollow User   | O(1)            | O(1)             | Insert/Delete follow relation      |
-| Get Following List     | O(f)            | O(f)             | `f` = number of followed users     |
-| Search Users / Threads | O(n)            | O(r)             | `n` = total records, `r` = results |
+> WebSocket URL:  
+> `ws://localhost:8080/chat/websocket`  
+> Add JWT as header: `Authorization: Bearer {{your_token}}`  
+> Use [Postman WebSocket](https://learning.postman.com/docs/sending-requests/supported-api-frameworks/websocket/) or frontend clients.
+
+---
+
+### 🔹 1. Connect to WebSocket
+
+```
+WebSocket URL:
+ws://localhost:8080/chat/websocket
+```
+
+Headers:
+
+```json
+{
+  "Authorization": "Bearer {{your_token}}"
+}
+```
+
+---
+
+### 🔹 2. Subscribe to Public Chat Topic
+
+```json
+{
+  "command": "subscribe",
+  "headers": {
+    "id": "sub-0",
+    "destination": "/topic/public"
+  }
+}
+```
+
+✅ This subscribes you to broadcasted messages (public chat or notifications).
+
+---
+
+### 🔹 3. Send a Chat Message
+
+```json
+{
+  "command": "send",
+  "headers": {
+    "destination": "/app/chat.send"
+  },
+  "body": "{\"sender\":\"customer@example.com\",\"receiver\":\"agent@example.com\",\"content\":\"Hello Agent!\",\"timestamp\":\"2025-03-23T21:00:00Z\",\"type\":\"CHAT\"}"
+}
+```
+
+🧠 Remember: the `body` is a **JSON string inside a JSON object**.
+
+---
+
+### 🔹 4. Send a Join Notification
+
+```json
+{
+  "command": "send",
+  "headers": {
+    "destination": "/app/chat.newUser"
+  },
+  "body": "{\"sender\":\"customer@example.com\",\"type\":\"JOIN\"}"
+}
+```
+
+👥 Notifies that a user has joined the chat.
+
+---
+
+### 🔹 5. Receive Chat Message (example response)
+
+```json
+{
+  "sender": "agent@example.com",
+  "receiver": "customer@example.com",
+  "content": "Hello, how can I assist?",
+  "timestamp": "2025-03-23T21:00:10Z",
+  "type": "CHAT"
+}
+```
+
+---
+
+###  ⏱ Time and Space Complexity Analysis 🧠
+
+
+---
+
+
+### 🔹 1. Register User
+
+- **Time Complexity:** `O(1)` – inserts a user into the DB.
+- **Space Complexity:** `O(1)` – uses constant memory.
+
+---
+
+### 🔹 2. Login User (JWT Auth)
+
+- **Time Complexity:** `O(1)` – user lookup and JWT token generation.
+- **Space Complexity:** `O(1)` – small space for token generation.
+
+---
+
+### 🔹 3. Get User Profile
+
+- **Time Complexity:** `O(1)` – fetch user by email (indexed field).
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 4. Update User Profile
+
+- **Time Complexity:** `O(1)` – single record update.
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 5. Create a Ticket
+
+- **Time Complexity:** `O(1)` – inserts a new ticket with initial fields.
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 6. Get Ticket by ID
+
+- **Time Complexity:** `O(1)` – primary key lookup.
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 7. Upload File Attachment to a Ticket
+
+- **Time Complexity:**
+  - File saving: `O(n)` where `n = file size`.
+  - DB update: `O(1)`
+- **Space Complexity:** `O(n)` – depends on file size.
+
+---
+
+### 🔹 8. Manual Ticket Assignment to Agent
+
+- **Time Complexity:** `O(1)` – update ticket with agent ID.
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 9. Auto Assignment to Agent
+
+- **Time Complexity:**
+  - Agent lookup: `O(k)` where `k = number of agents`.
+  - Random pick + update: `O(1)`
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 10. WebSocket Chat – Send Message
+
+- **Time Complexity:** `O(1)` – publish to destination.
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 11. WebSocket Chat – Subscribe to Topic
+
+- **Time Complexity:** `O(1)` – subscription registration.
+- **Space Complexity:** `O(1)`
+
+---
+
+### 🔹 12. WebSocket Chat – Message History Retrieval
+
+- **Time Complexity:** `O(m)` – fetch all messages for user or pair.
+- **Space Complexity:** `O(m)` – message list stored in memory.
+
+---
+
+### 🔹 13. Email Notifications (Ticket Created / Status Changed / Assigned)
+
+- **Time Complexity:**
+  - Template load + send email: `O(1)`
+- **Space Complexity:** `O(1)`
 
 ---
 
 ## 📊 Code Coverage Reports
 
 - ✅ 1st
-  Iteration: [Coverage Screenshot](https://drive.google.com/file/d/13MWnsCL0vlw0rJE0hk-3QoZIbeBy_f3c/view?usp=drive_link)
+  Iteration: [Coverage Screenshot](https://drive.google.com/file/d/1l95Eoz2u6XCmRoQtE0nMBid1GAndU6T8/view?usp=drive_link)
 - ✅ 2nd
-  Iteration: [Coverage Screenshot](https://drive.google.com/file/d/1OAdCQviFS3kqaEiYiVLRZz7ssyCpW3hO/view?usp=drive_link)
+  Iteration: [Coverage Screenshot](https://drive.google.com/file/d/1swsVQzhJXqczKt8ljiBPF5z5LcL_AV-v/view?usp=drive_link)
 
 ---
 
 ## 📦 Download Code
 
-[👉 Click to Download the Project Source Code](https://drive.google.com/file/d/18x1FymwcoO10PyiZMMKr_-PO1GdYMXbC/view?usp=drive_link)
+[👉 Click to Download the Project Source Code](https://drive.google.com/file/d/1V_ggn0gIMbjGr2tudKLUfNrC2GjLvnFi/view?usp=drive_link)
+
 
 ---
-
 
 ## 🧠 Conclusion
----
 
-The **Spring Boot Online Forum System** demonstrates efficient **constant to linear time complexity** across all core
-operations. The system:
+The **Spring Boot Support Ticket System** efficiently manages user registration, ticketing, real-time messaging, and email notifications with **constant to linear time complexity** across most endpoints. The system:
 
-- Handles user interaction at scale with optimized DB queries.
-- Uses **lazy loading** and **pagination** where applicable to prevent memory bloat.
-- Guarantees **data consistency** and **low latency** through minimal joins and eager moderation logging.
-- Provides real-time communication and notification delivery with negligible overhead via **WebSocket** and *
-  *event-driven triggers**.
+✅ **Supports scalable user interaction** with optimized indexed database queries and role-based access control.  
+✅ **Ensures data integrity and low latency**, leveraging lazy loading and transactional consistency across ticket and chat workflows.  
+✅ **Delivers real-time communication and notifications** with minimal overhead using **WebSocket + STOMP**, and asynchronous event-driven logic for responsiveness.  
+✅ **Handles file uploads and large datasets** efficiently through streaming and controlled attachment handling.  
+✅ **Provides maintainability and testability**, with modularized services, proper logging, exception handling, and JWT-based security.
 
-With good database indexing, caching (optional Redis), and async logging or messaging, this architecture ensures *
-*scalability and performance** for high-traffic production environments.
+With proper **database indexing**, optional **caching (e.g., Redis)**, **async email/event processing**, and a robust **microservice-friendly design**, the application architecture ensures **high performance and scalability** for production-ready, enterprise-level use cases. 🚀
 
 ---
 
-```
 
