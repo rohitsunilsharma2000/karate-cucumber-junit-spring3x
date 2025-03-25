@@ -9,10 +9,10 @@
 			<relativePath/> <!-- lookup parent from repository -->
 		</parent>
 		<groupId>com.example</groupId>
-		<artifactId>turingLLMTuningSystem</artifactId>
+		<artifactId>notificationservice</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<name>Turing LLM Tuning System</name>
-		<description>Turing LLM Tuning System</description>
+		<name>notificationservice</name>
+		<description>It integrates multiple notification channels (email, SMS, push).</description>
 		<url/>
 		<licenses>
 			<license/>
