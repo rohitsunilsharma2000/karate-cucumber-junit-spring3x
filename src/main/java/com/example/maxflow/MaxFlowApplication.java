@@ -1,12 +1,12 @@
-package com.example.turingLLMTuningSystem;
+package com.example.maxflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TuringLLMTuningSystem {
+public class MaxFlowApplication {
 
     public static void main ( String[] args ) {
-        SpringApplication.run(TuringLLMTuningSystem.class , args);
+        SpringApplication.run(MaxFlowApplication.class , args);
     }
 }
