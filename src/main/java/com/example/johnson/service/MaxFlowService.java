@@ -1,7 +1,7 @@
-package com.example.maxflow.service;
+package com.example.johnson.service;
 
-import com.example.maxflow.exception.MaxFlowException;
-import com.example.maxflow.model.Graph;
+import com.example.johnson.exception.MaxFlowException;
+import com.example.johnson.model.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

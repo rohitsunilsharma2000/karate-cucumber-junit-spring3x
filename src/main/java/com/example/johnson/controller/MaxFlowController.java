@@ -1,7 +1,7 @@
-package com.example.maxflow.controller;
+package com.example.johnson.controller;
 
-import com.example.maxflow.model.Graph;
-import com.example.maxflow.service.MaxFlowService;
+import com.example.johnson.model.Graph;
+import com.example.johnson.service.MaxFlowService;
 import org.springframework.web.bind.annotation.*;
 
 /**

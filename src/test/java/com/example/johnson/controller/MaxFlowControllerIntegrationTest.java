@@ -1,6 +1,6 @@
-package com.example.maxflow.controller;
+package com.example.johnson.controller;
 
-import com.example.maxflow.model.Graph;
+import com.example.johnson.model.Graph;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

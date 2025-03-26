@@ -1,4 +1,4 @@
-package com.example.maxflow.model;
+package com.example.johnson.model;
 
 import java.util.HashMap;
 import java.util.Map;
