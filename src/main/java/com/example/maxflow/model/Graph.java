@@ -1,5 +1,7 @@
 package com.example.maxflow.model;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,14 +32,13 @@ import java.util.Map;
  *     <li><b>Pass:</b> Successfully initializes the graph with the specified number of vertices and correctly adds edges with their capacities.</li>
  *     <li><b>Fail:</b> Fails to add an edge if the specified source or destination vertices are not valid (i.e., outside the range of 0 to vertices - 1).</li>
  * </ul>
- *
- *
  */
 public class Graph {
 
     /**
      * The total number of vertices in the graph.
      */
+    @Min(value = 1, message = "There must be at least one vertex in the graph.")
     private final int vertices;
 
     /**
@@ -47,6 +48,7 @@ public class Graph {
      * and the value is the capacity of the edge from the source vertex (the key in the outer map) to that destination.
      * </p>
      */
+    @NotNull(message = "Adjacency matrix must not be null.")
     private final Map<Integer, Map<Integer, Integer>> adjMatrix;
 
     /**
@@ -71,22 +73,13 @@ public class Graph {
      * If an edge already exists, its capacity is updated to the new value.
      * </p>
      *
-     * <p><b>Parameters:</b></p>
-     * <ul>
-     *     <li><strong>source</strong> (int): The vertex from which the edge originates.</li>
-     *     <li><strong>destination</strong> (int): The vertex to which the edge points.</li>
-     *     <li><strong>capacity</strong> (int): The capacity of the edge, must be non-negative.</li>
-     * </ul>
-     *
-     * <p><b>Pass Condition:</b> The edge is successfully added or updated in the adjacency matrix.</p>
-     * <p><b>Fail Condition:</b> The edge is not added if either the source or destination vertex is invalid.</p>
-     *
      * @param source      the source vertex of the edge.
      * @param destination the destination vertex of the edge.
-     * @param capacity    the capacity of the edge.
+     * @param capacity    the capacity of the edge; must be non-negative.
      */
     public void addEdge(int source, int destination, int capacity) {
-        // Consider adding validations for source and destination range if needed
+        // Consider adding validations for source and destination range if needed.
+        // Here, we assume the calling code ensures that indices are valid.
         adjMatrix.get(source).put(destination, capacity);
     }
 
@@ -106,9 +99,6 @@ public class Graph {
 
     /**
      * Returns the entire adjacency matrix representing the graph.
-     * <p>
-     * The returned matrix is a map where each key is a vertex and each value is another map representing the edges and capacities.
-     * </p>
      *
      * @return the adjacency matrix of the graph.
      */
