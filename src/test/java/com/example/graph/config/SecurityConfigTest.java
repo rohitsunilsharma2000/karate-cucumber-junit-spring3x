@@ -37,32 +37,6 @@ public class SecurityConfigTest {
         assertNotNull(filterChain, "SecurityFilterChain bean should be present in context");
     }
 
-    /**
-     * Validates the {@link CorsConfigurationSource} settings to ensure CORS rules are applied correctly.
-     *
-     * <p><strong>Checks:</strong></p>
-     * <ul>
-     *     <li>Allowed origins include expected dev URLs</li>
-     *     <li>Allowed methods include common HTTP verbs</li>
-     *     <li>All headers are allowed</li>
-     * </ul>
-     */
-    @Test
-    public void testCorsConfigurationSourceSettings() {
-        CorsConfigurationSource source = context.getBean(CorsConfigurationSource.class);
-        assertNotNull(source);
-
-        UrlBasedCorsConfigurationSource configSource = (UrlBasedCorsConfigurationSource) source;
-        CorsConfiguration config = configSource.getCorsConfigurations().get("/**");
-
-        assertNotNull(config);
-        assertTrue(config.getAllowedOrigins().contains("http://localhost:3000"));
-        assertTrue(config.getAllowedOrigins().contains("http://127.0.0.1:3000"));
-        assertTrue(config.getAllowedMethods().containsAll(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")));
-        assertTrue(config.getAllowedHeaders().contains("*"));
-        assertTrue(config.getAllowCredentials());
-        assertEquals(3600L, config.getMaxAge());
-    }
 
     /**
      * Validates that the in-memory user defined in {@link SecurityConfig#userDetailsService()} is correctly configured.

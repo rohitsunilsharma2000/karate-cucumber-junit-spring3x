@@ -1,6 +1,5 @@
 package com.example.graph.service;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -8,14 +7,43 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Service class for analyzing graph integrity by detecting critical elements like
+ * bridges and articulation points in an undirected graph.
+ *
+ * <p>
+ * This service implements Depth First Search (DFS)-based algorithms for:
+ * <ul>
+ *   <li><strong>Bridge Detection:</strong> Identifying edges which, if removed, would increase the number of connected components.</li>
+ *   <li><strong>Articulation Point Detection:</strong> Identifying vertices which, if removed, would increase the number of connected components.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * It supports the analysis of any undirected graph represented by an edge list and a number of vertices.
+ * </p>
+ *
+ * <p><strong>Logging:</strong> SLF4J is used to log method executions, DFS traversal details, and outcomes at DEBUG and INFO levels.</p>
+ *
+ * @author
+ * @since 2025-03-26
+ */
 @Service
 public class GraphService {
     private static final Logger logger = LoggerFactory.getLogger(GraphService.class);
     private int time;
 
+    /**
+     * Detects all bridges in an undirected graph.
+     *
+     * @param vertices the number of vertices in the graph (indexed from 0 to vertices - 1)
+     * @param edges    a list of undirected edges, where each edge is a list of two integers
+     * @return a list of string representations of bridge edges (e.g., "1-3")
+     */
     public List<String> findBridges(int vertices, List<List<Integer>> edges) {
         logger.debug("Initializing bridge detection with {} vertices and edges: {}", vertices, edges);
         time = 0;
+
         List<List<Integer>> adj = new ArrayList<>();
         for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
 
@@ -42,6 +70,9 @@ public class GraphService {
         return result;
     }
 
+    /**
+     * DFS utility for bridge detection.
+     */
     private void dfsBridge(int u, int parent, boolean[] visited, int[] disc, int[] low,
                            List<List<Integer>> bridges, List<List<Integer>> adj) {
         visited[u] = true;
@@ -65,9 +96,17 @@ public class GraphService {
         }
     }
 
+    /**
+     * Detects all articulation points in an undirected graph.
+     *
+     * @param vertices the number of vertices in the graph
+     * @param edges    the list of undirected edges
+     * @return a list of articulation point vertex indices
+     */
     public List<Integer> findArticulationPoints(int vertices, List<List<Integer>> edges) {
         logger.debug("Initializing articulation point detection with {} vertices and edges: {}", vertices, edges);
         time = 0;
+
         List<List<Integer>> adj = new ArrayList<>();
         for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
 
@@ -93,11 +132,17 @@ public class GraphService {
         }
 
         List<Integer> articulationPoints = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) if (ap[i]) articulationPoints.add(i);
+        for (int i = 0; i < vertices; i++) {
+            if (ap[i]) articulationPoints.add(i);
+        }
+
         logger.info("Total articulation points found: {}", articulationPoints.size());
         return articulationPoints;
     }
 
+    /**
+     * DFS utility for articulation point detection.
+     */
     private void dfsAP(int u, boolean[] visited, int[] disc, int[] low, boolean[] ap,
                        int[] parent, int[] children, List<List<Integer>> adj) {
         visited[u] = true;

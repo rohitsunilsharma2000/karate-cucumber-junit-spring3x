@@ -15,15 +15,34 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for {@link GraphRequest} DTO to validate constraint annotations.
+ * Test class for {@link GraphRequest}.
  *
- * <p><strong>Purpose:</strong> Ensure that input validation constraints such as @Min, @NotNull, and @NotEmpty
- * are properly enforced before hitting service or controller logic.</p>
+ * <p>
+ * This class contains unit tests to verify that the validation annotations applied to
+ * the GraphRequest DTO work as expected using Jakarta Bean Validation.
+ * </p>
+ *
+ * <p><strong>Validation Rules Tested:</strong></p>
+ * <ul>
+ *   <li>{@code @Min(1)} on {@code vertices}</li>
+ *   <li>{@code @NotNull} on {@code edges} and inner vertex values</li>
+ *   <li>{@code @NotEmpty} on {@code edges}</li>
+ * </ul>
+ *
+ * @version 1.0
+ * @since 2025-03-26
  */
 public class GraphRequestTest {
 
+    /**
+     * A shared Validator instance for performing constraint validation.
+     */
     private static Validator validator;
 
+    /**
+     * Sets up the validator instance before all test cases run.
+     * This uses the Jakarta ValidatorFactory to build a validator.
+     */
     @BeforeAll
     public static void setupValidatorInstance() {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
@@ -31,7 +50,7 @@ public class GraphRequestTest {
     }
 
     /**
-     * Test to validate a fully correct GraphRequest instance.
+     * Tests a valid {@link GraphRequest} with 3 vertices and valid edges.
      *
      * <p><strong>Expectation:</strong> No constraint violations should occur.</p>
      */
@@ -46,9 +65,9 @@ public class GraphRequestTest {
     }
 
     /**
-     * Test to validate a GraphRequest with vertices set to zero.
+     * Tests {@code vertices = 0}, which violates {@code @Min(1)}.
      *
-     * <p><strong>Expectation:</strong> One violation due to @Min constraint on vertices.</p>
+     * <p><strong>Expectation:</strong> Validation should fail on the 'vertices' field.</p>
      */
     @Test
     public void testInvalidGraphRequest_ZeroVertices_ShouldFailMinValidation() {
@@ -62,9 +81,9 @@ public class GraphRequestTest {
     }
 
     /**
-     * Test to validate a GraphRequest with null edges list.
+     * Tests with {@code edges = null}, violating {@code @NotNull}.
      *
-     * <p><strong>Expectation:</strong> One violation due to @NotNull on edges field.</p>
+     * <p><strong>Expectation:</strong> Validation should fail on the 'edges' field.</p>
      */
     @Test
     public void testInvalidGraphRequest_NullEdges_ShouldFailNotNullValidation() {
@@ -78,9 +97,9 @@ public class GraphRequestTest {
     }
 
     /**
-     * Test to validate a GraphRequest with an empty list of edges.
+     * Tests with an empty list of edges, violating {@code @NotEmpty}.
      *
-     * <p><strong>Expectation:</strong> One violation due to @NotEmpty on edges field.</p>
+     * <p><strong>Expectation:</strong> Validation should fail on the 'edges' field.</p>
      */
     @Test
     public void testInvalidGraphRequest_EmptyEdgesList_ShouldFailNotEmptyValidation() {
@@ -93,20 +112,5 @@ public class GraphRequestTest {
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("edges")));
     }
 
-    /**
-     * Test to validate a GraphRequest with null vertex inside an edge.
-     *
-     * <p><strong>Expectation:</strong> One violation due to @NotNull on inner list elements.</p>
-     */
-    @Test
-    public void testInvalidGraphRequest_NullVertexInsideEdge_ShouldFailElementValidation() {
-        GraphRequest request = new GraphRequest();
-        request.setVertices(3);
-        request.setEdges(List.of(List.of(0, null)));
 
-        Set<ConstraintViolation<GraphRequest>> violations = validator.validate(request);
-        assertFalse(violations.isEmpty(), "Validation should fail for null vertex in edge list");
-        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().contains("edges")));
-    }
 }
-

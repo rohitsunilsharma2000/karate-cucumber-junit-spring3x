@@ -7,12 +7,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class GraphApplication {
-    private static final Logger logger = LoggerFactory.getLogger(GraphApplication.class);
+public class GraphIntegrityApp {
+    private static final Logger logger = LoggerFactory.getLogger(GraphIntegrityApp.class);
 
     public static void main(String[] args) {
         logger.info("Starting Graph Application...");
-        SpringApplication.run(GraphApplication.class, args);
+        SpringApplication.run(GraphIntegrityApp.class, args);
         logger.info("Graph Application started successfully.");
     }
 }
