@@ -1,4 +1,4 @@
-package com.example.johnson.exception;
+package com.example.maxflow.exception;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

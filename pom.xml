@@ -12,7 +12,7 @@
 		<artifactId>maxflow</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<name>MaxFlowApplication</name>
-		<description>Develop a Spring Boot REST API that uses the Edmonds‑Karp algorithm to compute max flow in networks.</description>
+		<description>Implement the Ford‑Fulkerson algorithm for maximum flow in a Spring Boot service.</description>
 		<url/>
 		<licenses>
 			<license/>
