@@ -1,9 +1,6 @@
 package com.example.notificationservice.exception;
 
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,8 +10,18 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 /**
  * Unit tests for {@link GlobalExceptionHandler}.
+ * <p>
+ * This test class verifies that the {@link GlobalExceptionHandler} correctly handles HTTP client errors (4xx)
+ * and server errors (5xx) by mapping exceptions to structured error responses.
+ * </p>
+ *
+ * @version 1.0
+ * @since 2025-03-26
  */
 public class GlobalExceptionHandlerTest {
 
@@ -24,13 +31,14 @@ public class GlobalExceptionHandlerTest {
     /**
      * Tests the handling of a HttpClientErrorException (4xx errors).
      * <p>
-     * This method creates a simulated 404 Not Found exception and verifies that the
-     * GlobalExceptionHandler returns a response with the correct status code and error details.
+     * <strong>Description:</strong> This test simulates a 404 Not Found exception and verifies that the
+     * GlobalExceptionHandler returns a ResponseEntity with status 404 and correct error details.
      * </p>
      */
     @Test
+    @DisplayName("Test handling of HttpClientErrorException (404 Not Found)")
     public void testHandleHttpClientErrorException() {
-        // Create a simulated HttpClientErrorException with status 404 Not Found.
+        // Arrange: Create a simulated HttpClientErrorException with 404 status.
         HttpClientErrorException clientErrorException = HttpClientErrorException.create(
                 HttpStatus.NOT_FOUND, "Not Found", null, null, null);
 
@@ -38,35 +46,33 @@ public class GlobalExceptionHandlerTest {
         WebRequest mockRequest = mock(WebRequest.class);
         when(mockRequest.getDescription(false)).thenReturn("uri=/api/test");
 
-        // Call the handler method for HttpClientErrorException.
+        // Act: Call the handler method for HttpClientErrorException.
         ResponseEntity<Map<String, Object>> responseEntity =
                 exceptionHandler.handleHttpClientErrorException(clientErrorException, mockRequest);
 
-        // Assert that the response status code is 404 (Not Found).
-        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        // Assert: Verify that the response status code is 404 and the error details match the expected values.
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode(), "Response status should be 404 Not Found");
 
-        // Retrieve the error details from the response body.
         Map<String, Object> errorDetails = responseEntity.getBody();
         assertNotNull(errorDetails, "Error details should not be null");
-
-        // Verify that the error details contain the expected values.
-        assertEquals("Not Found", errorDetails.get("message"));
-        assertEquals(404, errorDetails.get("status"));
-        assertEquals("Not Found", errorDetails.get("error"));
-        assertEquals("uri=/api/test", errorDetails.get("path"));
+        assertEquals("Not Found", errorDetails.get("message"), "Error message should match");
+        assertEquals(404, errorDetails.get("status"), "Status code in error details should be 404");
+        assertEquals("Not Found", errorDetails.get("error"), "Error description should match");
+        assertEquals("uri=/api/test", errorDetails.get("path"), "Path should match the mock request description");
         assertNotNull(errorDetails.get("timestamp"), "Timestamp should not be null");
     }
 
     /**
      * Tests the handling of a HttpServerErrorException (5xx errors).
      * <p>
-     * This method creates a simulated 500 Internal Server Error exception and verifies that the
-     * GlobalExceptionHandler returns a response with the correct status code and error details.
+     * <strong>Description:</strong> This test simulates a 500 Internal Server Error exception and verifies that the
+     * GlobalExceptionHandler returns a ResponseEntity with status 500 and correct error details.
      * </p>
      */
     @Test
+    @DisplayName("Test handling of HttpServerErrorException (500 Internal Server Error)")
     public void testHandleHttpServerErrorException() {
-        // Create a simulated HttpServerErrorException with status 500 Internal Server Error.
+        // Arrange: Create a simulated HttpServerErrorException with 500 status.
         HttpServerErrorException serverErrorException = HttpServerErrorException.create(
                 HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", null, null, null);
 
@@ -74,22 +80,19 @@ public class GlobalExceptionHandlerTest {
         WebRequest mockRequest = mock(WebRequest.class);
         when(mockRequest.getDescription(false)).thenReturn("uri=/api/test");
 
-        // Call the handler method for HttpServerErrorException.
+        // Act: Call the handler method for HttpServerErrorException.
         ResponseEntity<Map<String, Object>> responseEntity =
                 exceptionHandler.handleHttpServerErrorException(serverErrorException, mockRequest);
 
-        // Assert that the response status code is 500 (Internal Server Error).
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
+        // Assert: Verify that the response status code is 500 and the error details match the expected values.
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode(), "Response status should be 500 Internal Server Error");
 
-        // Retrieve the error details from the response body.
         Map<String, Object> errorDetails = responseEntity.getBody();
         assertNotNull(errorDetails, "Error details should not be null");
-
-        // Verify that the error details contain the expected values.
-        assertEquals("Internal Server Error", errorDetails.get("message"));
-        assertEquals(500, errorDetails.get("status"));
-        assertEquals("Internal Server Error", errorDetails.get("error"));
-        assertEquals("uri=/api/test", errorDetails.get("path"));
+        assertEquals("Internal Server Error", errorDetails.get("message"), "Error message should match");
+        assertEquals(500, errorDetails.get("status"), "Status code in error details should be 500");
+        assertEquals("Internal Server Error", errorDetails.get("error"), "Error description should match");
+        assertEquals("uri=/api/test", errorDetails.get("path"), "Path should match the mock request description");
         assertNotNull(errorDetails.get("timestamp"), "Timestamp should not be null");
     }
 }
