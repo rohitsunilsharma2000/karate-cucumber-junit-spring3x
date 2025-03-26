@@ -75,7 +75,7 @@ public class MaxFlowControllerIntegrationTest {
         ResponseEntity<String> response = restTemplate.postForEntity(url(), request, String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).contains("Request or graph cannot be null");
+        assertThat(response.getBody()).contains("Graph must not be null.");
     }
 
     @Test
@@ -123,7 +123,7 @@ public class MaxFlowControllerIntegrationTest {
         ResponseEntity<String> response = restTemplate.postForEntity(url(), request, String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).contains("Invalid source index");
+        assertThat(response.getBody()).contains("Source vertex index must be non-negative.");
     }
 
     @Test
