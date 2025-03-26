@@ -51,7 +51,7 @@ Develop a Spring Boot REST API that computes the maximum flow in a network using
     - Develop integration tests (e.g., `MaxFlowControllerIntegrationTest`) using TestRestTemplate/MockMvc to simulate REST calls and validate API behavior.
 
 
----
+
 ---
 
 **Dependency Requirements:**
@@ -901,7 +901,7 @@ public class SecurityConfig {
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.24</version>
+			<version>1.18.30</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- For Jakarta Bean Validation -->
