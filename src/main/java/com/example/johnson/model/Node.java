@@ -1,10 +1,15 @@
 package com.example.johnson.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Objects;
 
 /**
  * Helper class to represent a node in the priority queue.
  */
+@Getter
+@Setter
 public class Node implements Comparable<Node> {
     private final String vertex;
     private final int distance;
@@ -14,13 +19,7 @@ public class Node implements Comparable<Node> {
         this.distance = distance;
     }
 
-    public String getVertex() {
-        return vertex;
-    }
 
-    public int getDistance() {
-        return distance;
-    }
 
     @Override
     public int compareTo(Node other) {

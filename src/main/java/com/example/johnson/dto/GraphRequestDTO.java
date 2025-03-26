@@ -1,13 +1,26 @@
 package com.example.johnson.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
 
 /**
- * DTO representing the input graph data.
+ * Data Transfer Object representing the input graph data.
+ * <p>
+ * Contains a list of vertices and a list of edges that define the graph.
+ * The vertices list must not be empty. Each edge must be valid with non-null endpoints.
+ * </p>
  */
 public class GraphRequestDTO {
-    private List<String> vertices;
-    private List<EdgeDTO> edges;
+
+    @NotEmpty(message = "Vertices list must not be empty")
+    private List<@NotNull(message = "Vertex identifier must not be null") String> vertices;
+
+    @NotEmpty(message = "Edges list must not be empty")
+    @Valid
+    private List<@NotNull(message = "Edge must not be null") EdgeDTO> edges;
 
     public List<String> getVertices() {
         return vertices;
@@ -25,9 +38,18 @@ public class GraphRequestDTO {
         this.edges = edges;
     }
 
+    /**
+     * Nested DTO representing an edge between two vertices in the graph.
+     */
     public static class EdgeDTO {
+
+        @NotEmpty(message = "Source vertex must not be empty")
         private String from;
+
+        @NotEmpty(message = "Destination vertex must not be empty")
         private String to;
+
+        // Note: Depending on the algorithm, negative weights may be allowed.
         private int weight;
 
         public String getFrom() {
