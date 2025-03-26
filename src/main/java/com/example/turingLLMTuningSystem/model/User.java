@@ -18,12 +18,9 @@ public class User {
     private String username;
     private String password;
     private String email;
-    private String role;
+
 
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(name = "is_banned")
-    private Boolean banned = false;  // Use Boolean instead of boolean
 
 
     // Getters and setters
