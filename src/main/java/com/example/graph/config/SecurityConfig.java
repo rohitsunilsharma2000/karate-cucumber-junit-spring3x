@@ -1,4 +1,4 @@
-package com.example.johnson.config;
+package com.example.graph.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

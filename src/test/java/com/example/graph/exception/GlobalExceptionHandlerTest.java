@@ -1,4 +1,4 @@
-package com.example.johnson.exception;
+package com.example.graph.exception;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,7 +10,8 @@ import java.util.Date;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link GlobalExceptionHandler} without using a dummy controller.
@@ -80,7 +81,7 @@ class GlobalExceptionHandlerTest {
         assertEquals("Test exception", body.get("message"), "Error message should match");
         assertEquals(404, body.get("status"), "Status code should be 404");
         assertEquals("Not Found", body.get("error"), "Error reason should be 'Not Found'");
-        assertTrue(body.get("timestamp") instanceof Date, "Timestamp should be a Date instance");
+        assertInstanceOf(Date.class, body.get("timestamp"), "Timestamp should be a Date instance");
         assertEquals("uri=/test", body.get("path"), "Path should match the mocked request description");
     }
 }

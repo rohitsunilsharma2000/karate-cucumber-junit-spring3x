@@ -1,4 +1,4 @@
-package com.example.johnson;
+package com.example.graph;
 
 
 import org.springframework.boot.SpringApplication;
