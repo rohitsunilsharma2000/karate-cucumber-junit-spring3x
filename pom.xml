@@ -11,7 +11,7 @@
 		<groupId>com.example</groupId>
 		<artifactId>maxflow</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<name>MaxFlowApplication</name>
+		<name>graph-flow-solver</name>
 		<description>Implement the Ford‑Fulkerson algorithm for maximum flow in a Spring Boot service.</description>
 		<url/>
 		<licenses>
@@ -64,7 +64,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.24</version>
+			<version>1.18.30</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- For Jakarta Bean Validation -->
@@ -77,16 +77,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<version>3.4.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-websocket</artifactId>
-			<version>3.4.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap</artifactId>
-			<version>5.1.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>
