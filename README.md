@@ -1,10 +1,19 @@
+**Metadata**
 
----
+**Programming Language:** Java
 
-**L2 Taxonomy:** Build a Spring Boot application that detects bridges and articulation points in a graph.
-Here is the complete documentation in the format you requested for your **Spring Boot Graph Application** that detects **bridges** and **articulation points** in a graph.
+**L1 Taxonomy:** Complete Implementations
 
----
+**L2 Taxonomy:** Social Media Application
+
+**Use Case:**  Graph Integrity Analysis Platform for validating critical connectivity in infrastructure, network systems, and dependency graphs.
+
+Organizations need to identify vulnerabilities in their graph-based systems—such as communication networks, software component dependencies, or transport grids. This application detects bridges (critical edges) and articulation points (critical nodes) that, if removed, would disconnect the graph, potentially disrupting system integrity.
+
+
+**Use Case Type:** Core
+
+**Task Difficulty:** Hard
 
 # **Prompt**
 
