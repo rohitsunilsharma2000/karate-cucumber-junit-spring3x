@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the {@link NotificationException} class.
+ * Unit tests for the {@link PushNotificationException} class.
  * <p>
- * This test class verifies that the {@link NotificationException} constructors correctly assign the error message
+ * This test class verifies that the {@link PushNotificationException} constructors correctly assign the error message
  * and cause. Two tests are provided:
  * <ul>
  *   <li>Test for the constructor that accepts only a message.</li>
@@ -24,49 +24,49 @@ import static org.junit.jupiter.api.Assertions.*;
  * @version 1.0
  * @since 2025-03-26
  */
-class NotificationExceptionTest {
+class PushNotificationExceptionTest {
 
     /**
-     * Tests the constructor of NotificationException with a valid message.
+     * Tests the constructor of PushNotificationException with a valid message.
      * <p>
      * <strong>Description:</strong> This test ensures that when an exception is created with just a message,
      * the message is correctly stored and the cause is null.
      * </p>
      */
     @Test
-    @DisplayName("Test NotificationException constructor with valid message")
+    @DisplayName("Test PushNotificationException constructor with valid message")
     void testConstructorWithMessage() {
         // Arrange
-        String errorMessage = "Error occurred";
+        String errorMessage = "Push notification error occurred";
 
         // Act: Create an instance with only a message.
-        NotificationException exception = new NotificationException(errorMessage);
+        PushNotificationException exception = new PushNotificationException(errorMessage);
 
         // Assert: Verify that the exception's message matches and the cause is null.
-        assertNotNull(exception, "NotificationException instance should not be null");
+        assertNotNull(exception, "PushNotificationException instance should not be null");
         assertEquals(errorMessage, exception.getMessage(), "The exception message should match the provided message");
         assertNull(exception.getCause(), "The exception cause should be null when not provided");
     }
 
     /**
-     * Tests the constructor of NotificationException with a valid message and a cause.
+     * Tests the constructor of PushNotificationException with a valid message and a cause.
      * <p>
      * <strong>Description:</strong> This test ensures that when an exception is created with both a message and a cause,
      * both the message and the cause are correctly stored.
      * </p>
      */
     @Test
-    @DisplayName("Test NotificationException constructor with valid message and cause")
+    @DisplayName("Test PushNotificationException constructor with valid message and cause")
     void testConstructorWithMessageAndCause() {
         // Arrange
-        String errorMessage = "Error occurred with cause";
-        Throwable cause = new RuntimeException("Underlying cause");
+        String errorMessage = "Push notification error with cause";
+        Throwable cause = new RuntimeException("Underlying push error");
 
         // Act: Create an instance with a message and a cause.
-        NotificationException exception = new NotificationException(errorMessage, cause);
+        PushNotificationException exception = new PushNotificationException(errorMessage, cause);
 
         // Assert: Verify that both the exception's message and cause are correctly set.
-        assertNotNull(exception, "NotificationException instance should not be null");
+        assertNotNull(exception, "PushNotificationException instance should not be null");
         assertEquals(errorMessage, exception.getMessage(), "The exception message should match the provided message");
         assertEquals(cause, exception.getCause(), "The exception cause should match the provided cause");
     }
