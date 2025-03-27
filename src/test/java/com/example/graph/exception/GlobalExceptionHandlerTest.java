@@ -23,14 +23,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for {@link GlobalExceptionHandler} within the context of {@link GraphController}.
  *
- * <p>This test class verifies the correct mapping of application exceptions to standardized HTTP responses.
- * It ensures:
+ * <p>
+ * This test class verifies that application exceptions are correctly mapped to standardized HTTP responses.
+ * The tests validate:
  * <ul>
- *     <li>Validation failures return 400 Bad Request</li>
- *     <li>Malformed JSON results in 400 Bad Request</li>
- *     <li>Custom exceptions like {@link GraphAnalysisException} return 500 Internal Server Error</li>
+ *     <li>Validation failures return 400 Bad Request with detailed error messages</li>
+ *     <li>Malformed JSON input results in 400 Bad Request with a specific error message</li>
+ *     <li>Custom exceptions (e.g., {@link GraphAnalysisException}) return 500 Internal Server Error with the exception's message</li>
  *     <li>Unhandled exceptions return a generic 500 Internal Server Error with fallback messaging</li>
  * </ul>
+ * </p>
  *
  * @since 2025-03-27
  */
@@ -40,23 +42,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class GlobalExceptionHandlerTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvc mockMvc; // Used to simulate HTTP requests in integration tests
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper; // Converts Java objects to JSON strings for request payloads
 
     @MockBean
-    private com.example.graph.service.GraphService graphService;
+    private com.example.graph.service.GraphService graphService; // Mocks the GraphService dependency
 
     /**
-     * Verifies that validation errors on {@link GraphRequest} return a structured 400 Bad Request
-     * with descriptive error messages.
+     * Verifies that validation errors on a {@link GraphRequest} result in a structured 400 Bad Request.
+     *
+     * <p>
+     * <strong>Scenario:</strong> An invalid GraphRequest (with missing required fields) is sent.
+     * The endpoint should return HTTP 400 along with a message indicating that validation failed and include error details.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
      */
     @Test
     @DisplayName("Should return 400 for invalid GraphRequest (validation error)")
     void testHandleValidationErrors() throws Exception {
-        GraphRequest invalidRequest = new GraphRequest(); // missing required fields
+        // GIVEN: Create an invalid GraphRequest instance with missing required fields.
+        GraphRequest invalidRequest = new GraphRequest(); // Required fields are not set
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 400 with a validation error message.
         mockMvc.perform(post("/graph/bridges")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidRequest)))
@@ -66,13 +76,22 @@ public class GlobalExceptionHandlerTest {
     }
 
     /**
-     * Verifies that malformed JSON input triggers a 400 Bad Request response with appropriate message.
+     * Verifies that malformed JSON input triggers a 400 Bad Request response.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A POST request is sent with improperly formatted JSON (e.g., missing closing brackets).
+     * The endpoint should detect the JSON parsing error and return HTTP 400 with a message indicating a malformed JSON request.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
      */
     @Test
     @DisplayName("Should return 400 for malformed JSON input")
     void testHandleJsonParseErrors() throws Exception {
-        String malformedJson = "{\"vertices\": 5, \"edges\": [[0,1], [1,2]"; // missing closing ]
+        // GIVEN: Define a malformed JSON string (missing closing bracket).
+        String malformedJson = "{\"vertices\": 5, \"edges\": [[0,1], [1,2]"; // Malformed JSON
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges using the malformed JSON and expect HTTP 400.
         mockMvc.perform(post("/graph/bridges")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(malformedJson))
@@ -81,19 +100,28 @@ public class GlobalExceptionHandlerTest {
     }
 
     /**
-     * Verifies that a thrown {@link GraphAnalysisException} results in a 500 Internal Server Error response
-     * with the exact exception message.
+     * Verifies that a custom {@link GraphAnalysisException} thrown by the service layer is mapped to a 500 Internal Server Error.
+     *
+     * <p>
+     * <strong>Scenario:</strong> The GraphService throws a GraphAnalysisException when processing a valid GraphRequest.
+     * The endpoint should catch the exception and return HTTP 500 with the exception's message.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
      */
     @Test
     @DisplayName("Should return 500 for custom GraphAnalysisException")
     void testHandleGraphAnalysisException() throws Exception {
+        // GIVEN: Create a valid GraphRequest with proper vertices and edges.
         GraphRequest request = new GraphRequest();
         request.setVertices(3);
         request.setEdges(List.of(List.of(0, 1), List.of(1, 2)));
 
+        // AND: Configure the mocked GraphService to throw a GraphAnalysisException when findBridges is called.
         doThrow(new GraphAnalysisException("Failed to analyze graph"))
                 .when(graphService).findBridges(request.getVertices(), request.getEdges());
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 500 with the exception's message.
         mockMvc.perform(post("/graph/bridges")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
@@ -102,19 +130,28 @@ public class GlobalExceptionHandlerTest {
     }
 
     /**
-     * Verifies that any unhandled runtime exceptions are caught and return a generic 500 Internal Server Error
-     * with fallback error messaging.
+     * Verifies that unhandled runtime exceptions are caught and result in a generic 500 Internal Server Error.
+     *
+     * <p>
+     * <strong>Scenario:</strong> The GraphService throws a generic RuntimeException when processing a valid GraphRequest.
+     * The endpoint should return HTTP 500 with a generic error message indicating that an unexpected error occurred.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
      */
     @Test
     @DisplayName("Should return 500 for unexpected exception")
     void testHandleGenericException() throws Exception {
+        // GIVEN: Create a valid GraphRequest with proper vertices and edges.
         GraphRequest request = new GraphRequest();
         request.setVertices(3);
         request.setEdges(List.of(List.of(0, 1), List.of(1, 2)));
 
+        // AND: Configure the mocked GraphService to throw a RuntimeException when findBridges is called.
         doThrow(new RuntimeException("Unexpected error"))
                 .when(graphService).findBridges(request.getVertices(), request.getEdges());
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 500 with a generic error message.
         mockMvc.perform(post("/graph/bridges")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))

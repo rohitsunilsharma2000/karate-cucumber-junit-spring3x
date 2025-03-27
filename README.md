@@ -1,15 +1,8 @@
 
 
-**Use Case:**  Graph Integrity Analysis Platform for validating critical connectivity in infrastructure, network systems, and dependency graphs.
-
-Organizations need to identify vulnerabilities in their graph-based systems—such as communication networks, software component dependencies, or transport grids. This application detects bridges (critical edges) and articulation points (critical nodes) that, if removed, would disconnect the graph, potentially disrupting system integrity.
-
-
-
-
 ---
 
-**Use Case:** Implement bridge and articulation point detection in an undirected graph using Depth-First Search (DFS) algorithms within a Spring Boot service. This utility is essential for identifying critical links and nodes in network graphs—useful for communication networks, social graphs, and infrastructure systems. The service exposes REST endpoints where clients can submit graph data and retrieve lists of bridges and articulation points. The design prioritizes structured architecture, input validation, and clear error messaging to enhance stability and traceability.
+**Use Case:** A network analysis tool for industries requiring efficient detection of bridges and articulation points in complex networks. This API is designed to be integrated into larger systems (e.g., infrastructure monitoring, cybersecurity, and social network analysis) to quickly identify critical nodes and connections whose removal could fragment or weaken the network. The solution must be robust, scalable, and well-documented with comprehensive REST endpoints, input validations, and strong exception handling.
 
 # **Prompt**
 
@@ -136,6 +129,7 @@ src
                     |-- GraphIntegrityAppTest.java
                     |-- controller
                     |   `-- GraphControllerIntegrationTest.java
+                    |   `-- GraphControllerTest.java
                     |-- dto
                     |   `-- GraphRequestTest.java
                     |-- exception
@@ -739,7 +733,7 @@ server.port=8080
 
 # **Unit Tests (JUnit 5 + Mockito)**
 
-**9) Main Application:** `src/test/java/com/example/graph/MaxFlowApplicationTest.java`
+**9) Main Application:** `src/test/java/com/example/graph/GraphIntegrityAppTest.java`
 ```java
 package com.example.graph;
 
@@ -751,8 +745,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 /**
  * Unit and integration test for {@link GraphIntegrityAppTest}.
  *
- * <p><strong>Purpose:</strong> Ensures that the Spring Boot application context loads successfully
- * and the main method can be invoked without errors.</p>
+ * <p>
+ * <strong>Purpose:</strong> Ensures that the Spring Boot application context loads successfully and that the main method can be invoked without errors.
+ * </p>
+ *
+ * <p>
+ * This test verifies that the application's configuration and bean definitions are correct and that no exceptions occur during context initialization.
+ * </p>
+ *
+ * @since 2025-03-27
  */
 @SpringBootTest
 public class GraphIntegrityAppTest {
@@ -760,14 +761,22 @@ public class GraphIntegrityAppTest {
     /**
      * Tests that the Spring Boot application context loads without throwing any exceptions.
      *
-     * <p><strong>Expectation:</strong> The application should start and initialize the context successfully.</p>
+     * <p>
+     * <strong>GIVEN:</strong> The Spring Boot application is configured properly.
+     * <br>
+     * <strong>WHEN:</strong> The application context is started.
+     * <br>
+     * <strong>THEN:</strong> No exceptions are thrown, indicating that the application has started successfully.
+     * </p>
      */
     @Test
     public void contextLoads() {
-        // If this fails, Spring Boot context loading failed
+        // WHEN & THEN: Assert that no exception is thrown when loading the Spring Boot application context.
+        assertDoesNotThrow(() -> {
+            // The SpringBootTest annotation will automatically load the application context.
+            // If context initialization fails, this assertion will fail.
+        }, "Spring Boot context should load without throwing exceptions");
     }
-
-
 }
 
 ```
@@ -788,11 +797,13 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for {@link GraphService}.
  *
- * <p>This class verifies the correctness and robustness of graph-related computations:
+ * <p>
+ * This class verifies the correctness and robustness of graph-related computations by testing:
  * <ul>
- *   <li>Correct identification of bridges and articulation points in an undirected graph</li>
- *   <li>Proper exception handling in edge cases and faulty inputs</li>
- *   <li>Validation for empty graph structures</li>
+ *   <li>Identification of bridges in an undirected graph</li>
+ *   <li>Identification of articulation points in an undirected graph</li>
+ *   <li>Handling of edge cases such as empty graph structures</li>
+ *   <li>Proper exception handling for malformed inputs</li>
  * </ul>
  * </p>
  *
@@ -800,18 +811,32 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class GraphServiceTest {
 
+    // Instance of GraphService to test graph computation methods
     private GraphService graphService;
 
+    /**
+     * Initializes the GraphService instance before each test.
+     */
     @BeforeEach
     void setUp() {
+        // Create a new instance of GraphService before each test case
         graphService = new GraphService();
     }
 
     /**
      * Tests successful identification of bridges in a well-formed graph.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> A graph with 5 vertices and a list of edges forming cycles and a branch.
+     * <br>
+     * <strong>WHEN:</strong> The findBridges method is called.
+     * <br>
+     * <strong>THEN:</strong> Two bridge edges should be identified.
+     * </p>
      */
     @Test
     void testFindBridges_Success() {
+        // GIVEN: Define a graph with 5 vertices and specific edges.
         int vertices = 5;
         List<List<Integer>> edges = Arrays.asList(
                 Arrays.asList(1, 0),
@@ -821,41 +846,78 @@ class GraphServiceTest {
                 Arrays.asList(3, 4)
         );
 
+        // WHEN: Call the findBridges method.
         List<String> bridges = graphService.findBridges(vertices, edges);
-        assertEquals(2, bridges.size());
-        assertTrue(bridges.contains("3-4") || bridges.contains("4-3"));
-        assertTrue(bridges.contains("0-3") || bridges.contains("3-0"));
+
+        // THEN: Validate that exactly 2 bridges are detected.
+        assertEquals(2, bridges.size(), "Expected exactly 2 bridges to be detected");
+        // Check that one of the bridges connects vertices 3 and 4.
+        assertTrue(bridges.contains("3-4") || bridges.contains("4-3"), "Bridge between 3 and 4 should be detected");
+        // Check that one of the bridges connects vertices 0 and 3.
+        assertTrue(bridges.contains("0-3") || bridges.contains("3-0"), "Bridge between 0 and 3 should be detected");
     }
 
     /**
-     * Tests that an empty graph results in an empty list of bridges.
+     * Tests that an empty graph (no vertices and no edges) results in an empty list of bridges.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> An empty graph with 0 vertices and an empty edges list.
+     * <br>
+     * <strong>WHEN:</strong> The findBridges method is called.
+     * <br>
+     * <strong>THEN:</strong> An empty list should be returned.
+     * </p>
      */
     @Test
     void testFindBridges_EmptyGraph() {
+        // GIVEN: An empty graph with 0 vertices and no edges.
         List<String> bridges = graphService.findBridges(0, Collections.emptyList());
-        assertNotNull(bridges);
-        assertTrue(bridges.isEmpty());
+
+        // THEN: Verify that the result is not null and is empty.
+        assertNotNull(bridges, "Bridges list should not be null for an empty graph");
+        assertTrue(bridges.isEmpty(), "Bridges list should be empty for an empty graph");
     }
 
     /**
-     * Tests that the service throws a {@link GraphAnalysisException} for malformed input (e.g., null edge).
+     * Tests that a {@link GraphAnalysisException} is thrown for malformed input in findBridges.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> A graph input with valid vertices but containing a null edge.
+     * <br>
+     * <strong>WHEN:</strong> The findBridges method is called.
+     * <br>
+     * <strong>THEN:</strong> A GraphAnalysisException should be thrown with an appropriate error message.
+     * </p>
      */
     @Test
     void testFindBridges_Exception() {
+        // GIVEN: Define a graph with 3 vertices and an edge list that contains a null entry.
         Exception exception = assertThrows(GraphAnalysisException.class, () -> {
             graphService.findBridges(3, Arrays.asList(
                     Arrays.asList(0, 1),
-                    null
+                    null // Malformed input: null edge
             ));
         });
-        assertTrue(exception.getMessage().contains("Something went wrong while detecting bridges"));
+
+        // THEN: Verify that the exception message contains the expected error text.
+        assertTrue(exception.getMessage().contains("Something went wrong while detecting bridges"),
+                   "Expected error message to mention failure in detecting bridges");
     }
 
     /**
      * Tests successful identification of articulation points in a well-formed graph.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> A graph with 5 vertices and a list of edges forming cycles and a branch.
+     * <br>
+     * <strong>WHEN:</strong> The findArticulationPoints method is called.
+     * <br>
+     * <strong>THEN:</strong> Two articulation points should be identified.
+     * </p>
      */
     @Test
     void testFindArticulationPoints_Success() {
+        // GIVEN: Define a graph with 5 vertices and specific edges.
         int vertices = 5;
         List<List<Integer>> edges = Arrays.asList(
                 Arrays.asList(1, 0),
@@ -865,39 +927,66 @@ class GraphServiceTest {
                 Arrays.asList(3, 4)
         );
 
+        // WHEN: Call the findArticulationPoints method.
         List<Integer> aps = graphService.findArticulationPoints(vertices, edges);
-        assertEquals(2, aps.size());
-        assertTrue(aps.contains(0));
-        assertTrue(aps.contains(3));
+
+        // THEN: Validate that exactly 2 articulation points are detected.
+        assertEquals(2, aps.size(), "Expected exactly 2 articulation points to be detected");
+        // Check that the detected articulation points include vertex 0.
+        assertTrue(aps.contains(0), "Vertex 0 should be identified as an articulation point");
+        // Check that the detected articulation points include vertex 3.
+        assertTrue(aps.contains(3), "Vertex 3 should be identified as an articulation point");
     }
 
     /**
-     * Tests that an empty graph results in an empty list of articulation points.
+     * Tests that an empty graph (no vertices and no edges) results in an empty list of articulation points.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> An empty graph with 0 vertices and an empty edges list.
+     * <br>
+     * <strong>WHEN:</strong> The findArticulationPoints method is called.
+     * <br>
+     * <strong>THEN:</strong> An empty list should be returned.
+     * </p>
      */
     @Test
     void testFindArticulationPoints_EmptyGraph() {
+        // GIVEN: An empty graph with 0 vertices and no edges.
         List<Integer> aps = graphService.findArticulationPoints(0, Collections.emptyList());
-        assertNotNull(aps);
-        assertTrue(aps.isEmpty());
+
+        // THEN: Verify that the result is not null and is empty.
+        assertNotNull(aps, "Articulation points list should not be null for an empty graph");
+        assertTrue(aps.isEmpty(), "Articulation points list should be empty for an empty graph");
     }
 
     /**
-     * Tests that the service throws a {@link GraphAnalysisException} for malformed input (e.g., null edge).
+     * Tests that a {@link GraphAnalysisException} is thrown for malformed input in findArticulationPoints.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> A graph input with valid vertices but containing a null edge.
+     * <br>
+     * <strong>WHEN:</strong> The findArticulationPoints method is called.
+     * <br>
+     * <strong>THEN:</strong> A GraphAnalysisException should be thrown with an appropriate error message.
+     * </p>
      */
     @Test
     void testFindArticulationPoints_Exception() {
+        // GIVEN: Define a graph with 3 vertices and an edge list that contains a null entry.
         Exception exception = assertThrows(GraphAnalysisException.class, () -> {
             graphService.findArticulationPoints(3, Arrays.asList(
                     Arrays.asList(0, 1),
-                    null
+                    null // Malformed input: null edge
             ));
         });
-        assertTrue(exception.getMessage().contains("Something went wrong while detecting articulation points"));
+
+        // THEN: Verify that the exception message contains the expected error text.
+        assertTrue(exception.getMessage().contains("Something went wrong while detecting articulation points"),
+                   "Expected error message to mention failure in detecting articulation points");
     }
 }
 
 ```
-
 
 **11) GraphRequestTest:** `src/test/java/com/example/graph/dto/GraphRequestTest.java`
 ```java
@@ -925,12 +1014,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the GraphRequest DTO work as expected using Jakarta Bean Validation.
  * </p>
  *
- * <p><strong>Validation Rules Tested:</strong></p>
+ * <p>
+ * <strong>Validation Rules Tested:</strong>
  * <ul>
  *   <li>{@code @Min(1)} on {@code vertices}</li>
  *   <li>{@code @NotNull} on {@code edges} and inner vertex values</li>
  *   <li>{@code @NotEmpty} on {@code edges}</li>
  * </ul>
+ * </p>
  *
  * @version 1.0
  * @since 2025-03-26
@@ -948,6 +1039,7 @@ public class GraphRequestTest {
      */
     @BeforeAll
     public static void setupValidatorInstance() {
+        // Build the default ValidatorFactory and retrieve the Validator instance.
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
     }
@@ -955,72 +1047,97 @@ public class GraphRequestTest {
     /**
      * Tests a valid {@link GraphRequest} with 3 vertices and valid edges.
      *
-     * <p><strong>Expectation:</strong> No constraint violations should occur.</p>
+     * <p>
+     * <strong>Expectation:</strong> No constraint violations should occur.
+     * </p>
      */
     @Test
     public void testValidGraphRequest_NoViolations() {
+        // GIVEN: A valid GraphRequest with vertices set to 3 and a non-empty list of edges.
         GraphRequest request = new GraphRequest();
         request.setVertices(3);
         request.setEdges(List.of(List.of(0, 1), List.of(1, 2)));
 
+        // WHEN: Validate the request using the shared validator instance.
         Set<ConstraintViolation<GraphRequest>> violations = validator.validate(request);
+
+        // THEN: Assert that there are no constraint violations.
         assertTrue(violations.isEmpty(), "There should be no validation errors for a valid input");
     }
 
     /**
      * Tests {@code vertices = 0}, which violates {@code @Min(1)}.
      *
-     * <p><strong>Expectation:</strong> Validation should fail on the 'vertices' field.</p>
+     * <p>
+     * <strong>Expectation:</strong> Validation should fail on the 'vertices' field.
+     * </p>
      */
     @Test
     public void testInvalidGraphRequest_ZeroVertices_ShouldFailMinValidation() {
+        // GIVEN: A GraphRequest with vertices set to 0 (invalid) and a valid edges list.
         GraphRequest request = new GraphRequest();
         request.setVertices(0);
         request.setEdges(List.of(List.of(0, 1)));
 
+        // WHEN: Validate the request.
         Set<ConstraintViolation<GraphRequest>> violations = validator.validate(request);
+
+        // THEN: Assert that validation fails and a violation is reported on the 'vertices' field.
         assertFalse(violations.isEmpty(), "Validation should fail for vertices < 1");
-        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("vertices")));
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("vertices")),
+                   "Expected violation on the 'vertices' field");
     }
 
     /**
      * Tests with {@code edges = null}, violating {@code @NotNull}.
      *
-     * <p><strong>Expectation:</strong> Validation should fail on the 'edges' field.</p>
+     * <p>
+     * <strong>Expectation:</strong> Validation should fail on the 'edges' field.
+     * </p>
      */
     @Test
     public void testInvalidGraphRequest_NullEdges_ShouldFailNotNullValidation() {
+        // GIVEN: A GraphRequest with a valid vertices value but with edges set to null.
         GraphRequest request = new GraphRequest();
         request.setVertices(3);
         request.setEdges(null);
 
+        // WHEN: Validate the request.
         Set<ConstraintViolation<GraphRequest>> violations = validator.validate(request);
+
+        // THEN: Assert that validation fails and a violation is reported on the 'edges' field.
         assertFalse(violations.isEmpty(), "Validation should fail for null edges list");
-        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("edges")));
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("edges")),
+                   "Expected violation on the 'edges' field");
     }
 
     /**
      * Tests with an empty list of edges, violating {@code @NotEmpty}.
      *
-     * <p><strong>Expectation:</strong> Validation should fail on the 'edges' field.</p>
+     * <p>
+     * <strong>Expectation:</strong> Validation should fail on the 'edges' field.
+     * </p>
      */
     @Test
     public void testInvalidGraphRequest_EmptyEdgesList_ShouldFailNotEmptyValidation() {
+        // GIVEN: A GraphRequest with vertices set to a valid value but with an empty edges list.
         GraphRequest request = new GraphRequest();
         request.setVertices(3);
-        request.setEdges(new ArrayList<>());
+        request.setEdges(new ArrayList<>()); // Empty list
 
+        // WHEN: Validate the request.
         Set<ConstraintViolation<GraphRequest>> violations = validator.validate(request);
-        assertFalse(violations.isEmpty(), "Validation should fail for empty edges list");
-        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("edges")));
-    }
 
-   
+        // THEN: Assert that validation fails and a violation is reported on the 'edges' field.
+        assertFalse(violations.isEmpty(), "Validation should fail for empty edges list");
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("edges")),
+                   "Expected violation on the 'edges' field");
+    }
 }
 
 ```
 
-## After the first iteration, the overall test coverage was 74%. To improve this, additional test cases—including those in  GraphControllerIntegrationTest and GlobalExceptionHandlerTest will be introduced to further increase the test coverage percentage.
+## After the first iteration, the overall test coverage was 74%. To improve this, additional test cases—including those in GraphControllerIntegrationTest , GraphControllerTest and GlobalExceptionHandlerTest will be introduced to further increase the test coverage percentage.
 
 
 **12) GraphControllerIntegrationTest:** `src/test/java/com/example/graph/controller/GraphControllerIntegrationTest.java`
@@ -1046,20 +1163,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for {@link GraphController}.
  *
  * <p>
- * This class verifies the behavior of the {@code /graph/bridges} and {@code /graph/articulation}
- * REST endpoints in a Spring Boot environment using {@link MockMvc}. These tests validate:
- * </p>
- *
+ * This class verifies the behavior of the REST endpoints defined in the GraphController within a full Spring Boot application context.
+ * The tests cover:
  * <ul>
- *   <li>Correct HTTP status codes for valid and invalid input payloads</li>
+ *   <li>HTTP status codes for valid and invalid input payloads</li>
  *   <li>Proper JSON request/response handling</li>
- *   <li>Validation constraint violations on the {@link com.example.graph.dto.GraphRequest}</li>
+ *   <li>Validation constraint violations on the {@link com.example.graph.dto.GraphRequest} DTO</li>
  *   <li>Behavior of {@link com.example.graph.exception.GlobalExceptionHandler} for edge cases</li>
  * </ul>
+ * </p>
  *
  * <p>
- * This test suite ensures that the controller logic and request validation
- * are working as expected in a full Spring Boot context.
+ * By running these tests, we ensure that the controller logic, validation, and exception handling work as expected when the application is fully bootstrapped.
  * </p>
  *
  * @author
@@ -1070,18 +1185,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class GraphControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvc mockMvc; // Simulates HTTP requests for integration testing
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper; // Converts Java objects to JSON and vice versa
 
     /**
-     * Valid input test for /graph/bridges endpoint.
-     * Expects HTTP 200 OK and successful processing.
+     * Integration test for the /graph/bridges endpoint with valid input.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A valid request is sent with 5 vertices and a proper list of edges.
+     * The test expects an HTTP 200 OK response, indicating that the request was processed successfully.
+     * </p>
+     *
+     * @throws Exception if an error occurs during request processing.
      */
     @Test
     @DisplayName("POST /graph/bridges - Valid Input - Returns 200 OK")
     public void testFindBridges_ValidInput_ReturnsOk() throws Exception {
+        // GIVEN: Build a valid request payload containing 5 vertices and a list of edges.
         Map<String, Object> request = Map.of(
                 "vertices", 5,
                 "edges", List.of(
@@ -1093,19 +1215,27 @@ public class GraphControllerIntegrationTest {
                 )
         );
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges, then expect HTTP 200 OK.
         mockMvc.perform(post("/graph/bridges")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
                .andExpect(status().isOk());
     }
 
     /**
-     * Valid input test for /graph/articulation endpoint.
-     * Expects HTTP 200 OK and successful processing.
+     * Integration test for the /graph/articulation endpoint with valid input.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A valid request is sent with 5 vertices and a list of edges.
+     * The test expects an HTTP 200 OK response, indicating that the endpoint processed the request successfully.
+     * </p>
+     *
+     * @throws Exception if an error occurs during request processing.
      */
     @Test
     @DisplayName("POST /graph/articulation - Valid Input - Returns 200 OK")
     public void testFindArticulationPoints_ValidInput_ReturnsOk() throws Exception {
+        // GIVEN: Build a valid request payload containing 5 vertices and a list of edges.
         Map<String, Object> request = Map.of(
                 "vertices", 5,
                 "edges", List.of(
@@ -1117,19 +1247,27 @@ public class GraphControllerIntegrationTest {
                 )
         );
 
+        // WHEN & THEN: Perform a POST request to /graph/articulation and expect HTTP 200 OK.
         mockMvc.perform(post("/graph/articulation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
                .andExpect(status().isOk());
     }
 
     /**
-     * Test missing 'vertices' field.
-     * Expects HTTP 400 Bad Request due to validation failure.
+     * Integration test for the /graph/bridges endpoint when the 'vertices' field is missing.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A request is sent without the required 'vertices' field.
+     * The test expects an HTTP 400 Bad Request response due to validation failure.
+     * </p>
+     *
+     * @throws Exception if an error occurs during request processing.
      */
     @Test
     @DisplayName("POST /graph/bridges - Missing vertices - Returns 400 Bad Request")
     public void testFindBridges_MissingVertices_ReturnsBadRequest() throws Exception {
+        // GIVEN: Build a request payload with the 'edges' field only, leaving out the required 'vertices'.
         Map<String, Object> request = Map.of(
                 "edges", List.of(
                         List.of(0, 1),
@@ -1137,44 +1275,61 @@ public class GraphControllerIntegrationTest {
                 )
         );
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 400 Bad Request with a validation error message.
         mockMvc.perform(post("/graph/bridges")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
                .andExpect(status().isBadRequest())
                .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     /**
-     * Test empty 'edges' list.
-     * Expects HTTP 400 Bad Request due to validation constraints.
+     * Integration test for the /graph/articulation endpoint when the 'edges' list is empty.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A request is sent with a valid 'vertices' value but an empty 'edges' list.
+     * The test expects an HTTP 400 Bad Request response due to a validation error.
+     * </p>
+     *
+     * @throws Exception if an error occurs during request processing.
      */
     @Test
     @DisplayName("POST /graph/articulation - Empty edges - Returns 400 Bad Request")
     public void testFindArticulationPoints_EmptyEdges_ReturnsBadRequest() throws Exception {
+        // GIVEN: Build a request payload with a valid 'vertices' value but an empty list for 'edges'.
         Map<String, Object> request = Map.of(
                 "vertices", 4,
                 "edges", List.of()
         );
 
+        // WHEN & THEN: Perform a POST request to /graph/articulation and expect HTTP 400 Bad Request with a validation error message.
         mockMvc.perform(post("/graph/articulation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
                .andExpect(status().isBadRequest())
                .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     /**
-     * Test with malformed JSON body.
-     * Expects HTTP 400 Bad Request due to JSON parsing error.
+     * Integration test for the /graph/bridges endpoint with a malformed JSON payload.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A request is sent with a malformed JSON body.
+     * The test expects an HTTP 400 Bad Request response due to a JSON parsing error.
+     * </p>
+     *
+     * @throws Exception if an error occurs during request processing.
      */
     @Test
     @DisplayName("POST /graph/bridges - Invalid JSON - Returns 400 Bad Request")
     public void testFindBridges_InvalidJson_ReturnsBadRequest() throws Exception {
+        // GIVEN: Create a malformed JSON string (e.g., missing closing bracket).
         String malformedJson = "{\"vertices\": 4, \"edges\": [[0,1], [1,2], [2]]";
 
+        // WHEN & THEN: Perform a POST request to /graph/bridges with the malformed JSON and expect HTTP 400 Bad Request.
         mockMvc.perform(post("/graph/bridges")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(malformedJson))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(malformedJson))
                .andExpect(status().isBadRequest());
     }
 }
@@ -1183,6 +1338,343 @@ public class GraphControllerIntegrationTest {
 
 **11) GlobalExceptionHandlerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
 ```java
+package com.example.graph.exception;
+
+import com.example.graph.dto.GraphRequest;
+import com.example.graph.controller.GraphController;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolationException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Integration tests for {@link GlobalExceptionHandler} within the context of {@link GraphController}.
+ *
+ * <p>
+ * This test class verifies that application exceptions are correctly mapped to standardized HTTP responses.
+ * The tests validate:
+ * <ul>
+ *     <li>Validation failures return 400 Bad Request with detailed error messages</li>
+ *     <li>Malformed JSON input results in 400 Bad Request with a specific error message</li>
+ *     <li>Custom exceptions (e.g., {@link GraphAnalysisException}) return 500 Internal Server Error with the exception's message</li>
+ *     <li>Unhandled exceptions return a generic 500 Internal Server Error with fallback messaging</li>
+ * </ul>
+ * </p>
+ *
+ * @since 2025-03-27
+ */
+@WebMvcTest(controllers = GraphController.class,
+        excludeAutoConfiguration = SecurityAutoConfiguration.class)
+@ContextConfiguration(classes = {GraphController.class, GlobalExceptionHandler.class})
+public class GlobalExceptionHandlerTest {
+
+    @Autowired
+    private MockMvc mockMvc; // Used to simulate HTTP requests in integration tests
+
+    @Autowired
+    private ObjectMapper objectMapper; // Converts Java objects to JSON strings for request payloads
+
+    @MockBean
+    private com.example.graph.service.GraphService graphService; // Mocks the GraphService dependency
+
+    /**
+     * Verifies that validation errors on a {@link GraphRequest} result in a structured 400 Bad Request.
+     *
+     * <p>
+     * <strong>Scenario:</strong> An invalid GraphRequest (with missing required fields) is sent.
+     * The endpoint should return HTTP 400 along with a message indicating that validation failed and include error details.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
+     */
+    @Test
+    @DisplayName("Should return 400 for invalid GraphRequest (validation error)")
+    void testHandleValidationErrors() throws Exception {
+        // GIVEN: Create an invalid GraphRequest instance with missing required fields.
+        GraphRequest invalidRequest = new GraphRequest(); // Required fields are not set
+
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 400 with a validation error message.
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRequest)))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Validation failed"))
+               .andExpect(jsonPath("$.errors").exists());
+    }
+
+    /**
+     * Verifies that malformed JSON input triggers a 400 Bad Request response.
+     *
+     * <p>
+     * <strong>Scenario:</strong> A POST request is sent with improperly formatted JSON (e.g., missing closing brackets).
+     * The endpoint should detect the JSON parsing error and return HTTP 400 with a message indicating a malformed JSON request.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
+     */
+    @Test
+    @DisplayName("Should return 400 for malformed JSON input")
+    void testHandleJsonParseErrors() throws Exception {
+        // GIVEN: Define a malformed JSON string (missing closing bracket).
+        String malformedJson = "{\"vertices\": 5, \"edges\": [[0,1], [1,2]"; // Malformed JSON
+
+        // WHEN & THEN: Perform a POST request to /graph/bridges using the malformed JSON and expect HTTP 400.
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(malformedJson))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Malformed JSON request"));
+    }
+
+    /**
+     * Verifies that a custom {@link GraphAnalysisException} thrown by the service layer is mapped to a 500 Internal Server Error.
+     *
+     * <p>
+     * <strong>Scenario:</strong> The GraphService throws a GraphAnalysisException when processing a valid GraphRequest.
+     * The endpoint should catch the exception and return HTTP 500 with the exception's message.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
+     */
+    @Test
+    @DisplayName("Should return 500 for custom GraphAnalysisException")
+    void testHandleGraphAnalysisException() throws Exception {
+        // GIVEN: Create a valid GraphRequest with proper vertices and edges.
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        request.setEdges(List.of(List.of(0, 1), List.of(1, 2)));
+
+        // AND: Configure the mocked GraphService to throw a GraphAnalysisException when findBridges is called.
+        doThrow(new GraphAnalysisException("Failed to analyze graph"))
+                .when(graphService).findBridges(request.getVertices(), request.getEdges());
+
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 500 with the exception's message.
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isInternalServerError())
+               .andExpect(jsonPath("$.message").value("Failed to analyze graph"));
+    }
+
+    /**
+     * Verifies that unhandled runtime exceptions are caught and result in a generic 500 Internal Server Error.
+     *
+     * <p>
+     * <strong>Scenario:</strong> The GraphService throws a generic RuntimeException when processing a valid GraphRequest.
+     * The endpoint should return HTTP 500 with a generic error message indicating that an unexpected error occurred.
+     * </p>
+     *
+     * @throws Exception if request processing fails.
+     */
+    @Test
+    @DisplayName("Should return 500 for unexpected exception")
+    void testHandleGenericException() throws Exception {
+        // GIVEN: Create a valid GraphRequest with proper vertices and edges.
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        request.setEdges(List.of(List.of(0, 1), List.of(1, 2)));
+
+        // AND: Configure the mocked GraphService to throw a RuntimeException when findBridges is called.
+        doThrow(new RuntimeException("Unexpected error"))
+                .when(graphService).findBridges(request.getVertices(), request.getEdges());
+
+        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 500 with a generic error message.
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isInternalServerError())
+               .andExpect(jsonPath("$.message").value("An unexpected error occurred. Please try again later."));
+    }
+}
+
+```
+**12) GraphControllerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
+```java
+package com.example.graph.controller;
+
+import com.example.graph.dto.GraphRequest;
+import com.example.graph.service.GraphService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Unit tests for the {@link com.example.graph.controller.GraphController} class.
+ *
+ * <p>
+ * This class tests the REST endpoints exposed by the GraphController, which are responsible for:
+ * <ul>
+ *   <li>Detecting bridge edges in an undirected graph using the /graph/bridges endpoint.</li>
+ *   <li>Detecting articulation points in an undirected graph using the /graph/articulation endpoint.</li>
+ * </ul>
+ * The tests use Spring Boot's {@code @WebMvcTest} to initialize the controller in isolation,
+ * along with {@code MockMvc} for simulating HTTP requests and Mockito for mocking the service layer.
+ * </p>
+ *
+ * <p>
+ * <strong>Test Cases Covered:</strong>
+ * <ul>
+ *   <li><strong>Valid Request for Bridges:</strong> Ensures that a valid GraphRequest returns the expected list of bridge edges.</li>
+ *   <li><strong>Valid Request for Articulation Points:</strong> Ensures that a valid GraphRequest returns the expected list of articulation point indices.</li>
+ *   <li><strong>Validation Failure:</strong> Ensures that requests missing required fields (e.g., vertices) result in a 400 Bad Request with a proper error message.</li>
+ * </ul>
+ * </p>
+ *
+ * @author
+ * @since 2025-03-26
+ */
+@WebMvcTest(GraphController.class)
+public class GraphControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc; // Used to perform HTTP requests in tests
+
+    @MockBean
+    private GraphService graphService; // Mocking GraphService dependency to isolate controller tests
+
+    @Autowired
+    private ObjectMapper objectMapper; // Used to convert Java objects to JSON strings
+
+    /**
+     * Tests the /graph/bridges endpoint with a valid GraphRequest.
+     *
+     * <p>
+     * <strong>Scenario:</strong>
+     * A valid request with 5 vertices and a list of edges is sent.
+     * The GraphService is expected to return a list of bridge edges (e.g., "3-4" and "1-3").
+     * </p>
+     *
+     * @throws Exception if the request processing fails.
+     */
+    @Test
+    @DisplayName("Test getBridges endpoint - valid request")
+    public void testGetBridges_ValidRequest() throws Exception {
+        // Given: Define vertices, edges, and create a valid GraphRequest object.
+        int vertices = 5;
+        List<List<Integer>> edges = Arrays.asList(
+                Arrays.asList(0, 1),
+                Arrays.asList(1, 2),
+                Arrays.asList(2, 0),
+                Arrays.asList(1, 3),
+                Arrays.asList(3, 4)
+        );
+        GraphRequest request = new GraphRequest();
+        request.setVertices(vertices);
+        request.setEdges(edges);
+
+        // Expected response from the service layer
+        List<String> bridges = Arrays.asList("3-4", "1-3");
+
+        // When: Mock the GraphService behavior for findBridges.
+        Mockito.when(graphService.findBridges(vertices, edges)).thenReturn(bridges);
+
+        // Then: Perform POST request to /graph/bridges and validate the response.
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$", hasSize(2)))
+               .andExpect(jsonPath("$", containsInAnyOrder("3-4", "1-3")));
+    }
+
+    /**
+     * Tests the /graph/articulation endpoint with a valid GraphRequest.
+     *
+     * <p>
+     * <strong>Scenario:</strong>
+     * A valid request with 5 vertices and a list of edges is sent.
+     * The GraphService is expected to return a list of articulation point indices (e.g., 1 and 3).
+     * </p>
+     *
+     * @throws Exception if the request processing fails.
+     */
+    @Test
+    @DisplayName("Test getArticulationPoints endpoint - valid request")
+    public void testGetArticulationPoints_ValidRequest() throws Exception {
+        // Given: Define vertices, edges, and create a valid GraphRequest object.
+        int vertices = 5;
+        List<List<Integer>> edges = Arrays.asList(
+                Arrays.asList(0, 1),
+                Arrays.asList(1, 2),
+                Arrays.asList(2, 0),
+                Arrays.asList(1, 3),
+                Arrays.asList(3, 4)
+        );
+        GraphRequest request = new GraphRequest();
+        request.setVertices(vertices);
+        request.setEdges(edges);
+
+        // Expected response from the service layer
+        List<Integer> articulationPoints = Arrays.asList(1, 3);
+
+        // When: Mock the GraphService behavior for findArticulationPoints.
+        Mockito.when(graphService.findArticulationPoints(vertices, edges)).thenReturn(articulationPoints);
+
+        // Then: Perform POST request to /graph/articulation and validate the response.
+        mockMvc.perform(post("/graph/articulation")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$", hasSize(2)))
+               .andExpect(jsonPath("$[0]").value(1))
+               .andExpect(jsonPath("$[1]").value(3));
+    }
+
+    /**
+     * Tests the /graph/bridges endpoint for a validation failure scenario.
+     *
+     * <p>
+     * <strong>Scenario:</strong>
+     * A request with missing vertices (null) is sent to trigger a validation error.
+     * The expected response is a 400 Bad Request with a validation error message.
+     * </p>
+     *
+     * @throws Exception if the request processing fails.
+     */
+    @Test
+    @DisplayName("Test getBridges endpoint - validation failure (missing vertices)")
+    public void testGetBridges_ValidationFailure_MissingVertices() throws Exception {
+        // Given: Create a GraphRequest with missing vertices to simulate a validation error.
+        GraphRequest request = new GraphRequest();
+        // vertices not set (null), only edges are provided.
+        request.setEdges(Collections.singletonList(Arrays.asList(0, 1)));
+
+        // Then: Perform POST request and validate that a 400 status and validation message is returned.
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Validation failed"));
+    }
+}
 
 ```
 # After the second iteration, test coverage increased to 99%.
@@ -1197,9 +1689,7 @@ public class GraphControllerIntegrationTest {
 spring.application.name=graph-integrity-app
 server.port=8080
 
-# Default in-memory user for basic authentication
-spring.security.user.name=admin
-spring.security.user.password=admin123
+
 
 # H2 in-memory database settings
 spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
@@ -1208,9 +1698,7 @@ spring.datasource.username=sa
 spring.datasource.password=
 spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 
-# Enable the H2 console
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
+
 
 ```
 4. **Build & Test:**
