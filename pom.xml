@@ -12,7 +12,7 @@
 		<artifactId>graph</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<name>graph-integrity-app</name>
-		<description>Build a Spring Boot application that detects bridges and articulation points in a graph. Sure! Here's the complete documentation in your requested format for the Bridges and Articulation Points Detection project using Spring Boot</description>
+		<description>Build a Spring Boot application that detects bridges and articulation points in a graph.</description>
 		<url/>
 		<licenses>
 			<license/>
@@ -44,17 +44,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<!-- Spring Security for authentication and authorization -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<!-- Spring Boot Starter Web (Includes Spring Security by default) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-
 		<!-- Spring Boot Starter for Validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

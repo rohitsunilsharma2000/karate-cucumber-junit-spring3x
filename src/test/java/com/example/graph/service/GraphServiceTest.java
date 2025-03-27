@@ -1,117 +1,122 @@
 package com.example.graph.service;
 
+import com.example.graph.exception.GraphAnalysisException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the {@link GraphService} class.
+ * Unit tests for {@link GraphService}.
  *
- * <p>This test suite validates the correctness of the graph analysis algorithms, specifically:</p>
+ * <p>This class verifies the correctness and robustness of graph-related computations:
  * <ul>
- *   <li>{@code findBridges(int, List<List<Integer>>)}</li>
- *   <li>{@code findArticulationPoints(int, List<List<Integer>>)}</li>
+ *   <li>Correct identification of bridges and articulation points in an undirected graph</li>
+ *   <li>Proper exception handling in edge cases and faulty inputs</li>
+ *   <li>Validation for empty graph structures</li>
  * </ul>
+ * </p>
  *
- * <p>Each test case checks either:</p>
- * <ul>
- *   <li>The detection of correct graph elements (bridges or articulation points).</li>
- *   <li>The return of empty results when no such critical elements exist.</li>
- * </ul>
- *
- * <p><strong>Note:</strong> The service is instantiated manually to test in isolation, without reliance on Spring context or dependencies.</p>
- *
- * @author
- * @since 2025-03-26
+ * @since 2025-03-27
  */
-@SpringBootTest
-public class GraphServiceTest {
+class GraphServiceTest {
 
-    private final GraphService graphService = new GraphService();
+    private GraphService graphService;
+
+    @BeforeEach
+    void setUp() {
+        graphService = new GraphService();
+    }
 
     /**
-     * Verifies that the bridge detection algorithm returns the correct set of bridge edges.
-     * <pre>
-     * Graph:
-     *   0 - 1 - 3 - 4
-     *    \  |
-     *      2
-     * </pre>
-     * Expected bridges: 1-3 and 3-4
+     * Tests successful identification of bridges in a well-formed graph.
      */
     @Test
-    public void testFindBridges_WithValidGraph_ReturnsCorrectBridges() {
+    void testFindBridges_Success() {
         int vertices = 5;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0),
-                List.of(1, 3),
-                List.of(3, 4)
+        List<List<Integer>> edges = Arrays.asList(
+                Arrays.asList(1, 0),
+                Arrays.asList(0, 2),
+                Arrays.asList(2, 1),
+                Arrays.asList(0, 3),
+                Arrays.asList(3, 4)
         );
 
         List<String> bridges = graphService.findBridges(vertices, edges);
         assertEquals(2, bridges.size());
-        assertTrue(bridges.contains("1-3") || bridges.contains("3-1"));
         assertTrue(bridges.contains("3-4") || bridges.contains("4-3"));
+        assertTrue(bridges.contains("0-3") || bridges.contains("3-0"));
     }
 
     /**
-     * Verifies that articulation points are correctly identified for a non-trivial graph.
-     * Expected articulation points: vertex 1 and vertex 3
+     * Tests that an empty graph results in an empty list of bridges.
      */
     @Test
-    public void testFindArticulationPoints_WithValidGraph_ReturnsCorrectPoints() {
-        int vertices = 5;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0),
-                List.of(1, 3),
-                List.of(3, 4)
-        );
-
-        List<Integer> points = graphService.findArticulationPoints(vertices, edges);
-        assertEquals(2, points.size());
-        assertTrue(points.contains(1));
-        assertTrue(points.contains(3));
-    }
-
-    /**
-     * Verifies that the bridge detection algorithm returns an empty list
-     * when there are no bridges in a cyclic graph.
-     */
-    @Test
-    public void testFindBridges_WithNoBridgeGraph_ReturnsEmptyList() {
-        int vertices = 3;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0)
-        );
-
-        List<String> bridges = graphService.findBridges(vertices, edges);
+    void testFindBridges_EmptyGraph() {
+        List<String> bridges = graphService.findBridges(0, Collections.emptyList());
+        assertNotNull(bridges);
         assertTrue(bridges.isEmpty());
     }
 
     /**
-     * Verifies that the articulation point detection algorithm returns an empty list
-     * when all nodes are part of a strongly connected component.
+     * Tests that the service throws a {@link GraphAnalysisException} for malformed input (e.g., null edge).
      */
     @Test
-    public void testFindArticulationPoints_WithNoArticulationPointGraph_ReturnsEmptyList() {
-        int vertices = 3;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0)
+    void testFindBridges_Exception() {
+        Exception exception = assertThrows(GraphAnalysisException.class, () -> {
+            graphService.findBridges(3, Arrays.asList(
+                    Arrays.asList(0, 1),
+                    null
+            ));
+        });
+        assertTrue(exception.getMessage().contains("Something went wrong while detecting bridges"));
+    }
+
+    /**
+     * Tests successful identification of articulation points in a well-formed graph.
+     */
+    @Test
+    void testFindArticulationPoints_Success() {
+        int vertices = 5;
+        List<List<Integer>> edges = Arrays.asList(
+                Arrays.asList(1, 0),
+                Arrays.asList(0, 2),
+                Arrays.asList(2, 1),
+                Arrays.asList(0, 3),
+                Arrays.asList(3, 4)
         );
 
-        List<Integer> points = graphService.findArticulationPoints(vertices, edges);
-        assertTrue(points.isEmpty());
+        List<Integer> aps = graphService.findArticulationPoints(vertices, edges);
+        assertEquals(2, aps.size());
+        assertTrue(aps.contains(0));
+        assertTrue(aps.contains(3));
+    }
+
+    /**
+     * Tests that an empty graph results in an empty list of articulation points.
+     */
+    @Test
+    void testFindArticulationPoints_EmptyGraph() {
+        List<Integer> aps = graphService.findArticulationPoints(0, Collections.emptyList());
+        assertNotNull(aps);
+        assertTrue(aps.isEmpty());
+    }
+
+    /**
+     * Tests that the service throws a {@link GraphAnalysisException} for malformed input (e.g., null edge).
+     */
+    @Test
+    void testFindArticulationPoints_Exception() {
+        Exception exception = assertThrows(GraphAnalysisException.class, () -> {
+            graphService.findArticulationPoints(3, Arrays.asList(
+                    Arrays.asList(0, 1),
+                    null
+            ));
+        });
+        assertTrue(exception.getMessage().contains("Something went wrong while detecting articulation points"));
     }
 }

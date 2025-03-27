@@ -1,5 +1,6 @@
 package com.example.graph.service;
 
+import com.example.graph.exception.GraphAnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -10,23 +11,6 @@ import java.util.List;
 /**
  * Service class for analyzing graph integrity by detecting critical elements like
  * bridges and articulation points in an undirected graph.
- *
- * <p>
- * This service implements Depth First Search (DFS)-based algorithms for:
- * <ul>
- *   <li><strong>Bridge Detection:</strong> Identifying edges which, if removed, would increase the number of connected components.</li>
- *   <li><strong>Articulation Point Detection:</strong> Identifying vertices which, if removed, would increase the number of connected components.</li>
- * </ul>
- * </p>
- *
- * <p>
- * It supports the analysis of any undirected graph represented by an edge list and a number of vertices.
- * </p>
- *
- * <p><strong>Logging:</strong> SLF4J is used to log method executions, DFS traversal details, and outcomes at DEBUG and INFO levels.</p>
- *
- * @author
- * @since 2025-03-26
  */
 @Service
 public class GraphService {
@@ -41,33 +25,37 @@ public class GraphService {
      * @return a list of string representations of bridge edges (e.g., "1-3")
      */
     public List<String> findBridges(int vertices, List<List<Integer>> edges) {
-        logger.debug("Initializing bridge detection with {} vertices and edges: {}", vertices, edges);
-        time = 0;
+        try {
+            logger.debug("Initializing bridge detection with {} vertices and edges: {}", vertices, edges);
+            time = 0;
 
-        List<List<Integer>> adj = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
+            List<List<Integer>> adj = new ArrayList<>();
+            for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
 
-        for (List<Integer> edge : edges) {
-            adj.get(edge.get(0)).add(edge.get(1));
-            adj.get(edge.get(1)).add(edge.get(0));
-        }
-        logger.debug("Adjacency list created: {}", adj);
-
-        boolean[] visited = new boolean[vertices];
-        int[] disc = new int[vertices];
-        int[] low = new int[vertices];
-        List<List<Integer>> bridges = new ArrayList<>();
-
-        for (int i = 0; i < vertices; i++) {
-            if (!visited[i]) {
-                logger.debug("Starting DFS for bridge detection at vertex {}", i);
-                dfsBridge(i, -1, visited, disc, low, bridges, adj);
+            for (List<Integer> edge : edges) {
+                adj.get(edge.get(0)).add(edge.get(1));
+                adj.get(edge.get(1)).add(edge.get(0));
             }
-        }
 
-        List<String> result = bridges.stream().map(b -> b.get(0) + "-" + b.get(1)).toList();
-        logger.info("Total bridges found: {}", result.size());
-        return result;
+            boolean[] visited = new boolean[vertices];
+            int[] disc = new int[vertices];
+            int[] low = new int[vertices];
+            List<List<Integer>> bridges = new ArrayList<>();
+
+            for (int i = 0; i < vertices; i++) {
+                if (!visited[i]) {
+                    dfsBridge(i, -1, visited, disc, low, bridges, adj);
+                }
+            }
+
+            List<String> result = bridges.stream().map(b -> b.get(0) + "-" + b.get(1)).toList();
+            logger.info("Total bridges found: {}", result.size());
+            return result;
+
+        } catch (Exception e) {
+            logger.error("Error occurred while finding bridges", e);
+            throw new GraphAnalysisException("Something went wrong while detecting bridges in the graph.", e);
+        }
     }
 
     /**
@@ -104,40 +92,44 @@ public class GraphService {
      * @return a list of articulation point vertex indices
      */
     public List<Integer> findArticulationPoints(int vertices, List<List<Integer>> edges) {
-        logger.debug("Initializing articulation point detection with {} vertices and edges: {}", vertices, edges);
-        time = 0;
+        try {
+            logger.debug("Initializing articulation point detection with {} vertices and edges: {}", vertices, edges);
+            time = 0;
 
-        List<List<Integer>> adj = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
+            List<List<Integer>> adj = new ArrayList<>();
+            for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
 
-        for (List<Integer> edge : edges) {
-            adj.get(edge.get(0)).add(edge.get(1));
-            adj.get(edge.get(1)).add(edge.get(0));
-        }
-        logger.debug("Adjacency list created: {}", adj);
-
-        boolean[] visited = new boolean[vertices];
-        int[] disc = new int[vertices];
-        int[] low = new int[vertices];
-        boolean[] ap = new boolean[vertices];
-        int[] parent = new int[vertices];
-        int[] children = new int[vertices];
-
-        for (int i = 0; i < vertices; i++) {
-            parent[i] = -1;
-            if (!visited[i]) {
-                logger.debug("Starting DFS for articulation point detection at vertex {}", i);
-                dfsAP(i, visited, disc, low, ap, parent, children, adj);
+            for (List<Integer> edge : edges) {
+                adj.get(edge.get(0)).add(edge.get(1));
+                adj.get(edge.get(1)).add(edge.get(0));
             }
-        }
 
-        List<Integer> articulationPoints = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) {
-            if (ap[i]) articulationPoints.add(i);
-        }
+            boolean[] visited = new boolean[vertices];
+            int[] disc = new int[vertices];
+            int[] low = new int[vertices];
+            boolean[] ap = new boolean[vertices];
+            int[] parent = new int[vertices];
+            int[] children = new int[vertices];
 
-        logger.info("Total articulation points found: {}", articulationPoints.size());
-        return articulationPoints;
+            for (int i = 0; i < vertices; i++) {
+                parent[i] = -1;
+                if (!visited[i]) {
+                    dfsAP(i, visited, disc, low, ap, parent, children, adj);
+                }
+            }
+
+            List<Integer> articulationPoints = new ArrayList<>();
+            for (int i = 0; i < vertices; i++) {
+                if (ap[i]) articulationPoints.add(i);
+            }
+
+            logger.info("Total articulation points found: {}", articulationPoints.size());
+            return articulationPoints;
+
+        } catch (Exception e) {
+            logger.error("Error occurred while finding articulation points", e);
+            throw new GraphAnalysisException("Something went wrong while detecting articulation points in the graph.", e);
+        }
     }
 
     /**

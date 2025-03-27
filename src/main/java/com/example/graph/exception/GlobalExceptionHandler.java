@@ -2,84 +2,86 @@ package com.example.graph.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
- * Global exception handler for the Graph Application.
- *
- * <p>
- * This class centralizes exception handling for all controllers, ensuring that errors are
- * consistently formatted, logged, and returned with appropriate HTTP status codes.
- * </p>
- *
- * <p><strong>Key Responsibilities:</strong></p>
- * <ul>
- *   <li>Handle validation errors arising from invalid request payloads.</li>
- *   <li>Catch and log unexpected runtime exceptions.</li>
- *   <li>Ensure secure and meaningful error responses are sent to clients.</li>
- * </ul>
- *
- * <p><strong>Registered Exception Handlers:</strong></p>
- * <ul>
- *   <li>{@link MethodArgumentNotValidException}: Thrown when a `@Valid` annotated DTO fails validation.</li>
- *   <li>{@link Exception}: Catch-all handler for any uncaught runtime exception.</li>
- * </ul>
- *
- * <p><strong>Pass/Fail Conditions:</strong></p>
- * <ul>
- *   <li><strong>Pass:</strong> The application returns structured and meaningful error responses for invalid or exceptional conditions.</li>
- *   <li><strong>Fail:</strong> Errors are returned as raw stack traces or unformatted messages, leaking implementation details or failing to inform clients.</li>
- * </ul>
- *
- *
- * @author
- * @since 2025-03-26
+ * Global exception handler for managing application-wide exceptions with consistent responses.
  */
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
-     * Handles validation errors from failed `@Valid` DTOs.
+     * Generic error response builder.
      *
-     * <p>
-     * Aggregates all validation errors and returns them in a structured format with HTTP 400.
-     * </p>
-     *
-     * @param ex the MethodArgumentNotValidException thrown by Spring
-     * @return ResponseEntity containing field-specific error messages
+     * @param status  HTTP status code
+     * @param message Main message or error details
+     * @param extra   Optional extra fields (like field errors)
+     * @return structured error response
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            errors.put(error.getField(), error.getDefaultMessage());
-        });
-        logger.error("Validation error occurred: {}", errors);
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    private ResponseEntity<Object> buildErrorResponse(HttpStatus status, String message, Map<String, ?> extra) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        if (extra != null && !extra.isEmpty()) {
+            body.putAll(extra);
+        }
+        return new ResponseEntity<>(body, status);
     }
 
     /**
-     * Catches any unexpected or unhandled exception.
-     *
-     * <p>
-     * Logs the full stack trace for debugging and returns a generic error message to the client.
-     * </p>
-     *
-     * @param ex the unexpected exception
-     * @return ResponseEntity with HTTP 500 and a general error message
+     * Handles validation failures on method arguments.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Object> handleValidationErrors(MethodArgumentNotValidException ex) {
+        logger.error("Validation error: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", Map.of("errors", errors));
+    }
+
+    /**
+     * Handles malformed JSON requests.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleJsonParseErrors(HttpMessageNotReadableException ex) {
+        logger.error("Malformed JSON: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request", null);
+    }
+
+    /**
+     * Handles graph analysis related exceptions.
+     */
+    @ExceptionHandler(GraphAnalysisException.class)
+    public ResponseEntity<Object> handleGraphAnalysisException(GraphAnalysisException ex) {
+        logger.error("Graph analysis exception: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), null);
+    }
+
+    /**
+     * Handles all other unexpected exceptions.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneralException(Exception ex) {
-        logger.error("Unexpected error occurred: ", ex);
-        return new ResponseEntity<>("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<Object> handleGenericException(Exception ex) {
+        logger.error("Unhandled exception: ", ex);
+        return buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.",
+                null
+        );
     }
 }

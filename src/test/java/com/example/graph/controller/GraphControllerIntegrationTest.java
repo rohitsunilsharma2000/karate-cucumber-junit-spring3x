@@ -1,6 +1,7 @@
 package com.example.graph.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,64 +13,49 @@ import java.util.List;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Integration tests for {@link GraphController}.
  *
  * <p>
- * This class verifies the actual behavior of the graph-related REST endpoints by launching
- * the Spring Boot context and executing HTTP requests through {@link MockMvc}.
+ * This class verifies the behavior of the {@code /graph/bridges} and {@code /graph/articulation}
+ * REST endpoints in a Spring Boot environment using {@link MockMvc}. These tests validate:
  * </p>
+ *
+ * <ul>
+ *   <li>Correct HTTP status codes for valid and invalid input payloads</li>
+ *   <li>Proper JSON request/response handling</li>
+ *   <li>Validation constraint violations on the {@link com.example.graph.dto.GraphRequest}</li>
+ *   <li>Behavior of {@link com.example.graph.exception.GlobalExceptionHandler} for edge cases</li>
+ * </ul>
  *
  * <p>
- * <strong>Target Endpoints:</strong>
- * <ul>
- *     <li>POST /graph/bridges</li>
- *     <li>POST /graph/articulation</li>
- * </ul>
+ * This test suite ensures that the controller logic and request validation
+ * are working as expected in a full Spring Boot context.
  * </p>
  *
- * <p>
- * <strong>Focus:</strong>
- * Validates end-to-end request processing, including:
- * <ul>
- *     <li>JSON input parsing</li>
- *     <li>Validation constraints</li>
- *     <li>Controller and service layer interaction</li>
- *     <li>HTTP response status codes</li>
- * </ul>
- * </p>
- *
- * @version 1.0
+ * @author
  * @since 2025-03-26
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class GraphControllerIntegrationTest {
 
-    /**
-     * Injected MockMvc to simulate HTTP requests to controller endpoints.
-     */
     @Autowired
     private MockMvc mockMvc;
 
-    /**
-     * Injected ObjectMapper for serializing request bodies to JSON format.
-     */
     @Autowired
     private ObjectMapper objectMapper;
 
     /**
-     * Verifies that a valid request to /graph/bridges returns a 200 OK response.
-     *
-     * <p><strong>Scenario:</strong> Valid graph with 5 vertices and known bridges.</p>
-     * <p><strong>Pass:</strong> Returns HTTP 200.</p>
-     * <p><strong>Fail:</strong> Any non-200 status indicates a failure in controller validation or service logic.</p>
+     * Valid input test for /graph/bridges endpoint.
+     * Expects HTTP 200 OK and successful processing.
      */
     @Test
-    public void testGetBridges_ValidRequest_ReturnsBridges() throws Exception {
-        Map<String, Object> requestBody = Map.of(
+    @DisplayName("POST /graph/bridges - Valid Input - Returns 200 OK")
+    public void testFindBridges_ValidInput_ReturnsOk() throws Exception {
+        Map<String, Object> request = Map.of(
                 "vertices", 5,
                 "edges", List.of(
                         List.of(0, 1),
@@ -82,20 +68,18 @@ public class GraphControllerIntegrationTest {
 
         mockMvc.perform(post("/graph/bridges")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(requestBody)))
+                                .content(objectMapper.writeValueAsString(request)))
                .andExpect(status().isOk());
     }
 
     /**
-     * Verifies that a valid request to /graph/articulation returns a 200 OK response.
-     *
-     * <p><strong>Scenario:</strong> Valid graph input that includes articulation points.</p>
-     * <p><strong>Pass:</strong> HTTP 200 response indicating successful processing.</p>
-     * <p><strong>Fail:</strong> Any non-200 status.</p>
+     * Valid input test for /graph/articulation endpoint.
+     * Expects HTTP 200 OK and successful processing.
      */
     @Test
-    public void testGetArticulationPoints_ValidRequest_ReturnsPoints() throws Exception {
-        Map<String, Object> requestBody = Map.of(
+    @DisplayName("POST /graph/articulation - Valid Input - Returns 200 OK")
+    public void testFindArticulationPoints_ValidInput_ReturnsOk() throws Exception {
+        Map<String, Object> request = Map.of(
                 "vertices", 5,
                 "edges", List.of(
                         List.of(0, 1),
@@ -108,20 +92,18 @@ public class GraphControllerIntegrationTest {
 
         mockMvc.perform(post("/graph/articulation")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(requestBody)))
+                                .content(objectMapper.writeValueAsString(request)))
                .andExpect(status().isOk());
     }
 
     /**
-     * Tests missing "vertices" field in request to /graph/bridges, expecting a 400 Bad Request.
-     *
-     * <p><strong>Scenario:</strong> Input validation fails due to missing required field.</p>
-     * <p><strong>Pass:</strong> HTTP 400 is returned by validation framework.</p>
-     * <p><strong>Fail:</strong> If status is not 400, validation isn't working as expected.</p>
+     * Test missing 'vertices' field.
+     * Expects HTTP 400 Bad Request due to validation failure.
      */
     @Test
-    public void testGetBridges_InvalidRequest_MissingVertices() throws Exception {
-        Map<String, Object> requestBody = Map.of(
+    @DisplayName("POST /graph/bridges - Missing vertices - Returns 400 Bad Request")
+    public void testFindBridges_MissingVertices_ReturnsBadRequest() throws Exception {
+        Map<String, Object> request = Map.of(
                 "edges", List.of(
                         List.of(0, 1),
                         List.of(1, 2)
@@ -130,27 +112,42 @@ public class GraphControllerIntegrationTest {
 
         mockMvc.perform(post("/graph/bridges")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(requestBody)))
-               .andExpect(status().isBadRequest());
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     /**
-     * Tests empty edges list for /graph/articulation, expecting 400 Bad Request.
-     *
-     * <p><strong>Scenario:</strong> Edge list is empty, violating @NotEmpty constraint.</p>
-     * <p><strong>Pass:</strong> HTTP 400 is returned due to validation failure.</p>
-     * <p><strong>Fail:</strong> Any other status implies a missing or incorrect validation rule.</p>
+     * Test empty 'edges' list.
+     * Expects HTTP 400 Bad Request due to validation constraints.
      */
     @Test
-    public void testGetArticulationPoints_InvalidRequest_EmptyEdges() throws Exception {
-        Map<String, Object> requestBody = Map.of(
-                "vertices", 3,
+    @DisplayName("POST /graph/articulation - Empty edges - Returns 400 Bad Request")
+    public void testFindArticulationPoints_EmptyEdges_ReturnsBadRequest() throws Exception {
+        Map<String, Object> request = Map.of(
+                "vertices", 4,
                 "edges", List.of()
         );
 
         mockMvc.perform(post("/graph/articulation")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(requestBody)))
+                                .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Validation failed"));
+    }
+
+    /**
+     * Test with malformed JSON body.
+     * Expects HTTP 400 Bad Request due to JSON parsing error.
+     */
+    @Test
+    @DisplayName("POST /graph/bridges - Invalid JSON - Returns 400 Bad Request")
+    public void testFindBridges_InvalidJson_ReturnsBadRequest() throws Exception {
+        String malformedJson = "{\"vertices\": 4, \"edges\": [[0,1], [1,2], [2]]";
+
+        mockMvc.perform(post("/graph/bridges")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(malformedJson))
                .andExpect(status().isBadRequest());
     }
 }

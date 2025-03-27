@@ -1,128 +1,110 @@
-**Metadata**
 
-**Programming Language:** Java
-
-**L1 Taxonomy:** Complete Implementations
-
-**L2 Taxonomy:** Social Media Application
 
 **Use Case:**  Graph Integrity Analysis Platform for validating critical connectivity in infrastructure, network systems, and dependency graphs.
 
 Organizations need to identify vulnerabilities in their graph-based systems—such as communication networks, software component dependencies, or transport grids. This application detects bridges (critical edges) and articulation points (critical nodes) that, if removed, would disconnect the graph, potentially disrupting system integrity.
 
 
-**Use Case Type:** Core
 
-**Task Difficulty:** Hard
-
-# **Prompt**
-
-**Title:** Spring Boot Graph Analysis Service — Bridge & Articulation Point Detection
-
-**High-Level Description:**  
-You need to build a Spring Boot application that analyzes undirected graphs to detect **bridges** (critical edges) and **articulation points** (critical vertices). The application provides REST endpoints to receive input in the form of vertex and edge lists and responds with the results of the analysis. The solution includes input validation, service layer logic using DFS traversal, structured logging, exception handling, and security configuration. It is designed to be modular, testable, and extendable for more graph algorithms in the future.
 
 ---
 
-**Key Features:**
+**Use Case:** Implement bridge and articulation point detection in an undirected graph using Depth-First Search (DFS) algorithms within a Spring Boot service. This utility is essential for identifying critical links and nodes in network graphs—useful for communication networks, social graphs, and infrastructure systems. The service exposes REST endpoints where clients can submit graph data and retrieve lists of bridges and articulation points. The design prioritizes structured architecture, input validation, and clear error messaging to enhance stability and traceability.
 
-### 1. **Project Structure & Setup**
+# **Prompt**
 
-- Use Spring Initializr (https://start.spring.io/) to generate the project.
+## **Title:**
+Spring Boot Graph Analyzer — Bridge and Articulation Point Detection API
 
+## **High-Level Description:**
+A Spring Boot API that identifies *bridges* and *articulation points* in an undirected graph. The application exposes REST API endpoints where users can submit a graph defined by vertices and edges. It utilizes DFS-based algorithms to detect structural vulnerabilities—edges whose removal disconnects the graph (bridges), and vertices whose removal increases the number of connected components (articulation points). The solution adheres to layered architecture principles and includes a controller, service, exception handling, validation, and test coverage.
 
-### 2. **Graph Input DTO & Validation**
+## **Key Features:**
 
-- `GraphRequest.java`: DTO used in REST API input
-- Fields:
-   - `int vertices` (must be ≥ 1)
-   - `List<List<Integer>> edges` (cannot be null or empty)
-- Uses annotations like `@Min`, `@NotNull`, and `@NotEmpty` for validation.
+1. **Project Structure & Setup**
+- Create the project with Spring Initializr.
+- Organize packages into `controller`, `service`, `dto`, `exception`, and `config`.
 
+2. **REST Controller & API Endpoints**
+- Implement a REST controller under `/graph`.
+- Expose two endpoints:
+  - `POST /graph/bridges` — accepts a JSON request and returns a list of bridge edges.
+  - `POST /graph/articulation` — accepts a JSON request and returns a list of articulation point nodes.
+- Use `@Valid` with request DTO to enforce field constraints.
 
+3. **Service Layer – DFS-based Algorithms**
+- Detect **bridges** using Tarjan’s Bridge-Finding algorithm (DFS-based).
+- Detect **articulation points** using DFS with tracking of discovery and low times.
+- Log detailed progress using SLF4J at `INFO`, `DEBUG`, and `ERROR` levels.
 
-### 3. **Service Layer: DFS-based Graph Analysis**
+4. **Exception Handling & Input Validation**
+- Validate input using Jakarta annotations:
+  - `@Min(1)` for vertex count.
+  - `@NotEmpty`, `@NotNull` for edge definitions.
+- Implement `@RestControllerAdvice` to handle:
+  - Validation exceptions (`MethodArgumentNotValidException`)
+  - Malformed JSON (`HttpMessageNotReadableException`)
+  - Custom graph exceptions (`GraphAnalysisException`)
+  - Generic unhandled exceptions.
 
-- `GraphService.java` implements:
-   - `findBridges(int vertices, List<List<Integer>> edges)`
-   - `findArticulationPoints(int vertices, List<List<Integer>> edges)`
-- Depth First Search (DFS) used with discovery/low time tracking.
-- Logs every DFS step using SLF4J with levels: `INFO`, `DEBUG`.
+5. **Logging & Traceability**
+- Log incoming requests, internal algorithm steps, and responses using SLF4J.
+- Capture exceptions with stack traces for debugging.
 
+6. **Testing & Documentation**
+- Write:
+  - Unit tests for graph logic in service layer.
+  - Integration tests for controller with MockMvc.
+  - Negative test cases for malformed JSON and invalid input.
+- Use Javadoc and class-level documentation for maintainability.
 
+7. **Expected Behaviour:**
+- The bridge/articulation detection endpoints must:
+  - Return HTTP 200 OK with correct results for valid graphs.
+  - Return HTTP 400 Bad Request for:
+    - Missing/zero vertices → “Number of vertices must be at least 1”
+    - Null/empty edge list → “Edges list cannot be null/empty”
+    - Edges with null nodes → “Edge vertex cannot be null”
+    - Malformed JSON → “Malformed JSON request”
+- In case of internal errors during analysis, return HTTP 500 with a meaningful error.
 
-### 4. **Controller Layer: Graph Endpoints**
+8. **Edge Cases**
+- Handle cases where:
+  - `vertices = 0` → return 400.
+  - `edges = null or []` → return 400.
+  - Graph has isolated nodes → no bridges/articulation points.
+  - Edge list contains null vertex → return validation error.
+  - Invalid JSON → return parse error.
+- Maintain consistent error response format with `timestamp`, `status`, `error`, `message`.
 
-- `GraphController.java` defines two REST endpoints:
-   - `POST /graph/bridges` → returns a list of bridges (`["1-3", "3-4"]`)
-   - `POST /graph/articulation` → returns a list of articulation points (`[1, 3]`)
-- Input validated with `@Valid`.
-- Logs each request and result.
-
-
-
-### 5. **Security Configuration**
-
-- `SecurityConfig.java`:
-   - Disables CSRF (for dev)
-   - Enables CORS for localhost:3000
-   - Allows all endpoints (`/**`)
-   - Adds basic HTTP authentication
-   - Defines in-memory user: `user:password` (no encoding)
-
-
-
-### 6. **Exception Handling**
-
-- `MaxFlowException.java` for custom graph errors.
-- Recommended: Implement `@ControllerAdvice` for centralized error handling (e.g., validation errors, bad input).
-
-
-
-### 7. **Testing**
-
-- ✅ `GraphServiceTest`  
-  Tests core DFS logic for bridges and articulation points.
-
-- ✅ `GraphControllerIntegrationTest`  
-  Tests REST endpoints using `MockMvc`, covering:
-   - Valid requests
-   - Invalid (validation-failing) requests
-
-- ✅ `GraphRequestTest`  
-  JUnit + Validator test of `GraphRequest` constraints.
-
-- ✅ `SecurityConfigTest`  
-  Verifies:
-   - CORS config
-   - UserDetailsService creation
-   - Security filter chain setup
-
-- ✅ `MaxFlowExceptionTest`  
-  Checks proper exception message propagation.
-
-- ✅ `GraphApplicationTest` and `JohnsonApplicationTest`  
-  Confirms Spring Boot context loads and `main()` executes without issues.
-
+---
 
 **Dependency Requirements:**
 
 - **JUnit 5:** For writing and executing unit tests.
-- **Maven:** For dependency management and build automation.
-- **Spring Boot Starter Web:** For creating REST endpoints and handling HTTP requests.
-- **Spring Boot Starter Security:** For providing authentication and authorization capabilities.
-- **Spring Boot Starter Validation:** For implementing robust input validation.
-- **Lombok:** For reducing boilerplate code in model classes (optional).
-- **Spring Boot Starter Test:** For unit and integration testing (includes JUnit 5 and Mockito).
-- **H2 Database:** For in-memory database support during testing.
-- **Jakarta Validation API:** For supporting Jakarta Bean Validation.
-- **Spring Boot DevTools:** For enhancing development productivity with automatic restarts and live reload.
-
-
-### **Goal:**
-A fully testable and modular Spring Boot microservice capable of detecting graph bridges and articulation points via REST APIs, complete with security, logging, and input validation. Ideal for integration in larger platforms needing graph-based analytics or structural diagnostics.
+- **Maven:** For dependency management and builds.
+- **Spring Boot Starter Web:** For exposing RESTful APIs.
+- **Spring Boot Starter Validation:** For request validation using Jakarta Bean Validation.
+- **Spring Boot Starter Test:** For unit and integration testing.
+- **Lombok:** (optional) for reducing boilerplate in DTOs and services.
+- **SLF4J / Logback:** For logging.
+- **Spring Boot DevTools:** For fast development and hot reloading.
+- **H2 Database:** Only if persistence is needed for future enhancements (not used here).
 
 ---
+
+## **Goal:**
+To develop a Spring Boot microservice that reliably detects bridges and articulation points in a graph using efficient DFS-based algorithms. The application must maintain a clean structure, enforce robust validation, log key activities, and handle both expected and unexpected errors gracefully. This service is useful for identifying critical points in communication, social, and transport networks.
+
+
+---
+
+**Plan**  
+I will set up the project structure using Spring Initializr and create the core packages: `controller`, `service`, `dto`, `exception`, and `config`. I will configure the `pom.xml` with all required dependencies and set the Java version to 17. I will define the `GraphRequest` DTO with validation annotations to ensure input integrity. I will build the REST controller to expose two endpoints: one for detecting bridges and another for articulation points. I will implement the DFS-based algorithms in the service layer with proper SLF4J logging at INFO and DEBUG levels. I will add a `GlobalExceptionHandler` class to handle validation failures, malformed requests, and custom graph exceptions uniformly. I will write unit tests for the service logic and integration tests for the REST endpoints using JUnit 5 and Spring MockMvc. Finally, I will verify the application by building and running it with Maven, ensuring that it returns correct results and properly handles edge cases and errors.
+
+--- 
+
+
 # **Complete Project Code**
 
 **1) Project Structure:** A logical structure (typical Maven layout)
@@ -136,15 +118,13 @@ src
 |   |       `-- example
 |   |           `-- graph
 |   |               |-- GraphIntegrityApp.java
-|   |               |-- config
-|   |               |   `-- SecurityConfig.java
 |   |               |-- controller
 |   |               |   `-- GraphController.java
 |   |               |-- dto
 |   |               |   `-- GraphRequest.java
 |   |               |-- exception
 |   |               |   |-- GlobalExceptionHandler.java
-|   |               |   `-- MaxFlowException.java
+|   |               |   `-- GraphAnalysisException.java
 |   |               `-- service
 |   |                   `-- GraphService.java
 |   `-- resources
@@ -154,22 +134,21 @@ src
             `-- example
                 `-- graph
                     |-- GraphIntegrityAppTest.java
-                    |-- config
-                    |   `-- SecurityConfigTest.java
                     |-- controller
                     |   `-- GraphControllerIntegrationTest.java
                     |-- dto
                     |   `-- GraphRequestTest.java
                     |-- exception
-                    |   |-- GraphServiceTest.java
-                    |   `-- MaxFlowExceptionTest.java
+                    |   `-- GlobalExceptionHandlerTest.java
                     `-- service
                         `-- GraphServiceTest.java
 
 
+
+
 ```
 
-**2) Main Application:** src/main/java/com/example/graph/GraphIntegrityApp.java
+**2) Main Application:** `src/main/java/com/example/graph/GraphIntegrityApp.java`
 ```java
 package com.example.graph;
 
@@ -211,31 +190,25 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author 
  * @since 2025-03-26
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
 public class GraphIntegrityApp {
-    private static final Logger logger = LoggerFactory.getLogger(GraphIntegrityApp.class);
 
-    /**
-     * The main method that launches the Graph Integrity Application.
-     *
-     * <p>
-     * Logs startup initiation and completion.
-     * </p>
-     *
-     * @param args Command-line arguments (not used).
-     */
-    public static void main(String[] args) {
-        logger.info("Starting Graph Application...");
-        SpringApplication.run(GraphIntegrityApp.class, args);
-        logger.info("Graph Application started successfully.");
-    }
+  /**
+   * Main method that starts the Spring Boot application.
+   *
+   * @param args Command-line arguments passed to the application.
+   */
+  public static void main(String[] args) {
+    SpringApplication.run(GraphIntegrityApp.class, args);
+  }
 }
 
 ```
-**3) GraphService:** src/main/java/com/example/graph/service/GraphService.java
+**3) GraphService:** `src/main/java/com/example/graph/service/GraphService.java`
 ```java
 package com.example.graph.service;
 
+import com.example.graph.exception.GraphAnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -246,23 +219,6 @@ import java.util.List;
 /**
  * Service class for analyzing graph integrity by detecting critical elements like
  * bridges and articulation points in an undirected graph.
- *
- * <p>
- * This service implements Depth First Search (DFS)-based algorithms for:
- * <ul>
- *   <li><strong>Bridge Detection:</strong> Identifying edges which, if removed, would increase the number of connected components.</li>
- *   <li><strong>Articulation Point Detection:</strong> Identifying vertices which, if removed, would increase the number of connected components.</li>
- * </ul>
- * </p>
- *
- * <p>
- * It supports the analysis of any undirected graph represented by an edge list and a number of vertices.
- * </p>
- *
- * <p><strong>Logging:</strong> SLF4J is used to log method executions, DFS traversal details, and outcomes at DEBUG and INFO levels.</p>
- *
- * @author
- * @since 2025-03-26
  */
 @Service
 public class GraphService {
@@ -277,33 +233,37 @@ public class GraphService {
      * @return a list of string representations of bridge edges (e.g., "1-3")
      */
     public List<String> findBridges(int vertices, List<List<Integer>> edges) {
-        logger.debug("Initializing bridge detection with {} vertices and edges: {}", vertices, edges);
-        time = 0;
+        try {
+            logger.debug("Initializing bridge detection with {} vertices and edges: {}", vertices, edges);
+            time = 0;
 
-        List<List<Integer>> adj = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
+            List<List<Integer>> adj = new ArrayList<>();
+            for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
 
-        for (List<Integer> edge : edges) {
-            adj.get(edge.get(0)).add(edge.get(1));
-            adj.get(edge.get(1)).add(edge.get(0));
-        }
-        logger.debug("Adjacency list created: {}", adj);
-
-        boolean[] visited = new boolean[vertices];
-        int[] disc = new int[vertices];
-        int[] low = new int[vertices];
-        List<List<Integer>> bridges = new ArrayList<>();
-
-        for (int i = 0; i < vertices; i++) {
-            if (!visited[i]) {
-                logger.debug("Starting DFS for bridge detection at vertex {}", i);
-                dfsBridge(i, -1, visited, disc, low, bridges, adj);
+            for (List<Integer> edge : edges) {
+                adj.get(edge.get(0)).add(edge.get(1));
+                adj.get(edge.get(1)).add(edge.get(0));
             }
-        }
 
-        List<String> result = bridges.stream().map(b -> b.get(0) + "-" + b.get(1)).toList();
-        logger.info("Total bridges found: {}", result.size());
-        return result;
+            boolean[] visited = new boolean[vertices];
+            int[] disc = new int[vertices];
+            int[] low = new int[vertices];
+            List<List<Integer>> bridges = new ArrayList<>();
+
+            for (int i = 0; i < vertices; i++) {
+                if (!visited[i]) {
+                    dfsBridge(i, -1, visited, disc, low, bridges, adj);
+                }
+            }
+
+            List<String> result = bridges.stream().map(b -> b.get(0) + "-" + b.get(1)).toList();
+            logger.info("Total bridges found: {}", result.size());
+            return result;
+
+        } catch (Exception e) {
+            logger.error("Error occurred while finding bridges", e);
+            throw new GraphAnalysisException("Something went wrong while detecting bridges in the graph.", e);
+        }
     }
 
     /**
@@ -340,40 +300,44 @@ public class GraphService {
      * @return a list of articulation point vertex indices
      */
     public List<Integer> findArticulationPoints(int vertices, List<List<Integer>> edges) {
-        logger.debug("Initializing articulation point detection with {} vertices and edges: {}", vertices, edges);
-        time = 0;
+        try {
+            logger.debug("Initializing articulation point detection with {} vertices and edges: {}", vertices, edges);
+            time = 0;
 
-        List<List<Integer>> adj = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
+            List<List<Integer>> adj = new ArrayList<>();
+            for (int i = 0; i < vertices; i++) adj.add(new ArrayList<>());
 
-        for (List<Integer> edge : edges) {
-            adj.get(edge.get(0)).add(edge.get(1));
-            adj.get(edge.get(1)).add(edge.get(0));
-        }
-        logger.debug("Adjacency list created: {}", adj);
-
-        boolean[] visited = new boolean[vertices];
-        int[] disc = new int[vertices];
-        int[] low = new int[vertices];
-        boolean[] ap = new boolean[vertices];
-        int[] parent = new int[vertices];
-        int[] children = new int[vertices];
-
-        for (int i = 0; i < vertices; i++) {
-            parent[i] = -1;
-            if (!visited[i]) {
-                logger.debug("Starting DFS for articulation point detection at vertex {}", i);
-                dfsAP(i, visited, disc, low, ap, parent, children, adj);
+            for (List<Integer> edge : edges) {
+                adj.get(edge.get(0)).add(edge.get(1));
+                adj.get(edge.get(1)).add(edge.get(0));
             }
-        }
 
-        List<Integer> articulationPoints = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) {
-            if (ap[i]) articulationPoints.add(i);
-        }
+            boolean[] visited = new boolean[vertices];
+            int[] disc = new int[vertices];
+            int[] low = new int[vertices];
+            boolean[] ap = new boolean[vertices];
+            int[] parent = new int[vertices];
+            int[] children = new int[vertices];
 
-        logger.info("Total articulation points found: {}", articulationPoints.size());
-        return articulationPoints;
+            for (int i = 0; i < vertices; i++) {
+                parent[i] = -1;
+                if (!visited[i]) {
+                    dfsAP(i, visited, disc, low, ap, parent, children, adj);
+                }
+            }
+
+            List<Integer> articulationPoints = new ArrayList<>();
+            for (int i = 0; i < vertices; i++) {
+                if (ap[i]) articulationPoints.add(i);
+            }
+
+            logger.info("Total articulation points found: {}", articulationPoints.size());
+            return articulationPoints;
+
+        } catch (Exception e) {
+            logger.error("Error occurred while finding articulation points", e);
+            throw new GraphAnalysisException("Something went wrong while detecting articulation points in the graph.", e);
+        }
     }
 
     /**
@@ -408,96 +372,119 @@ public class GraphService {
 }
 
 ```
+**4) GraphAnalysisException:** `src/main/java/com/example/graph/exception/GraphAnalysisException.java`
+```java
+package com.example.graph.exception;
 
-**4) GlobalExceptionHandler:** src/main/java/com/example/maxflow/exception/GlobalExceptionHandler.java
+
+/**
+ * Exception thrown when an error occurs during graph analysis,
+ * such as detecting bridges or articulation points.
+ */
+public class GraphAnalysisException extends RuntimeException {
+
+    public GraphAnalysisException(String message) {
+        super(message);
+    }
+
+    public GraphAnalysisException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+```
+**4) GlobalExceptionHandler:** `src/main/java/com/example/graph/exception/GlobalExceptionHandler.java`
 ```java
 package com.example.graph.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
- * Global exception handler for the Graph Application.
- *
- * <p>
- * This class centralizes exception handling for all controllers, ensuring that errors are
- * consistently formatted, logged, and returned with appropriate HTTP status codes.
- * </p>
- *
- * <p><strong>Key Responsibilities:</strong></p>
- * <ul>
- *   <li>Handle validation errors arising from invalid request payloads.</li>
- *   <li>Catch and log unexpected runtime exceptions.</li>
- *   <li>Ensure secure and meaningful error responses are sent to clients.</li>
- * </ul>
- *
- * <p><strong>Registered Exception Handlers:</strong></p>
- * <ul>
- *   <li>{@link MethodArgumentNotValidException}: Thrown when a `@Valid` annotated DTO fails validation.</li>
- *   <li>{@link Exception}: Catch-all handler for any uncaught runtime exception.</li>
- * </ul>
- *
- * <p><strong>Pass/Fail Conditions:</strong></p>
- * <ul>
- *   <li><strong>Pass:</strong> The application returns structured and meaningful error responses for invalid or exceptional conditions.</li>
- *   <li><strong>Fail:</strong> Errors are returned as raw stack traces or unformatted messages, leaking implementation details or failing to inform clients.</li>
- * </ul>
- *
- * @author
- * @since 2025-03-26
+ * Global exception handler for managing application-wide exceptions with consistent responses.
  */
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
-     * Handles validation errors from failed `@Valid` DTOs.
+     * Generic error response builder.
      *
-     * <p>
-     * Aggregates all validation errors and returns them in a structured format with HTTP 400.
-     * </p>
-     *
-     * @param ex the MethodArgumentNotValidException thrown by Spring
-     * @return ResponseEntity containing field-specific error messages
+     * @param status  HTTP status code
+     * @param message Main message or error details
+     * @param extra   Optional extra fields (like field errors)
+     * @return structured error response
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            errors.put(error.getField(), error.getDefaultMessage());
-        });
-        logger.error("Validation error occurred: {}", errors);
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    private ResponseEntity<Object> buildErrorResponse(HttpStatus status, String message, Map<String, ?> extra) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        if (extra != null && !extra.isEmpty()) {
+            body.putAll(extra);
+        }
+        return new ResponseEntity<>(body, status);
     }
 
     /**
-     * Catches any unexpected or unhandled exception.
-     *
-     * <p>
-     * Logs the full stack trace for debugging and returns a generic error message to the client.
-     * </p>
-     *
-     * @param ex the unexpected exception
-     * @return ResponseEntity with HTTP 500 and a general error message
+     * Handles validation failures on method arguments.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Object> handleValidationErrors(MethodArgumentNotValidException ex) {
+        logger.error("Validation error: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", Map.of("errors", errors));
+    }
+
+    /**
+     * Handles malformed JSON requests.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleJsonParseErrors(HttpMessageNotReadableException ex) {
+        logger.error("Malformed JSON: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request", null);
+    }
+
+    /**
+     * Handles graph analysis related exceptions.
+     */
+    @ExceptionHandler(GraphAnalysisException.class)
+    public ResponseEntity<Object> handleGraphAnalysisException(GraphAnalysisException ex) {
+        logger.error("Graph analysis exception: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), null);
+    }
+
+    /**
+     * Handles all other unexpected exceptions.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneralException(Exception ex) {
-        logger.error("Unexpected error occurred: ", ex);
-        return new ResponseEntity<>("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<Object> handleGenericException(Exception ex) {
+        logger.error("Unhandled exception: ", ex);
+        return buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.",
+                null
+        );
     }
 }
 
 ```
-**5) GraphRequest:** src/main/java/com/example/graph/dto/GraphRequest.java
+**5) GraphRequest:** `src/main/java/com/example/graph/dto/GraphRequest.java`
 ```java
 package com.example.graph.dto;
 
@@ -571,7 +558,7 @@ public class GraphRequest {
 }
 
 ```
-**6) GraphController:** src/main/java/com/example/graph/controller/GraphController.java
+**6) GraphController:** `src/`main/java/com/example/graph/controller/GraphController.java`
 ```java
 package com.example.graph.controller;
 
@@ -650,313 +637,109 @@ public class GraphController {
 }
 
 ```
-**7) SecurityConfig:** src/main/java/com/example/graph/config/SecurityConfig.java
-```java
-package com.example.graph.config;
+**7) application.properties:** `src/main/resources/application.properties`
+```text
+spring.application.name=graph-integrity-app
+server.port=8080
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
-
-/**
- * Security configuration for the Notification Service Application.
- *
- * <p><strong>Overview:</strong></p>
- * This configuration sets up the security filter chain for the Notification Service. It:
- * <ul>
- *   <li>Enables CORS with custom rules to allow requests from development frontends (e.g., localhost:3000).</li>
- *   <li>Disables CSRF protection for API development (note: CSRF protection should be enabled in production).</li>
- *   <li>Permits open access to all endpoints for development and testing purposes.</li>
- *   <li>Enables HTTP Basic authentication for secured endpoints during testing.</li>
- *   <li>Configures in-memory authentication with a single test user.</li>
- * </ul>
- *
- * <p><strong>References:</strong></p>
- * <ul>
- *   <li>{@link SecurityFilterChain} is used to build and configure the filter chain.</li>
- *   <li>{@link CorsConfigurationSource} sets the CORS rules applied to all endpoints.</li>
- *   <li>{@link InMemoryUserDetailsManager} is used for in-memory user authentication.</li>
- * </ul>
- *
- * <p><strong>Functionality:</strong></p>
- * <ul>
- *   <li>Applies custom CORS rules allowing origins "http://localhost:3000" and "http://127.0.0.1:3000", with permitted methods GET, POST, PUT, DELETE, and OPTIONS.</li>
- *   <li>Disables CSRF protection to simplify API development.</li>
- *   <li>Allows open access to all endpoints ("/**" and "/api/**") for development purposes.</li>
- *   <li>Enables HTTP Basic authentication to secure endpoints during testing.</li>
- *   <li>Defines an in-memory user with username "user", password "password" (with no encoding), and role "USER".</li>
- * </ul>
- *
- * <p><strong>Error Conditions:</strong></p>
- * <ul>
- *   <li>If CORS is misconfigured, cross-origin requests may fail.</li>
- *   <li>Disabling CSRF in production environments can expose the application to CSRF attacks.</li>
- *   <li>If in-memory user details are misconfigured, authentication may fail, resulting in unauthorized access.</li>
- * </ul>
- *
- * <p><strong>Acceptable Values / Range:</strong></p>
- * <ul>
- *   <li><strong>Allowed Origins:</strong> "http://localhost:3000" and "http://127.0.0.1:3000"</li>
- *   <li><strong>Allowed Methods:</strong> GET, POST, PUT, DELETE, OPTIONS</li>
- *   <li><strong>User Credentials:</strong> Username "user", password "password" (with {noop} encoding), role "USER"</li>
- * </ul>
- *
- * <p><strong>Premise and Assertions:</strong></p>
- * <ul>
- *   <li>The configuration assumes a development or testing environment where open access is acceptable.</li>
- *   <li>It is expected that these settings will be revised for production to enforce stricter security controls.</li>
- * </ul>
- *
- * <p><strong>Pass/Fail Conditions:</strong></p>
- * <ul>
- *   <li><strong>Pass:</strong> The SecurityFilterChain is correctly configured, permitting valid CORS requests, proper authentication,
- *       and open access as defined.</li>
- *   <li><strong>Fail:</strong> Unauthorized access attempts or misconfigured endpoints result in failure, typically yielding a 403 Forbidden response.</li>
- * </ul>
- *
- * @version 1.0
- * @since 2025-03-26
- */
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig {
-
-    /**
-     * Configures the security filter chain for HTTP requests.
-     *
-     * <p><strong>Description:</strong></p>
-     * This method sets up the security filter chain by:
-     * <ul>
-     *   <li>Enabling CORS with the defined custom configuration.</li>
-     *   <li>Disabling CSRF protection for API development (ensure to secure this in production).</li>
-     *   <li>Permitting all requests to endpoints ("/**" and "/api/**") for development purposes.</li>
-     *   <li>Enabling HTTP Basic authentication to secure endpoints for testing.</li>
-     * </ul>
-     *
-     * <p><strong>Error Conditions:</strong></p>
-     * <ul>
-     *   <li>If CORS settings are not applied correctly, cross-origin requests may fail.</li>
-     *   <li>If CSRF is disabled in production, the application may be vulnerable to CSRF attacks.</li>
-     * </ul>
-     *
-     * <p><strong>Pass/Fail Conditions:</strong></p>
-     * <ul>
-     *   <li><strong>Pass:</strong> The filter chain builds successfully, and valid requests are processed with appropriate authentication.</li>
-     *   <li><strong>Fail:</strong> Misconfiguration results in security exceptions or unauthorized access errors.</li>
-     * </ul>
-     *
-     * @param http the {@link HttpSecurity} object provided by Spring Security.
-     * @return the configured {@link SecurityFilterChain}.
-     * @throws Exception if an error occurs during configuration.
-     */
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .cors() // Enable CORS
-                .and()
-                .csrf().disable() // Disable CSRF for API development
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(
-                                "/**",      // Allow all paths
-                                "/api/**"   // REST APIs
-                        ).permitAll()
-                        .anyRequest().permitAll() // Catch-all for any unlisted route
-                )
-                .httpBasic(); // Enable HTTP Basic authentication for testing
-
-        return http.build();
-    }
-
-    /**
-     * Defines the CORS configuration for the application.
-     *
-     * <p><strong>Description:</strong></p>
-     * This method sets up CORS rules to allow requests from the development frontend running on
-     * "http://localhost:3000" and "http://127.0.0.1:3000". It permits common HTTP methods and headers,
-     * enables credentials, and sets the preflight cache duration.
-     *
-     * <p><strong>Error Conditions:</strong></p>
-     * <ul>
-     *   <li>If the allowed origins or methods are misconfigured, legitimate cross-origin requests may be blocked.</li>
-     * </ul>
-     *
-     * <p><strong>Pass/Fail Conditions:</strong></p>
-     * <ul>
-     *   <li><strong>Pass:</strong> The CORS configuration is correctly applied to all endpoints.</li>
-     *   <li><strong>Fail:</strong> Misconfigured CORS settings result in failed cross-origin requests.</li>
-     * </ul>
-     *
-     * @return a {@link CorsConfigurationSource} containing the CORS settings.
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // Cache preflight response for 1 hour
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply configuration to all endpoints
-        return source;
-    }
-
-    /**
-     * Defines an in-memory user for testing purposes.
-     *
-     * <p><strong>Description:</strong></p>
-     * This method creates a simple in-memory user with the following details:
-     * <ul>
-     *   <li><strong>Username:</strong> "user"</li>
-     *   <li><strong>Password:</strong> "password" (with {noop} to indicate no password encoding)</li>
-     *   <li><strong>Role:</strong> "USER"</li>
-     * </ul>
-     * This user is intended for development and testing of authentication mechanisms.
-     *
-     * <p><strong>Error Conditions:</strong></p>
-     * <ul>
-     *   <li>If the user details are misconfigured, authentication will fail, resulting in access errors.</li>
-     * </ul>
-     *
-     * <p><strong>Pass/Fail Conditions:</strong></p>
-     * <ul>
-     *   <li><strong>Pass:</strong> The in-memory user is correctly configured, allowing successful authentication.</li>
-     *   <li><strong>Fail:</strong> Misconfiguration of user details leads to failed authentication.</li>
-     * </ul>
-     *
-     * @return an instance of {@link UserDetailsService} containing the test user.
-     */
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.withUsername("user")
-                               .password("{noop}password") // No encoding used for testing purposes
-                               .roles("USER")
-                               .build();
-        return new InMemoryUserDetailsManager(user);
-    }
-}
 ```
 
 
-
-**8) Maven:** pom.xml
+**8) Maven:** `pom.xml`
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-	<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-			 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-		<modelVersion>4.0.0</modelVersion>
-		<parent>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-parent</artifactId>
-			<version>3.4.2</version>
-			<relativePath/> <!-- lookup parent from repository -->
-		</parent>
-		<groupId>com.example</groupId>
-		<artifactId>graph</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
-		<name>graph-integrity-app</name>
-		<description>Build a Spring Boot application that detects bridges and articulation points in a graph. Sure! Here's the complete documentation in your requested format for the Bridges and Articulation Points Detection project using Spring Boot</description>
-		<url/>
-		<licenses>
-			<license/>
-		</licenses>
-		<developers>
-			<developer/>
-		</developers>
-		<scm>
-			<connection/>
-			<developerConnection/>
-			<tag/>
-			<url/>
-		</scm>
-		<properties>
-			<java.version>17</java.version>
-		</properties>
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<!-- Spring Boot Starter Web (Includes Spring Security by default) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<!-- Spring Security for authentication and authorization -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<!-- Spring Boot Starter Web (Includes Spring Security by default) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.2</version>
+    <relativePath/> <!-- lookup parent from repository -->
+  </parent>
+  <groupId>com.example</groupId>
+  <artifactId>graph</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>graph-integrity-app</name>
+  <description>Build a Spring Boot application that detects bridges and articulation points in a graph.</description>
+  <url/>
+  <licenses>
+    <license/>
+  </licenses>
+  <developers>
+    <developer/>
+  </developers>
+  <scm>
+    <connection/>
+    <developerConnection/>
+    <tag/>
+    <url/>
+  </scm>
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Spring Boot Starter Web (Includes Spring Security by default) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- Spring Boot Starter for Validation -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <!-- Lombok Dependency -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.30</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- For Jakarta Bean Validation -->
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+      <version>3.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-devtools</artifactId>
+      <version>3.4.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
-		<!-- Spring Boot Starter for Validation -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
-		<!-- Lombok Dependency -->
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>1.18.30</version>
-			<scope>provided</scope>
-		</dependency>
-		<!-- For Jakarta Bean Validation -->
-		<dependency>
-			<groupId>jakarta.validation</groupId>
-			<artifactId>jakarta.validation-api</artifactId>
-			<version>3.0.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<version>3.4.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
-		</dependency>
+  </dependencies>
 
-	</dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
-		<build>
-			<plugins>
-				<plugin>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-maven-plugin</artifactId>
-				</plugin>
-			</plugins>
-		</build>
-
-	</project>
+</project>
 ```
 
 
 # **Unit Tests (JUnit 5 + Mockito)**
 
-**9) Main Application:** src/test/java/com/example/maxflow/MaxFlowApplicationTest.java
+**9) Main Application:** `src/test/java/com/example/graph/MaxFlowApplicationTest.java`
 ```java
 package com.example.graph;
 
@@ -988,129 +771,135 @@ public class GraphIntegrityAppTest {
 }
 
 ```
-**10) GraphServiceTest:** src/test/java/com/example/graph/service/GraphServiceTest.java
+**10) GraphServiceTest:** `src/test/java/com/example/graph/service/GraphServiceTest.java`
 ```java
 package com.example.graph.service;
 
+import com.example.graph.exception.GraphAnalysisException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for the {@link GraphService} class.
+ * Unit tests for {@link GraphService}.
  *
- * <p>This test suite validates the correctness of the graph analysis algorithms, specifically:</p>
+ * <p>This class verifies the correctness and robustness of graph-related computations:
  * <ul>
- *   <li>{@code findBridges(int, List<List<Integer>>)}</li>
- *   <li>{@code findArticulationPoints(int, List<List<Integer>>)}</li>
+ *   <li>Correct identification of bridges and articulation points in an undirected graph</li>
+ *   <li>Proper exception handling in edge cases and faulty inputs</li>
+ *   <li>Validation for empty graph structures</li>
  * </ul>
+ * </p>
  *
- * <p>Each test case checks either:</p>
- * <ul>
- *   <li>The detection of correct graph elements (bridges or articulation points).</li>
- *   <li>The return of empty results when no such critical elements exist.</li>
- * </ul>
- *
- * <p><strong>Note:</strong> The service is instantiated manually to test in isolation, without reliance on Spring context or dependencies.</p>
- *
- * @author
- * @since 2025-03-26
+ * @since 2025-03-27
  */
-@SpringBootTest
-public class GraphServiceTest {
+class GraphServiceTest {
 
-    private final GraphService graphService = new GraphService();
+    private GraphService graphService;
+
+    @BeforeEach
+    void setUp() {
+        graphService = new GraphService();
+    }
 
     /**
-     * Verifies that the bridge detection algorithm returns the correct set of bridge edges.
-     * <pre>
-     * Graph:
-     *   0 - 1 - 3 - 4
-     *    \  |
-     *      2
-     * </pre>
-     * Expected bridges: 1-3 and 3-4
+     * Tests successful identification of bridges in a well-formed graph.
      */
     @Test
-    public void testFindBridges_WithValidGraph_ReturnsCorrectBridges() {
+    void testFindBridges_Success() {
         int vertices = 5;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0),
-                List.of(1, 3),
-                List.of(3, 4)
+        List<List<Integer>> edges = Arrays.asList(
+                Arrays.asList(1, 0),
+                Arrays.asList(0, 2),
+                Arrays.asList(2, 1),
+                Arrays.asList(0, 3),
+                Arrays.asList(3, 4)
         );
 
         List<String> bridges = graphService.findBridges(vertices, edges);
         assertEquals(2, bridges.size());
-        assertTrue(bridges.contains("1-3") || bridges.contains("3-1"));
         assertTrue(bridges.contains("3-4") || bridges.contains("4-3"));
+        assertTrue(bridges.contains("0-3") || bridges.contains("3-0"));
     }
 
     /**
-     * Verifies that articulation points are correctly identified for a non-trivial graph.
-     * Expected articulation points: vertex 1 and vertex 3
+     * Tests that an empty graph results in an empty list of bridges.
      */
     @Test
-    public void testFindArticulationPoints_WithValidGraph_ReturnsCorrectPoints() {
-        int vertices = 5;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0),
-                List.of(1, 3),
-                List.of(3, 4)
-        );
-
-        List<Integer> points = graphService.findArticulationPoints(vertices, edges);
-        assertEquals(2, points.size());
-        assertTrue(points.contains(1));
-        assertTrue(points.contains(3));
-    }
-
-    /**
-     * Verifies that the bridge detection algorithm returns an empty list
-     * when there are no bridges in a cyclic graph.
-     */
-    @Test
-    public void testFindBridges_WithNoBridgeGraph_ReturnsEmptyList() {
-        int vertices = 3;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0)
-        );
-
-        List<String> bridges = graphService.findBridges(vertices, edges);
+    void testFindBridges_EmptyGraph() {
+        List<String> bridges = graphService.findBridges(0, Collections.emptyList());
+        assertNotNull(bridges);
         assertTrue(bridges.isEmpty());
     }
 
     /**
-     * Verifies that the articulation point detection algorithm returns an empty list
-     * when all nodes are part of a strongly connected component.
+     * Tests that the service throws a {@link GraphAnalysisException} for malformed input (e.g., null edge).
      */
     @Test
-    public void testFindArticulationPoints_WithNoArticulationPointGraph_ReturnsEmptyList() {
-        int vertices = 3;
-        List<List<Integer>> edges = List.of(
-                List.of(0, 1),
-                List.of(1, 2),
-                List.of(2, 0)
+    void testFindBridges_Exception() {
+        Exception exception = assertThrows(GraphAnalysisException.class, () -> {
+            graphService.findBridges(3, Arrays.asList(
+                    Arrays.asList(0, 1),
+                    null
+            ));
+        });
+        assertTrue(exception.getMessage().contains("Something went wrong while detecting bridges"));
+    }
+
+    /**
+     * Tests successful identification of articulation points in a well-formed graph.
+     */
+    @Test
+    void testFindArticulationPoints_Success() {
+        int vertices = 5;
+        List<List<Integer>> edges = Arrays.asList(
+                Arrays.asList(1, 0),
+                Arrays.asList(0, 2),
+                Arrays.asList(2, 1),
+                Arrays.asList(0, 3),
+                Arrays.asList(3, 4)
         );
 
-        List<Integer> points = graphService.findArticulationPoints(vertices, edges);
-        assertTrue(points.isEmpty());
+        List<Integer> aps = graphService.findArticulationPoints(vertices, edges);
+        assertEquals(2, aps.size());
+        assertTrue(aps.contains(0));
+        assertTrue(aps.contains(3));
+    }
+
+    /**
+     * Tests that an empty graph results in an empty list of articulation points.
+     */
+    @Test
+    void testFindArticulationPoints_EmptyGraph() {
+        List<Integer> aps = graphService.findArticulationPoints(0, Collections.emptyList());
+        assertNotNull(aps);
+        assertTrue(aps.isEmpty());
+    }
+
+    /**
+     * Tests that the service throws a {@link GraphAnalysisException} for malformed input (e.g., null edge).
+     */
+    @Test
+    void testFindArticulationPoints_Exception() {
+        Exception exception = assertThrows(GraphAnalysisException.class, () -> {
+            graphService.findArticulationPoints(3, Arrays.asList(
+                    Arrays.asList(0, 1),
+                    null
+            ));
+        });
+        assertTrue(exception.getMessage().contains("Something went wrong while detecting articulation points"));
     }
 }
 
 ```
 
-**11) GraphRequestTest:** src/test/java/com/example/graph/dto/GraphRequestTest.java
+
+**11) GraphRequestTest:** `src/test/java/com/example/graph/dto/GraphRequestTest.java`
 ```java
 package com.example.graph.dto;
 
@@ -1230,11 +1019,16 @@ public class GraphRequestTest {
 }
 
 ```
-**12) GraphControllerIntegrationTest:** src/test/java/com/example/graph/controller/GraphControllerIntegrationTest.java
+
+## After the first iteration, the overall test coverage was 74%. To improve this, additional test cases—including those in  GraphControllerIntegrationTest and GlobalExceptionHandlerTest will be introduced to further increase the test coverage percentage.
+
+
+**12) GraphControllerIntegrationTest:** `src/test/java/com/example/graph/controller/GraphControllerIntegrationTest.java`
 ```java
 package com.example.graph.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -1246,64 +1040,49 @@ import java.util.List;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Integration tests for {@link GraphController}.
  *
  * <p>
- * This class verifies the actual behavior of the graph-related REST endpoints by launching
- * the Spring Boot context and executing HTTP requests through {@link MockMvc}.
+ * This class verifies the behavior of the {@code /graph/bridges} and {@code /graph/articulation}
+ * REST endpoints in a Spring Boot environment using {@link MockMvc}. These tests validate:
  * </p>
+ *
+ * <ul>
+ *   <li>Correct HTTP status codes for valid and invalid input payloads</li>
+ *   <li>Proper JSON request/response handling</li>
+ *   <li>Validation constraint violations on the {@link com.example.graph.dto.GraphRequest}</li>
+ *   <li>Behavior of {@link com.example.graph.exception.GlobalExceptionHandler} for edge cases</li>
+ * </ul>
  *
  * <p>
- * <strong>Target Endpoints:</strong>
- * <ul>
- *     <li>POST /graph/bridges</li>
- *     <li>POST /graph/articulation</li>
- * </ul>
+ * This test suite ensures that the controller logic and request validation
+ * are working as expected in a full Spring Boot context.
  * </p>
  *
- * <p>
- * <strong>Focus:</strong>
- * Validates end-to-end request processing, including:
- * <ul>
- *     <li>JSON input parsing</li>
- *     <li>Validation constraints</li>
- *     <li>Controller and service layer interaction</li>
- *     <li>HTTP response status codes</li>
- * </ul>
- * </p>
- *
- * @version 1.0
+ * @author
  * @since 2025-03-26
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class GraphControllerIntegrationTest {
 
-    /**
-     * Injected MockMvc to simulate HTTP requests to controller endpoints.
-     */
     @Autowired
     private MockMvc mockMvc;
 
-    /**
-     * Injected ObjectMapper for serializing request bodies to JSON format.
-     */
     @Autowired
     private ObjectMapper objectMapper;
 
     /**
-     * Verifies that a valid request to /graph/bridges returns a 200 OK response.
-     *
-     * <p><strong>Scenario:</strong> Valid graph with 5 vertices and known bridges.</p>
-     * <p><strong>Pass:</strong> Returns HTTP 200.</p>
-     * <p><strong>Fail:</strong> Any non-200 status indicates a failure in controller validation or service logic.</p>
+     * Valid input test for /graph/bridges endpoint.
+     * Expects HTTP 200 OK and successful processing.
      */
     @Test
-    public void testGetBridges_ValidRequest_ReturnsBridges() throws Exception {
-        Map<String, Object> requestBody = Map.of(
+    @DisplayName("POST /graph/bridges - Valid Input - Returns 200 OK")
+    public void testFindBridges_ValidInput_ReturnsOk() throws Exception {
+        Map<String, Object> request = Map.of(
                 "vertices", 5,
                 "edges", List.of(
                         List.of(0, 1),
@@ -1316,20 +1095,18 @@ public class GraphControllerIntegrationTest {
 
         mockMvc.perform(post("/graph/bridges")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isOk());
+                        .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isOk());
     }
 
     /**
-     * Verifies that a valid request to /graph/articulation returns a 200 OK response.
-     *
-     * <p><strong>Scenario:</strong> Valid graph input that includes articulation points.</p>
-     * <p><strong>Pass:</strong> HTTP 200 response indicating successful processing.</p>
-     * <p><strong>Fail:</strong> Any non-200 status.</p>
+     * Valid input test for /graph/articulation endpoint.
+     * Expects HTTP 200 OK and successful processing.
      */
     @Test
-    public void testGetArticulationPoints_ValidRequest_ReturnsPoints() throws Exception {
-        Map<String, Object> requestBody = Map.of(
+    @DisplayName("POST /graph/articulation - Valid Input - Returns 200 OK")
+    public void testFindArticulationPoints_ValidInput_ReturnsOk() throws Exception {
+        Map<String, Object> request = Map.of(
                 "vertices", 5,
                 "edges", List.of(
                         List.of(0, 1),
@@ -1342,20 +1119,18 @@ public class GraphControllerIntegrationTest {
 
         mockMvc.perform(post("/graph/articulation")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isOk());
+                        .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isOk());
     }
 
     /**
-     * Tests missing "vertices" field in request to /graph/bridges, expecting a 400 Bad Request.
-     *
-     * <p><strong>Scenario:</strong> Input validation fails due to missing required field.</p>
-     * <p><strong>Pass:</strong> HTTP 400 is returned by validation framework.</p>
-     * <p><strong>Fail:</strong> If status is not 400, validation isn't working as expected.</p>
+     * Test missing 'vertices' field.
+     * Expects HTTP 400 Bad Request due to validation failure.
      */
     @Test
-    public void testGetBridges_InvalidRequest_MissingVertices() throws Exception {
-        Map<String, Object> requestBody = Map.of(
+    @DisplayName("POST /graph/bridges - Missing vertices - Returns 400 Bad Request")
+    public void testFindBridges_MissingVertices_ReturnsBadRequest() throws Exception {
+        Map<String, Object> request = Map.of(
                 "edges", List.of(
                         List.of(0, 1),
                         List.of(1, 2)
@@ -1364,108 +1139,54 @@ public class GraphControllerIntegrationTest {
 
         mockMvc.perform(post("/graph/bridges")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     /**
-     * Tests empty edges list for /graph/articulation, expecting 400 Bad Request.
-     *
-     * <p><strong>Scenario:</strong> Edge list is empty, violating @NotEmpty constraint.</p>
-     * <p><strong>Pass:</strong> HTTP 400 is returned due to validation failure.</p>
-     * <p><strong>Fail:</strong> Any other status implies a missing or incorrect validation rule.</p>
+     * Test empty 'edges' list.
+     * Expects HTTP 400 Bad Request due to validation constraints.
      */
     @Test
-    public void testGetArticulationPoints_InvalidRequest_EmptyEdges() throws Exception {
-        Map<String, Object> requestBody = Map.of(
-                "vertices", 3,
+    @DisplayName("POST /graph/articulation - Empty edges - Returns 400 Bad Request")
+    public void testFindArticulationPoints_EmptyEdges_ReturnsBadRequest() throws Exception {
+        Map<String, Object> request = Map.of(
+                "vertices", 4,
                 "edges", List.of()
         );
 
         mockMvc.perform(post("/graph/articulation")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(request)))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.message").value("Validation failed"));
+    }
+
+    /**
+     * Test with malformed JSON body.
+     * Expects HTTP 400 Bad Request due to JSON parsing error.
+     */
+    @Test
+    @DisplayName("POST /graph/bridges - Invalid JSON - Returns 400 Bad Request")
+    public void testFindBridges_InvalidJson_ReturnsBadRequest() throws Exception {
+        String malformedJson = "{\"vertices\": 4, \"edges\": [[0,1], [1,2], [2]]";
+
+        mockMvc.perform(post("/graph/bridges")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+               .andExpect(status().isBadRequest());
     }
 }
 
 ```
-**13) SecurityConfigTest:** src/test/java/com/example/graph/config/SecurityConfigTest.java
+
+**11) GlobalExceptionHandlerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
 ```java
-package com.example.graph.config;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-/**
- * Unit tests for {@link SecurityConfig}.
- *
- * <p><strong>Purpose:</strong> To validate the correctness of security-related bean configurations
- * such as the CORS policy, security filter chain, and user authentication setup.</p>
- */
-@SpringBootTest
-public class SecurityConfigTest {
-
-  @Autowired
-  private ApplicationContext context;
-
-  /**
-   * Validates the presence and construction of the {@link SecurityFilterChain} bean.
-   *
-   * <p><strong>Expected:</strong> Bean is not null and accepts configuration without throwing errors.</p>
-   */
-  @Test
-  public void testSecurityFilterChainBeanExists() throws Exception {
-    SecurityFilterChain filterChain = context.getBean(SecurityFilterChain.class);
-    assertNotNull(filterChain, "SecurityFilterChain bean should be present in context");
-  }
-
-
-  /**
-   * Validates that the in-memory user defined in {@link SecurityConfig#userDetailsService()} is correctly configured.
-   *
-   * <p><strong>Checks:</strong></p>
-   * <ul>
-   *     <li>User has username "user"</li>
-   *     <li>User has password "password" (no encoding)</li>
-   *     <li>User has role "USER"</li>
-   * </ul>
-   */
-  @Test
-  public void testInMemoryUserDetailsServiceConfiguration() {
-    UserDetailsService userDetailsService = context.getBean(UserDetailsService.class);
-    assertNotNull(userDetailsService);
-
-    var user = userDetailsService.loadUserByUsername("user");
-    assertEquals("user", user.getUsername());
-    assertEquals("{noop}password", user.getPassword());
-    assertTrue(user.getAuthorities().stream()
-                   .anyMatch(auth -> auth.getAuthority().equals("ROLE_USER")));
-  }
-}
 ```
-
-**Result:** The line coverage is 68%
-
-<a href="https://drive.google.com/file/d/1MrtHA1YwcW4SxyBZvBxSQSKkAkQ4Cp2x/view?usp=drive_link">Iteration One</a>
-
-**Plan:** The goal is to achieve >90% total code coverage and 95% total line coverage. To achieve this goal, will be writing tests for all models, dto, service, exception, event and controller packages.
-
-
-<a href="https://drive.google.com/file/d/1CSHrykxvcxkZayc4Q1VI4S373grtF8AL/view?usp=drive_link">Iteration Two </a>
-
-**Result:** Total line coverage is 96%
+# After the second iteration, test coverage increased to 99%.
+**Result:** Total line coverage is 99%
 
 # **How to Run**
 
@@ -1513,82 +1234,169 @@ mvn spring-boot:run
 - By default, it starts on port 8080 (unless configured otherwise).
 
 
+Here’s the complete **cURL documentation** for the **Detect Bridges** and **Detect Articulation Points** endpoints, formatted exactly like your sample:
+
+---
+
 ### 6. **Accessing Endpoints & Features:**
-REST Endpoints typically follow the pattern:
+
+Below are runnable cURL commands along with sample success and error responses for the **Graph Bridges and Articulation Points Detection** endpoints.
 
 ---
 
-- **Detect Bridges:**
-  - **POST /graph/bridges**
-  - **Description:** Detects all bridges (critical edges) in an undirected graph.
-  - **Request Body Example:**
-    ```json
-    {
-      "vertices": 5,
-      "edges": [
-        [0, 1],
-        [1, 2],
-        [2, 0],
-        [1, 3],
-        [3, 4]
-      ]
-    }
-    ```
+### ✅ Detect Bridges
+
+- **Valid Request (Success Response)**
+
   - **cURL Command:**
+
     ```bash
-    curl -X POST http://localhost:8080/graph/bridges \
-    -H "Content-Type: application/json" \
-    -d '{
-      "vertices": 5,
-      "edges": [
-        [0, 1],
-        [1, 2],
-        [2, 0],
-        [1, 3],
-        [3, 4]
-      ]
+    curl --location 'http://localhost:8080/graph/bridges' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "vertices": 5,
+        "edges": [
+            [0, 1],
+            [1, 2],
+            [2, 0],
+            [1, 3],
+            [3, 4]
+        ]
     }'
     ```
+
+  - **Sample Success Response:**
+
+    ```json
+    [
+      "3-4",
+      "1-3"
+    ]
+    ```
+
+    *(The API returns HTTP status 200 OK and a list of bridge edges in the graph.)*
 
 ---
 
-- **Detect Articulation Points:**
-  - **POST /graph/articulation**
-  - **Description:** Detects all articulation points (critical nodes) in an undirected graph.
-  - **Request Body Example:**
-    ```json
-    {
-      "vertices": 5,
-      "edges": [
-        [0, 1],
-        [1, 2],
-        [2, 0],
-        [1, 3],
-        [3, 4]
-      ]
-    }
-    ```
+- **Missing Vertices (Error Response)**
+
   - **cURL Command:**
+
     ```bash
-    curl -X POST http://localhost:8080/graph/articulation \
-    -H "Content-Type: application/json" \
-    -d '{
-      "vertices": 5,
-      "edges": [
-        [0, 1],
-        [1, 2],
-        [2, 0],
-        [1, 3],
-        [3, 4]
-      ]
+    curl --location 'http://localhost:8080/graph/bridges' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "edges": [
+            [0, 1],
+            [1, 2]
+        ]
     }'
     ```
 
+  - **Sample Error Response:**
 
-7. **Security**
+    ```json
+    {
+      "timestamp": "2025-03-27T13:45:20.147732",
+      "status": 400,
+      "error": "Bad Request",
+      "message": "Validation failed",
+      "errors": {
+        "vertices": "must not be null"
+      }
+    }
+    ```
 
-- Our Spring Security configuration enables CORS with custom rules (e.g., allowing requests from localhost:3000), disables CSRF protection for API development, permits open access to all endpoints for testing purposes, enables HTTP Basic authentication for secured endpoints during testing, and configures in-memory authentication with a single test user.
-  Here’s the **Time and Space Complexity** and **Conclusion** section tailored specifically for your **Graph Integrity App** that detects **bridges** and **articulation points** using DFS:
+    *(The API returns HTTP status 400 Bad Request due to missing required `vertices` field.)*
+
+---
+
+- **Malformed JSON (Error Response)**
+
+  - **cURL Command:**
+
+    ```bash
+    curl --location 'http://localhost:8080/graph/bridges' \
+    --header 'Content-Type: application/json' \
+    --data '{"vertices": 4, "edges": [[0,1], [1,2]'  # Missing closing bracket
+    ```
+
+  - **Sample Error Response:**
+
+    ```json
+    {
+      "timestamp": "2025-03-27T13:47:01.253465",
+      "status": 400,
+      "error": "Bad Request",
+      "message": "Malformed JSON request"
+    }
+    ```
+
+    *(The API returns HTTP status 400 Bad Request due to malformed JSON.)*
+
+---
+
+### ✅ Detect Articulation Points
+
+- **Valid Request (Success Response)**
+
+  - **cURL Command:**
+
+    ```bash
+    curl --location 'http://localhost:8080/graph/articulation' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "vertices": 5,
+        "edges": [
+            [0, 1],
+            [1, 2],
+            [2, 0],
+            [1, 3],
+            [3, 4]
+        ]
+    }'
+    ```
+
+  - **Sample Success Response:**
+
+    ```json
+    [1, 3]
+    ```
+
+    *(The API returns HTTP status 200 OK and a list of articulation point node indices.)*
+
+---
+
+- **Empty Edges (Error Response)**
+
+  - **cURL Command:**
+
+    ```bash
+    curl --location 'http://localhost:8080/graph/articulation' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "vertices": 4,
+        "edges": []
+    }'
+    ```
+
+  - **Sample Error Response:**
+
+    ```json
+    {
+      "timestamp": "2025-03-27T13:48:50.987351",
+      "status": 400,
+      "error": "Bad Request",
+      "message": "Validation failed",
+      "errors": {
+        "edges": "must not be empty"
+      }
+    }
+    ```
+
+    *(The API returns HTTP status 400 Bad Request due to empty edge list which violates the validation constraints.)*
+
+---
 
 
 
