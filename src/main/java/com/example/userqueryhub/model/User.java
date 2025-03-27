@@ -1,4 +1,4 @@
-package com.example.userpurge.model;
+package com.example.userqueryhub.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -34,4 +34,7 @@ public class User {
     private Long id;
     private String username;
     private String email;
+    private String password;
+
+
 }

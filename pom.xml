@@ -9,10 +9,10 @@
 			<relativePath/> <!-- lookup parent from repository -->
 		</parent>
 		<groupId>com.example</groupId>
-		<artifactId>userpurge</artifactId>
+		<artifactId>userqueryhub</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<name>user-purge</name>
-		<description>Call userRepository.delete(user) to remove an entity instance from the database.</description>
+		<name>DataFieldFinder</name>
+		<description>Use userRepository.findByUsername("alice") to perform a derived query based on a field.</description>
 		<url/>
 		<licenses>
 			<license/>

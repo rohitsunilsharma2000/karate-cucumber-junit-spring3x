@@ -1,4 +1,4 @@
-package com.example.userpurge.exception;
+package com.example.userqueryhub.exception;
 
 /**
  * Custom exception thrown when a user resource is not found in the system.

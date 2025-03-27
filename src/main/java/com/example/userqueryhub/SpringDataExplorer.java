@@ -1,4 +1,4 @@
-package com.example.userpurge;
+package com.example.userqueryhub;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -28,7 +28,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *    - Includes validation checks to ensure the user exists before attempting deletion, preventing unintended errors.
  *
  * 3. **Exception Handling & Input Validation**
- *    - Utilizes custom exceptions (e.g., {@link com.example.userpurge.exception.UserNotFoundException}) to handle cases where a user is not found.
+ *    - Utilizes custom exceptions (e.g., {@link com.example.userqueryhub.exception.UserNotFoundException}) to handle cases where a user is not found.
  *    - Integrates global exception handling to provide meaningful error responses and maintain application stability.
  *
  * 4. **Logging & Traceability**
@@ -42,9 +42,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * This class serves as the entry point for the UserPurge System, bootstrapping the Spring Boot application context and initializing all components.
  */
 @SpringBootApplication
-public class UserPurgeSystem {
+public class SpringDataExplorer {
 
     public static void main(String[] args) {
-        SpringApplication.run(UserPurgeSystem.class, args);
+        SpringApplication.run(SpringDataExplorer.class, args);
     }
 }
