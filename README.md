@@ -1485,6 +1485,13 @@ class MaxFlowServiceTest {
 }
 
 ```
+
+
+
+## After the first iteration, the overall test coverage was 94%. To improve this, additional test cases—including those in `GlobalExceptionHandlerTest`, `MaxFlowControllerIntegrationTest`, and `SecurityConfigTest`—will be introduced to further increase the test coverage percentage.
+
+
+
 **11) GlobalExceptionHandlerTest:** src/test/java/com/example/maxflow/exception/GlobalExceptionHandlerTest.java
 ```java
 package com.example.maxflow.exception;
@@ -2289,17 +2296,10 @@ class SecurityConfigTest {
 
 ```
 
-
-**Result:** The line coverage is 39%
-
-<a href="https://drive.google.com/file/d/14sXbGAy92H4HovkZAdDXrlx8FGyzOOE_/view?usp=drive_link">Iteration One</a>
-
-**Plan:** The goal is to achieve >90% total code coverage and 95% total line coverage. To achieve this goal, will be writing tests for all models, dto, service, exception, event and controller packages.
-
+After the second iteration, test coverage increased to 100%.
 
 <a href="https://drive.google.com/file/d/1G3UUKaedD_BzGLIADnRRLIpgmY2yH6qi/view?usp=drive_link">Iteration Two </a>
 
-**Result:** Total line coverage is 95%
 
 # **How to Run**
 
