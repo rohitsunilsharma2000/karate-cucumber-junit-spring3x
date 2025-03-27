@@ -1,6 +1,6 @@
 
 
----
+
 
 **Use Case:** A network analysis tool for industries requiring efficient detection of bridges and articulation points in complex networks. This API is designed to be integrated into larger systems (e.g., infrastructure monitoring, cybersecurity, and social network analysis) to quickly identify critical nodes and connections whose removal could fragment or weaken the network. The solution must be robust, scalable, and well-documented with comprehensive REST endpoints, input validations, and strong exception handling.
 
@@ -15,62 +15,60 @@ A Spring Boot API that identifies *bridges* and *articulation points* in an undi
 ## **Key Features:**
 
 1. **Project Structure & Setup**
-- Create the project with Spring Initializr.
-- Organize packages into `controller`, `service`, `dto`, `exception`, and `config`.
+  - Create the project with Spring Initializr.
+  - Organize packages into `controller`, `service`, `dto`, `exception`, and `config`.
 
 2. **REST Controller & API Endpoints**
-- Implement a REST controller under `/graph`.
-- Expose two endpoints:
-  - `POST /graph/bridges` — accepts a JSON request and returns a list of bridge edges.
-  - `POST /graph/articulation` — accepts a JSON request and returns a list of articulation point nodes.
-- Use `@Valid` with request DTO to enforce field constraints.
+  - Implement a REST controller under `/graph`.
+  - Expose two endpoints:
+    - `POST /graph/bridges` — accepts a JSON request and returns a list of bridge edges.
+    - `POST /graph/articulation` — accepts a JSON request and returns a list of articulation point nodes.
+  - Use `@Valid` with request DTO to enforce field constraints.
 
 3. **Service Layer – DFS-based Algorithms**
-- Detect **bridges** using Tarjan’s Bridge-Finding algorithm (DFS-based).
-- Detect **articulation points** using DFS with tracking of discovery and low times.
-- Log detailed progress using SLF4J at `INFO`, `DEBUG`, and `ERROR` levels.
+  - Detect **bridges** using Tarjan’s Bridge-Finding algorithm (DFS-based).
+  - Detect **articulation points** using DFS with tracking of discovery and low times.
+  - Log detailed progress using SLF4J at `INFO`, `DEBUG`, and `ERROR` levels.
 
 4. **Exception Handling & Input Validation**
-- Validate input using Jakarta annotations:
-  - `@Min(1)` for vertex count.
-  - `@NotEmpty`, `@NotNull` for edge definitions.
-- Implement `@RestControllerAdvice` to handle:
-  - Validation exceptions (`MethodArgumentNotValidException`)
-  - Malformed JSON (`HttpMessageNotReadableException`)
-  - Custom graph exceptions (`GraphAnalysisException`)
-  - Generic unhandled exceptions.
+  - Validate input using Jakarta annotations:
+    - `@Min(1)` for vertex count.
+    - `@NotEmpty`, `@NotNull` for edge definitions.
+  - Implement `@RestControllerAdvice` to handle:
+    - Validation exceptions (`MethodArgumentNotValidException`)
+    - Malformed JSON (`HttpMessageNotReadableException`)
+    - Custom graph exceptions (`GraphAnalysisException`)
+    - Generic unhandled exceptions.
 
 5. **Logging & Traceability**
-- Log incoming requests, internal algorithm steps, and responses using SLF4J.
-- Capture exceptions with stack traces for debugging.
+  - Log incoming requests, internal algorithm steps, and responses using SLF4J.
+  - Capture exceptions with stack traces for debugging.
 
 6. **Testing & Documentation**
-- Write:
-  - Unit tests for graph logic in service layer.
-  - Integration tests for controller with MockMvc.
-  - Negative test cases for malformed JSON and invalid input.
-- Use Javadoc and class-level documentation for maintainability.
+  - Write:
+    - Unit tests for graph logic in service layer.
+    - Integration tests for controller with MockMvc.
+    - Negative test cases for malformed JSON and invalid input.
+  - Use Javadoc and class-level documentation for maintainability.
 
 7. **Expected Behaviour:**
-- The bridge/articulation detection endpoints must:
-  - Return HTTP 200 OK with correct results for valid graphs.
-  - Return HTTP 400 Bad Request for:
-    - Missing/zero vertices → “Number of vertices must be at least 1”
-    - Null/empty edge list → “Edges list cannot be null/empty”
-    - Edges with null nodes → “Edge vertex cannot be null”
-    - Malformed JSON → “Malformed JSON request”
-- In case of internal errors during analysis, return HTTP 500 with a meaningful error.
+  - The bridge/articulation detection endpoints must:
+    - Return HTTP 200 OK with correct results for valid graphs.
+    - Return HTTP 400 Bad Request for:
+      - Missing/zero vertices → “Number of vertices must be at least 1”
+      - Null/empty edge list → “Edges list cannot be null/empty”
+      - Edges with null nodes → “Edge vertex cannot be null”
+      - Malformed JSON → “Malformed JSON request”
+  - In case of internal errors during analysis, return HTTP 500 with a meaningful error.
 
 8. **Edge Cases**
-- Handle cases where:
-  - `vertices = 0` → return 400.
-  - `edges = null or []` → return 400.
-  - Graph has isolated nodes → no bridges/articulation points.
-  - Edge list contains null vertex → return validation error.
-  - Invalid JSON → return parse error.
-- Maintain consistent error response format with `timestamp`, `status`, `error`, `message`.
-
----
+  - Handle cases where:
+    - `vertices = 0` → return 400.
+    - `edges = null or []` → return 400.
+    - Graph has isolated nodes → no bridges/articulation points.
+    - Edge list contains null vertex → return validation error.
+    - Invalid JSON → return parse error.
+  - Maintain consistent error response format with `timestamp`, `status`, `error`, `message`.
 
 **Dependency Requirements:**
 
@@ -84,18 +82,11 @@ A Spring Boot API that identifies *bridges* and *articulation points* in an undi
 - **Spring Boot DevTools:** For fast development and hot reloading.
 - **H2 Database:** Only if persistence is needed for future enhancements (not used here).
 
----
-
 ## **Goal:**
 To develop a Spring Boot microservice that reliably detects bridges and articulation points in a graph using efficient DFS-based algorithms. The application must maintain a clean structure, enforce robust validation, log key activities, and handle both expected and unexpected errors gracefully. This service is useful for identifying critical points in communication, social, and transport networks.
 
-
----
-
 **Plan**  
 I will set up the project structure using Spring Initializr and create the core packages: `controller`, `service`, `dto`, `exception`, and `config`. I will configure the `pom.xml` with all required dependencies and set the Java version to 17. I will define the `GraphRequest` DTO with validation annotations to ensure input integrity. I will build the REST controller to expose two endpoints: one for detecting bridges and another for articulation points. I will implement the DFS-based algorithms in the service layer with proper SLF4J logging at INFO and DEBUG levels. I will add a `GlobalExceptionHandler` class to handle validation failures, malformed requests, and custom graph exceptions uniformly. I will write unit tests for the service logic and integration tests for the REST endpoints using JUnit 5 and Spring MockMvc. Finally, I will verify the application by building and running it with Maven, ensuring that it returns correct results and properly handles edge cases and errors.
-
---- 
 
 
 # **Complete Project Code**
@@ -729,7 +720,6 @@ server.port=8080
 
 </project>
 ```
-
 
 # **Unit Tests (JUnit 5 + Mockito)**
 
@@ -1684,21 +1674,10 @@ public class GraphControllerTest {
 
 1. **Create the Project Structure:** Manually create the directories and files as shown in the provided project layout or use Spring Initializr to generate a skeleton, then place/modify files accordingly.
 2. **pom.xml / Dependencies:** Ensure your pom.xml includes Spring Boot Starter Web, Security, Validation, Lombok, Test, H2 Database, Jakarta Validation API, and DevTools dependencies with Java version set to 17 for a scalable REST API using the Edmonds‑Karp algorithm..
-3. **Database & Application Properties:** Configure H2 DB credentials in application.properties (or application.yml) due to in-memory auth, for example:
+3. ** Application Properties:** :
 ```properties
 spring.application.name=graph-integrity-app
 server.port=8080
-
-
-
-# H2 in-memory database settings
-spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-
-
 
 ```
 4. **Build & Test:**
@@ -1724,15 +1703,15 @@ mvn spring-boot:run
 
 Here’s the complete **cURL documentation** for the **Detect Bridges** and **Detect Articulation Points** endpoints, formatted exactly like your sample:
 
----
+
 
 ### 6. **Accessing Endpoints & Features:**
 
 Below are runnable cURL commands along with sample success and error responses for the **Graph Bridges and Articulation Points Detection** endpoints.
 
----
 
-### ✅ Detect Bridges
+
+###  Detect Bridges
 
 - **Valid Request (Success Response)**
 
@@ -1764,7 +1743,7 @@ Below are runnable cURL commands along with sample success and error responses f
 
     *(The API returns HTTP status 200 OK and a list of bridge edges in the graph.)*
 
----
+
 
 - **Missing Vertices (Error Response)**
 
@@ -1797,7 +1776,7 @@ Below are runnable cURL commands along with sample success and error responses f
 
     *(The API returns HTTP status 400 Bad Request due to missing required `vertices` field.)*
 
----
+
 
 - **Malformed JSON (Error Response)**
 
@@ -1822,9 +1801,9 @@ Below are runnable cURL commands along with sample success and error responses f
 
     *(The API returns HTTP status 400 Bad Request due to malformed JSON.)*
 
----
 
-### ✅ Detect Articulation Points
+
+###  Detect Articulation Points
 
 - **Valid Request (Success Response)**
 
@@ -1853,7 +1832,7 @@ Below are runnable cURL commands along with sample success and error responses f
 
     *(The API returns HTTP status 200 OK and a list of articulation point node indices.)*
 
----
+
 
 - **Empty Edges (Error Response)**
 
@@ -1884,7 +1863,7 @@ Below are runnable cURL commands along with sample success and error responses f
 
     *(The API returns HTTP status 400 Bad Request due to empty edge list which violates the validation constraints.)*
 
----
+
 
 
 
@@ -1901,7 +1880,7 @@ Below are runnable cURL commands along with sample success and error responses f
   - **O(V)** for auxiliary arrays like `disc[]`, `low[]`, `visited[]`, `ap[]`, `parent[]`, etc.
   - Therefore, total space complexity is **O(V + E)**.
 
----
+
 
 # **Conclusion**
 
