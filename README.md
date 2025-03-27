@@ -1,75 +1,84 @@
-**Metadata**
-
-**Programming Language:** Java
-
-**L1 Taxonomy:** Complete Implementations
-
-**L2 Taxonomy:** Social Media Application
-
-**Use Case:**  
-When a client requests a user by username (e.g., "alice"), the application leverages a derived query (findByUsername("alice")) to locate and return the user details. If the user is not found, the service throws a UserNotFoundException and logs the error for troubleshooting.
-Below is an example documentation following the provided format for an application that uses a derived query to locate a user entity via:
-
-```java
-userRepository.findByUsername("alice");
-```
 
 ---
+
+**Use Case:** In a user management module for an enterprise application, utilize the derived query method `userRepository.findByUsername("alice")` to fetch user details. This leverages Spring Data JPA's naming conventions, allowing developers to write concise, self-documenting code that automatically handles the query derivation. This approach minimizes boilerplate code while ensuring the query remains readable and maintainable.
 
 # **Prompt**
 
 ## **Title:**
-Spring Boot User Query Service — Derived Query Lookup
+Spring Boot User Management — Derived Query for Fetching User by Username
 
 ## **High-Level Description:**
-Develop a Spring Boot application that incorporates a service layer for retrieving user entities from a relational database using Spring Data JPA derived queries. The service leverages the repository method `userRepository.findByUsername("alice")` to perform a lookup based on a specific field (username). The solution is designed with a layered architecture, featuring a well-organized separation between controllers, services, and repositories. It emphasizes robust input validation, detailed logging for traceability, and effective error handling to ensure reliable data retrieval and maintainability.
+A Spring Boot module designed for user management that uses Spring Data JPA to retrieve user details based on the username field. The repository interface extends `JpaRepository` and declares a method `findByUsername`. This derived query method automatically generates the query to locate a user by the provided username (e.g., "alice"), ensuring code brevity and enhancing maintainability.
 
 ## **Key Features:**
+
 1. **Project Structure & Setup**
-    - Create a Spring Boot project using Spring Initializr with dependencies such as Spring Web, Spring Data JPA, and an in-memory database (H2) or MySQL for development and testing.
-    - Organize the project into distinct packages: `controller`, `service`, `repository`, `dto`, `model`, and `exception`.
+    - Initialize the project using Spring Initializr.
+    - Organize packages into `controller`, `service`, `repository`, `entity`, and `exception`.
 
-2. **Service Layer – User Query**
-    - Encapsulate the user lookup logic in a dedicated service class.
-    - Use a derived query method in the repository (`findByUsername`) to retrieve user details based on the username field.
-    - Map the retrieved entity to a DTO if necessary for data transfer.
-    - Incorporate comprehensive logging (using SLF4J) at multiple levels (INFO, DEBUG, ERROR) to capture the execution flow and highlight key events during the lookup process.
+2. **User Entity and Repository**
+    - Define a `User` entity with fields such as `id`, `username`, `password`, and `email`.
+    - Create a `UserRepository` interface that extends `JpaRepository<User, Long>`.
+    - Declare the method `User findByUsername(String username)` to perform a derived query based on the `username` field.
 
-3. **Exception Handling & Input Validation**
-    - Implement input validation at the controller or service layer to ensure that only valid usernames are processed.
-    - Use global exception handling to manage custom exceptions (e.g., `UserNotFoundException`) and provide clear error messages when no matching user is found.
-    - Validate that the username is not blank and matches expected patterns before invoking the repository method.
+3. **REST Controller & API Endpoint**
+    - Implement a REST controller under the `/users` path.
+    - Expose an endpoint:
+        - `GET /users/{username}` — retrieves user details based on the username.
+    - Validate the input path variable and return the user data as a JSON response.
 
-4. **Logging & Traceability**
-    - Use SLF4J for detailed logging throughout the lookup process.
-    - Log critical events such as:
-        - Receipt of a user lookup request.
-        - Invocation of the derived query method (`findByUsername`).
-        - Successful retrieval of the user entity.
-        - Error conditions, such as when the user is not found.
-    - Ensure that logs create an audit trail that is useful for debugging and production monitoring.
+4. **Service Layer & Exception Handling**
+    - Implement a service method that calls `userRepository.findByUsername("alice")` (or a variable username) to fetch the user.
+    - Handle the case where a user is not found by throwing a custom `UserNotFoundException`.
+    - Use `@RestControllerAdvice` to manage exceptions, including:
+        - `UserNotFoundException`
+        - General exceptions with meaningful error messages.
 
-5. **Testing & Documentation**
-    - Write comprehensive unit and integration tests for the user lookup functionality, ensuring that both valid and invalid scenarios are covered.
-    - Use testing frameworks like JUnit 5 and Mockito to simulate repository behavior.
-    - Document all code with detailed Javadoc comments to facilitate future maintenance and enhancements.
-    - Validate logging and exception management through targeted tests to confirm the robustness of the user query process.
+5. **Logging & Traceability**
+    - Use SLF4J to log key operations such as incoming requests, successful query executions, and any errors encountered.
+    - Ensure different log levels (`INFO`, `DEBUG`, `ERROR`) are appropriately used for tracking the application’s flow and diagnosing issues.
 
-## **Dependency Requirements:**
-- **JUnit 5:** For unit and integration testing.
-- **Maven:** For dependency management and build automation.
-- **Spring Boot Starter Web:** For creating REST endpoints and handling HTTP requests.
-- **Spring Boot Starter Data JPA:** For ORM and repository support.
-- **Spring Boot Starter Validation:** For implementing robust input validation.
-- **Lombok:** To reduce boilerplate code in entity and DTO classes.
-- **Spring Boot Starter Test:** For unit and integration testing (includes JUnit 5, Mockito, etc.).
-- **Spring Boot DevTools:** For enhanced development productivity with automatic restarts and live reload.
+6. **Testing & Documentation**
+    - Write unit tests for the repository and service layer methods.
+    - Develop integration tests for the REST endpoint using Spring Boot Test and MockMvc.
+    - Document the code with Javadoc for clarity and maintainability.
 
-## **Goal:**
-To build a scalable and maintainable Spring Boot service that efficiently retrieves user entities from a database using derived queries via `userRepository.findByUsername("alice")`. The solution will ensure high data integrity by enforcing stringent input validation, maintain comprehensive traceability through detailed logging, and implement robust error handling to manage cases where the user is not found. This design will result in a reliable user query process that is easy to maintain and extend as the application evolves.
+7. **Expected Behaviour:**
+    - The endpoint returns HTTP 200 OK with user details when the user "alice" (or the provided username) is found.
+    - Return HTTP 404 Not Found if the user does not exist.
+    - Log all significant operations to aid in debugging and performance monitoring.
+    - Ensure a clear and consistent error response structure for all exception cases.
 
+8. **Edge Cases**
+    - Validate that the username is neither null nor empty.
+    - Handle the scenario where the username does not exist in the database.
+    - Ensure proper error responses for any unexpected failures or invalid requests.
 
 ---
+
+**Dependency Requirements:**
+
+- **Spring Boot Starter Data JPA:** For repository and database interactions.
+- **Spring Boot Starter Web:** To build RESTful APIs.
+- **Spring Boot Starter Validation:** For validating request parameters.
+- **Spring Boot Starter Test:** For unit and integration testing.
+- **H2 Database:** For in-memory development and testing.
+- **Lombok:** (Optional) To reduce boilerplate code in entities and DTOs.
+- **SLF4J / Logback:** For logging application events.
+- **Maven or Gradle:** For dependency management and build automation.
+
+---
+
+## **Goal:**
+To develop a user management feature within a Spring Boot application that retrieves user data based on the username using a derived query method provided by Spring Data JPA. This approach improves code maintainability, reduces boilerplate, and enforces robust error handling and logging. The focus is on a clean architectural design, thorough input validation, and comprehensive test coverage.
+
+---
+
+**Plan**  
+I will begin by setting up the project using Spring Initializr, including the necessary dependencies such as Spring Data JPA, Spring Web, and Validation. The project structure will be organized into packages like `entity`, `repository`, `service`, `controller`, and `exception`. The `User` entity will be defined with relevant fields, and the `UserRepository` interface will include the method `findByUsername(String username)` to perform the derived query. The service layer will handle the business logic, invoking the repository method to fetch the user, while the REST controller will expose an endpoint to access this functionality. A global exception handler will be implemented to manage cases where a user is not found or other errors occur. Finally, unit and integration tests will be written to ensure the functionality meets the requirements and handles edge cases effectively.
+---
+
 # **Complete Project Code**
 
 **1) Project Structure:** A logical structure (typical Maven layout)
@@ -112,7 +121,7 @@ src
 
 ```
 
-**2) Main Application:** src/main/java/com/example/userqueryhub/UserPurgeSystem.java
+**2) Main Application:** `src/main/java/com/example/userqueryhub/UserPurgeSystem.java`
 ```java
 package com.example.userqueryhub;
 
@@ -167,7 +176,7 @@ public class SpringDataExplorer {
 
 ```
 
-**3) UserService:** src/main/java/com/example/userqueryhub/service/UserService.java
+**3) UserService:** `src/main/java/com/example/userqueryhub/service/UserService.java`
 ```java
 package com.example.userqueryhub.service;
 
@@ -257,7 +266,7 @@ public class UserService {
 
 ```
 
-**4) UserRepository:** src/main/java/com/example/userqueryhub/repository/UserRepository.java
+**4) UserRepository:** `src/main/java/com/example/userqueryhub/repository/UserRepository.java`
 ```java
 package com.example.userqueryhub.repository;
 
@@ -288,7 +297,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 ```
 
-**5) User:** src/main/java/com/example/userqueryhub/model/User.java
+**5) User:** `src/main/java/com/example/userqueryhub/model/User.java`
 ```java
 package com.example.userqueryhub.model;
 
@@ -333,7 +342,7 @@ public class User {
 
 ```
 
-**6) UserNotFoundException:** src/main/java/com/example/userqueryhub/exception/UserNotFoundException.java
+**6) UserNotFoundException:** `src/main/java/com/example/userqueryhub/exception/UserNotFoundException.java`
 ```java
 package com.example.userqueryhub.exception;
 
@@ -372,7 +381,7 @@ public class UserNotFoundException extends RuntimeException {
 }
 
 ```
-**7) GlobalExceptionHandler:** src/main/java/com/example/userqueryhub/exception/GlobalExceptionHandler.java
+**7) GlobalExceptionHandler:** `src/main/java/com/example/userqueryhub/exception/GlobalExceptionHandler.java`
 ```java
 package com.example.userqueryhub.exception;
 
@@ -441,7 +450,7 @@ public class GlobalExceptionHandler {
 }
 
 ```
-**8) UserDTO:** src/main/java/com/example/userqueryhub/dto/UserDTO.java
+**8) UserDTO:** `src/main/java/com/example/userqueryhub/dto/UserDTO.java`
 ```java
 package com.example.userqueryhub.dto;
 
@@ -485,7 +494,7 @@ public class UserDTO {
 
 ```
 
-**9) UserController:** src/main/java/com/example/userqueryhub/controller/UserController.java
+**9) UserController:** `src/main/java/com/example/userqueryhub/controller/UserController.java`
 ```java
 package com.example.userqueryhub.controller;
 
@@ -654,6 +663,28 @@ public class UserController {
 
 	</project>
 ```
+**7) application.properties:** `src/main/resources/application.properties`
+```text
+
+
+spring.application.name=user-purge-system
+
+server.port=8080
+
+# mySql database connection (Database Configuration)
+#spring.datasource.url=jdbc:mysql://localhost:3306/turingonlineforumsystem
+spring.datasource.url=jdbc:mysql://localhost:3307/turingonlineforumsystem
+spring.datasource.username=root
+spring.datasource.password=SYSTEM
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+# Automatically create/drop schema at startup
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+
+```
 
 # **Unit Tests (JUnit 5 + Mockito)**
 
@@ -741,11 +772,7 @@ public class UserNotFoundExceptionTest {
 
 ```
 
-**Result:** The line coverage is 48%
-
-<a href="https://drive.google.com/file/d/1KzBln2wAVTaKX_JUy0kbTP0vfko0Qhl2/view?usp=drive_link">Iteration One</a>
-
-**Plan:** The goal is to achieve >90% total code coverage and 95% total line coverage. To achieve this goal, will be writing tests for all models, dto, service, exception, event and controller packages.
+## After the first iteration, the overall test coverage was 21%. To improve this, additional test cases—including those in  UserServiceTest and GlobalExceptionHandlerTest will be introduced to further increase the test coverage percentage.
 **10) UserServiceTest:** src/test/java/com/example/userpurge/service/UserServiceTest.java
 ```java
 package com.example.userqueryhub.service;
@@ -865,6 +892,8 @@ public class UserServiceTest {
 }
 
 ```
+
+
 **11) UserControllerIntegrationTest:** src/test/java/com/example/userpurge/controller/UserControllerIntegrationTest.java
 ```java
 package com.example.userqueryhub.controller;
@@ -1065,7 +1094,6 @@ public class GlobalExceptionHandlerTest {
 }
 
 ```
-<a href="https://drive.google.com/file/d/1r2BNKyngnAiFPDFBLCbdVmXuh-oMJjYe/view?usp=drive_link">Iteration Two </a>
 
 **Result:** Total line coverage is 100%
 
@@ -1093,70 +1121,128 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 
 ```
-4. **Build & Test:**
 
-- From the root directory (where pom.xml is located), run:
-```bash
-mvn clean install
-```
-This will compile the code, install dependencies, and package the application.
-- To run unit tests (e.g., JUnit 5 + Mockito) and check coverage (Jacoco), do:
-```bash
-mvn clean test
-```
-Verify that test coverage meets or exceeds the 90% target.
-5. **Start the Application:**
+---
 
-- Launch the Spring Boot app via Maven:
-```bash
-mvn spring-boot:run
-```
+### 4. **Build & Test:**
 
-6. **Accessing Endpoints & Features:** REST Endpoints typically follow the pattern:
+- From the root directory (where **pom.xml** is located), run:
+  ```bash
+  mvn clean install
+  ```
+  This command compiles the code, installs dependencies, and packages the application.
 
-- **User:**
-    - **List All Users:**
+- To run unit tests (using JUnit 5 + Mockito) and check coverage with Jacoco, execute:
+  ```bash
+  mvn clean test
+  ```
+  Ensure that your test coverage meets or exceeds the 90% target.
+
+---
+
+### 5. **Start the Application:**
+
+- Launch the Spring Boot application via Maven:
+  ```bash
+  mvn spring-boot:run
+  ```
+- By default, the application starts on port **8080** (unless configured otherwise).
+
+---
+
+### 6. **Accessing Endpoints & Features:**
+
+Below are runnable cURL commands along with sample success and error responses for the **User Retrieval** endpoint which utilizes the derived query.
+
+---
+
+### ✅ Retrieve User by Username
+
+- **Valid Request (Success Response)**
+
+    - **cURL Command:**
       ```bash
-      curl -X GET http://localhost:8080/api/users
+      curl --location 'http://localhost:8080/users/alice' \
+      --header 'Content-Type: application/json'
       ```
-    - **Create User:**
+
+    - **Sample Success Response:**
+      ```json
+      {
+        "id": 1,
+        "username": "alice",
+        "email": "alice@example.com",
+        "roles": ["USER", "ADMIN"]
+      }
+      ```
+      *(The API returns HTTP status 200 OK along with the user details for "alice".)*
+
+---
+
+- **User Not Found (Error Response)**
+
+    - **cURL Command:**
       ```bash
-      curl -X POST http://localhost:8080/api/users \
-        -H "Content-Type: application/json" \
-        -d '{"username": "alice", "password": "secret"}'
+      curl --location 'http://localhost:8080/users/nonexistent' \
+      --header 'Content-Type: application/json'
       ```
-    - **Retrieve User by ID:**
+
+    - **Sample Error Response:**
+      ```json
+      {
+        "timestamp": "2025-03-27T14:05:12.345678",
+        "status": 404,
+        "error": "Not Found",
+        "message": "User with username 'nonexistent' not found"
+      }
+      ```
+      *(The API returns HTTP status 404 Not Found when no user is present for the given username.)*
+
+---
+
+- **Invalid Input (Error Response)**
+
+    - **cURL Command:**
       ```bash
-      curl -X GET http://localhost:8080/api/users/1
+      curl --location 'http://localhost:8080/users/' \
+      --header 'Content-Type: application/json'
       ```
+
+    - **Sample Error Response:**
+      ```json
+      {
+        "timestamp": "2025-03-27T14:07:30.123456",
+        "status": 400,
+        "error": "Bad Request",
+        "message": "Username must be provided"
+      }
+      ```
+      *(The API returns HTTP status 400 Bad Request due to a missing or empty username in the path.)*
+
+---
+
 # **Time and Space Complexity:**
 
 - **Time Complexity:**  
-  The user lookup operation using a derived query (`userRepository.findByUsername("alice")`) is generally executed in constant time **O(1)**, assuming that the username field is properly indexed.
-    - **Lookup:** The query efficiently locates the user based on the indexed username, resulting in constant-time performance.
-    - **Additional Overhead:** While underlying database operations may add slight overhead, the overall complexity remains close to **O(1)**.
+  The derived query `findByUsername` leverages Spring Data JPA’s method naming conventions and database indexing.
+    - **Best-case:** O(1) when an index exists on the username field.
+    - **Worst-case:** O(n) if a full table scan is required, although this scenario is rare in a properly indexed database.
 
 - **Space Complexity:**
-    - The operation uses minimal space as it only retrieves a single user entity into memory.
-    - Memory usage is largely dependent on the size of the user object, but generally remains negligible, hence **O(1)**.
-    - Any additional space overhead is managed by the database and the Spring Data JPA framework internally.
+    - The query itself uses minimal additional space, operating within the database’s optimized indexing and caching mechanisms.
+    - Application memory overhead is negligible relative to the size of user data returned.
 
 ---
 
 # **Conclusion**
 
-The **User Query Service**, built with **Spring Boot** and leveraging Spring Data JPA, offers an efficient and robust solution for retrieving user entities from a database using a derived query method such as `userRepository.findByUsername("alice")`. This solution is designed with a layered architecture that emphasizes:
+The **User Management Module**, built with **Spring Boot**, demonstrates the power of Spring Data JPA’s derived query methods to simplify data access. By using `userRepository.findByUsername("alice")`, developers can quickly and efficiently retrieve user details based on a unique field, reducing boilerplate and enhancing maintainability. With robust exception handling, comprehensive unit testing, and clear logging practices, the module ensures high reliability and performance. This makes it an excellent choice for enterprise applications that demand both clarity in code and operational efficiency.
 
-- **Efficient Performance:**  
-  The lookup operation is highly performant with constant time complexity due to proper indexing and optimized database queries.
 
-- **Robust Input Validation & Error Handling:**  
-  The service ensures that valid data is processed while gracefully handling cases where the user is not found by throwing a custom `UserNotFoundException`.
 
-- **Comprehensive Logging:**  
-  Detailed logging through SLF4J provides complete traceability of operations, aiding in debugging and ensuring reliable production monitoring.
 
-Overall, this approach delivers a scalable, maintainable, and performant solution for user data management, making it well-suited for enterprise applications that require efficient and reliable user retrieval processes.
+#Iteration
+
 
 Iteration One:https://drive.google.com/file/d/1KzBln2wAVTaKX_JUy0kbTP0vfko0Qhl2/view?usp=drive_link
 Iteration Two: https://drive.google.com/file/d/1r2BNKyngnAiFPDFBLCbdVmXuh-oMJjYe/view?usp=drive_link
