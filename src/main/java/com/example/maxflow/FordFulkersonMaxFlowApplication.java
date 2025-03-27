@@ -2,6 +2,7 @@ package com.example.maxflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 
 /**
  * Entry point for the Ford-Fulkerson Max Flow Spring Boot application.
@@ -11,7 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * application context and starts the embedded web server.
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
 public class FordFulkersonMaxFlowApplication {
 
     /**

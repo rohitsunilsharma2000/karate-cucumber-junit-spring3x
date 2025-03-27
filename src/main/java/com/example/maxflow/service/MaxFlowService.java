@@ -116,42 +116,47 @@ public class MaxFlowService {
             return 0;
         }
 
-        int u, v;
-        // Create a residual graph and initialize it with capacities from the original graph
-        int[][] rGraph = new int[n][n];
-        for (u = 0; u < n; u++) {
-            for (v = 0; v < n; v++) {
-                rGraph[u][v] = graph[u][v];
+        try {
+            int u, v;
+            // Create a residual graph and initialize it with capacities from the original graph
+            int[][] rGraph = new int[n][n];
+            for (u = 0; u < n; u++) {
+                for (v = 0; v < n; v++) {
+                    rGraph[u][v] = graph[u][v];
+                }
             }
+
+            int[] parent = new int[n]; // Array to store the augmenting path
+            int maxFlow = 0; // Initialize maximum flow to zero
+
+            logger.debug("Entering main loop to find augmenting paths.");
+            // Augment the flow while there is a path from source to sink
+            while (bfs(rGraph, source, sink, parent)) {
+                // Find the minimum residual capacity along the path found by BFS
+                int pathFlow = Integer.MAX_VALUE;
+                for (v = sink; v != source; v = parent[v]) {
+                    u = parent[v];
+                    pathFlow = Math.min(pathFlow, rGraph[u][v]);
+                }
+                logger.debug("Augmenting path found with flow: {}", pathFlow);
+
+                // Update residual capacities for the edges and reverse edges along the path
+                for (v = sink; v != source; v = parent[v]) {
+                    u = parent[v];
+                    rGraph[u][v] -= pathFlow;
+                    rGraph[v][u] += pathFlow;
+                }
+
+                maxFlow += pathFlow;
+                logger.info("Updated maximum flow: {}", maxFlow);
+            }
+
+            logger.info("Ford-Fulkerson algorithm completed. Total maximum flow: {}", maxFlow);
+            return maxFlow;
+        } catch (Exception ex) {
+            logger.error("An error occurred while running the Ford-Fulkerson algorithm.", ex);
+            throw new MaxFlowException("Something went wrong while running the algorithm.");
         }
-
-        int[] parent = new int[n]; // Array to store the augmenting path
-        int maxFlow = 0; // Initialize maximum flow to zero
-
-        logger.debug("Entering main loop to find augmenting paths.");
-        // Augment the flow while there is a path from source to sink
-        while (bfs(rGraph, source, sink, parent)) {
-            // Find the minimum residual capacity along the path found by BFS
-            int pathFlow = Integer.MAX_VALUE;
-            for (v = sink; v != source; v = parent[v]) {
-                u = parent[v];
-                pathFlow = Math.min(pathFlow, rGraph[u][v]);
-            }
-            logger.debug("Augmenting path found with flow: {}", pathFlow);
-
-            // Update residual capacities for the edges and reverse edges along the path
-            for (v = sink; v != source; v = parent[v]) {
-                u = parent[v];
-                rGraph[u][v] -= pathFlow;
-                rGraph[v][u] += pathFlow;
-            }
-
-            maxFlow += pathFlow;
-            logger.info("Updated maximum flow: {}", maxFlow);
-        }
-
-        logger.info("Ford-Fulkerson algorithm completed. Total maximum flow: {}", maxFlow);
-        return maxFlow;
     }
 
     /**
