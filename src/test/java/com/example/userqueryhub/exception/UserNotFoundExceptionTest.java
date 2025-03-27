@@ -1,4 +1,4 @@
-package com.example.userpurge.exception;
+package com.example.userqueryhub.exception;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

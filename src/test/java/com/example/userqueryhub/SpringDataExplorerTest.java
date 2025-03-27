@@ -1,4 +1,4 @@
-package com.example.userpurge;
+package com.example.userqueryhub;
 
 
 
@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Integration tests for the main application class {@link UserPurgeSystemTest}.
+ * Integration tests for the main application class {@link SpringDataExplorerTest}.
  *
  * <p>
  * This test class includes:
@@ -20,8 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
  * With these tests, code coverage tools (e.g., JaCoCo) should report over 90% class, method, and line coverage.
  * </p>
  */
-@SpringBootTest(classes = UserPurgeSystemTest.class)
-public class UserPurgeSystemTest {
+@SpringBootTest(classes = SpringDataExplorerTest.class)
+public class SpringDataExplorerTest {
 
     /**
      * Verifies that the Spring application context loads successfully.
@@ -33,12 +33,12 @@ public class UserPurgeSystemTest {
     }
 
     /**
-     * Verifies that calling the main method of {@link UserPurgeSystemTest} executes without exceptions.
+     * Verifies that calling the main method of {@link SpringDataExplorerTest} executes without exceptions.
      */
     @Test
     public void testMainMethod() {
         // Call the main method with an empty argument array.
-        UserPurgeSystem.main(new String[]{});
+        SpringDataExplorer.main(new String[]{});
         // Test passes if no exception is thrown.
     }
 }

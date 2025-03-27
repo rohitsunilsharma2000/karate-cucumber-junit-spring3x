@@ -1,6 +1,6 @@
-package com.example.userpurge.repository;
+package com.example.userqueryhub.repository;
 
-import com.example.userpurge.model.User;
+import com.example.userqueryhub.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -22,4 +22,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * </p>
  */
 public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
 }
