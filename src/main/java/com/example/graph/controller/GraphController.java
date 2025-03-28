@@ -40,7 +40,7 @@ public class GraphController {
     // Logger to track request and response flow
     private static final Logger logger = LoggerFactory.getLogger(GraphController.class);
 
-    // GraphService is injected via constructor (preferred practice over field injection)
+    // GraphService is injected via constructor
     private final GraphService graphService;
 
     /**

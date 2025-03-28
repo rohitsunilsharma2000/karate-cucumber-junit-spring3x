@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * </ul>
  * </p>
  *
- * @since 2025-03-27
  */
 class GraphServiceTest {
 

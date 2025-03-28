@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </p>
  *
  * @author
- * @since 2025-03-26
  */
 @WebMvcTest(GraphController.class)
 public class GraphControllerTest {

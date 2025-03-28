@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * This test verifies that the application's configuration and bean definitions are correct and that no exceptions occur during context initialization.
  * </p>
  *
- * @since 2025-03-27
  */
 @SpringBootTest
 public class GraphIntegrityAppTest {

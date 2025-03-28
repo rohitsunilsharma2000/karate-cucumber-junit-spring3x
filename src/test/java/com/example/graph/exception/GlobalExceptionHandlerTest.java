@@ -39,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </ul>
  * </p>
  *
- * @since 2025-03-27
  */
 @WebMvcTest(controllers = GraphController.class,
         excludeAutoConfiguration = SecurityAutoConfiguration.class)
