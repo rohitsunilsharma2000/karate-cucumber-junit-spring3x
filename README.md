@@ -64,7 +64,12 @@ This approach provides a clean and maintainable solution for deleting user entit
 ## **Goal:**
 To build a robust, scalable Spring Boot service capable of efficiently removing user entities from the database by calling `userRepository.delete(user)`. The solution will ensure high data integrity through stringent input validation, comprehensive logging for detailed traceability, and clear exception management, ultimately delivering a reliable deletion process that is easily maintained and scalable.
 
----
+## **Plan:**
+I will build a robust and scalable Spring Boot service that efficiently removes user entities from the database using userRepository.delete(user). I will ensure high data integrity by implementing strict input validation to prevent invalid or incomplete requests. I will incorporate comprehensive logging to provide detailed traceability of the deletion process, including who initiated the deletion and which user was removed.
+To handle edge cases and failures gracefully, I will implement clear and consistent exception management. This will include custom exceptions for scenarios such as attempting to delete a non-existent user. I will also structure the service for easy maintenance and future scalability by following best practices in code organization, service layering, and clean API design.
+By taking this approach, I will deliver a reliable, maintainable, and production-ready solution for user deletion.
+
+
 # **Complete Project Code**
 
 **1) Project Structure:** A logical structure (typical Maven layout)
@@ -489,7 +494,27 @@ public class UserNotFoundException extends RuntimeException {
 
 	</project>
 ```
+**8) application.properties:** `src/main/resources/application.properties`
+```properties
 
+spring.application.name=user-purge-system
+
+server.port=8080
+
+# mySql database connection (Database Configuration)
+#spring.datasource.url=jdbc:mysql://localhost:3306/turingonlineforumsystem
+spring.datasource.url=jdbc:mysql://localhost:3307/turingonlineforumsystem
+spring.datasource.username=root
+spring.datasource.password=SYSTEM
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+
+# Automatically create/drop schema at startup
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+
+```
 
 # **Unit Tests (JUnit 5 + Mockito)**
 
@@ -902,7 +927,6 @@ This service operation is invoked directly within the application logic or throu
     - Any additional space used is managed internally by the database and the Spring Data JPA framework, resulting in a negligible space footprint.
     - Overall, the space complexity is **O(1)**.
 
----
 
 # **Conclusion**
 
