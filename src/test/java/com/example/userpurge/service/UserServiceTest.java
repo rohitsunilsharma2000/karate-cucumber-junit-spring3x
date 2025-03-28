@@ -49,10 +49,10 @@ import static org.mockito.Mockito.*;
 public class UserServiceTest {
 
     @Mock
-    private UserRepository userRepo;
+    private UserRepository userRepo; // Mocking the repository layer
 
     @InjectMocks
-    private UserService userService;
+    private UserService userService; // Injecting the mocked repository into the service
 
     private static final Long VALID_ID = 1L;
     private static final Long INVALID_ID = 999L;
@@ -61,7 +61,7 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        sampleUser = new User();
+        sampleUser = new User(); // Creating a sample user before each test
         sampleUser.setId(VALID_ID);
         sampleUser.setUsername("testuser");
         sampleUser.setEmail("testuser@example.com");
@@ -76,12 +76,14 @@ public class UserServiceTest {
     @Test
     @Order(1)
     void testGetUserById_Success() {
-        when(userRepo.findById(VALID_ID)).thenReturn(Optional.of(sampleUser));
+        when(userRepo.findById(VALID_ID)).thenReturn(Optional.of(sampleUser)); // Mocking repository response
 
-        User user = userService.getUserById(VALID_ID);
-        assertNotNull(user, "The retrieved user should not be null.");
-        assertEquals("testuser", user.getUsername(), "The username should match the expected value.");
-        verify(userRepo, times(1)).findById(VALID_ID);
+        User user = userService.getUserById(VALID_ID); // Calling service method
+
+        assertNotNull(user, "The retrieved user should not be null."); // Ensuring user is not null
+        assertEquals("testuser", user.getUsername(), "The username should match the expected value."); // Asserting username
+
+        verify(userRepo, times(1)).findById(VALID_ID); // Verifying repository method was called once
     }
 
     /**
@@ -93,13 +95,16 @@ public class UserServiceTest {
     @Test
     @Order(2)
     void testGetUserById_NotFound() {
-        when(userRepo.findById(INVALID_ID)).thenReturn(Optional.empty());
+        when(userRepo.findById(INVALID_ID)).thenReturn(Optional.empty()); // Mocking not found scenario
 
-        Exception exception = assertThrows(UserNotFoundException.class, () -> userService.getUserById(INVALID_ID),
-                                           "Expected UserNotFoundException when user is not found.");
+        Exception exception = assertThrows(UserNotFoundException.class,
+                                           () -> userService.getUserById(INVALID_ID),
+                                           "Expected UserNotFoundException when user is not found."); // Expecting exception
+
         assertTrue(exception.getMessage().contains("User not found with ID: " + INVALID_ID),
-                   "The exception message should indicate that the user was not found.");
-        verify(userRepo, times(1)).findById(INVALID_ID);
+                   "The exception message should indicate that the user was not found."); // Asserting exception message
+
+        verify(userRepo, times(1)).findById(INVALID_ID); // Verifying method call
     }
 
     /**
@@ -111,18 +116,20 @@ public class UserServiceTest {
     @Test
     @Order(3)
     void testUpdateUserProfile() {
-        when(userRepo.findById(VALID_ID)).thenReturn(Optional.of(sampleUser));
-        when(userRepo.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepo.findById(VALID_ID)).thenReturn(Optional.of(sampleUser)); // Mock user lookup
+        when(userRepo.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0)); // Return the saved user
 
         User updatedInfo = new User();
         updatedInfo.setUsername("updateduser");
         updatedInfo.setEmail("updated@example.com");
 
-        User result = userService.updateUserProfile(VALID_ID, updatedInfo);
+        User result = userService.updateUserProfile(VALID_ID, updatedInfo); // Call service method
+
         assertEquals("updateduser", result.getUsername(), "The username should be updated successfully.");
         assertEquals("updated@example.com", result.getEmail(), "The email should be updated successfully.");
-        verify(userRepo, times(1)).findById(VALID_ID);
-        verify(userRepo, times(1)).save(sampleUser);
+
+        verify(userRepo, times(1)).findById(VALID_ID); // Verify lookup
+        verify(userRepo, times(1)).save(sampleUser); // Verify save
     }
 
     /**
@@ -134,11 +141,14 @@ public class UserServiceTest {
     @Test
     @Order(4)
     void testFindById_Found() {
-        when(userRepo.findById(VALID_ID)).thenReturn(Optional.of(sampleUser));
-        Optional<User> userOpt = userService.findById(VALID_ID);
+        when(userRepo.findById(VALID_ID)).thenReturn(Optional.of(sampleUser)); // Mock existing user
+
+        Optional<User> userOpt = userService.findById(VALID_ID); // Call service method
+
         assertTrue(userOpt.isPresent(), "The Optional should contain a user.");
         assertEquals(sampleUser, userOpt.get(), "The returned user should match the sample user.");
-        verify(userRepo, times(1)).findById(VALID_ID);
+
+        verify(userRepo, times(1)).findById(VALID_ID); // Ensure method was called
     }
 
     /**
@@ -150,10 +160,13 @@ public class UserServiceTest {
     @Test
     @Order(5)
     void testFindById_NotFound() {
-        when(userRepo.findById(INVALID_ID)).thenReturn(Optional.empty());
-        Optional<User> userOpt = userService.findById(INVALID_ID);
+        when(userRepo.findById(INVALID_ID)).thenReturn(Optional.empty()); // Mock missing user
+
+        Optional<User> userOpt = userService.findById(INVALID_ID); // Call service method
+
         assertFalse(userOpt.isPresent(), "The Optional should be empty when no user is found.");
-        verify(userRepo, times(1)).findById(INVALID_ID);
+
+        verify(userRepo, times(1)).findById(INVALID_ID); // Ensure method was called
     }
 
     /**
@@ -167,12 +180,14 @@ public class UserServiceTest {
     void testFindAll() {
         List<User> userList = new ArrayList<>();
         userList.add(sampleUser);
-        when(userRepo.findAll()).thenReturn(userList);
+        when(userRepo.findAll()).thenReturn(userList); // Mock user list
 
-        List<User> result = userService.findAll();
+        List<User> result = userService.findAll(); // Call service
+
         assertEquals(1, result.size(), "The returned list should contain one user.");
         assertEquals(sampleUser, result.get(0), "The user in the list should match the sample user.");
-        verify(userRepo, times(1)).findAll();
+
+        verify(userRepo, times(1)).findAll(); // Ensure findAll called
     }
 
     /**
@@ -184,15 +199,17 @@ public class UserServiceTest {
     @Test
     @Order(7)
     void testSave() {
-        when(userRepo.save(any(User.class))).thenReturn(sampleUser);
+        when(userRepo.save(any(User.class))).thenReturn(sampleUser); // Mock save behavior
 
         User newUser = new User();
         newUser.setUsername("newuser");
         newUser.setEmail("newuser@example.com");
 
-        User result = userService.save(newUser);
-        assertNotNull(result, "The saved user should not be null.");
-        verify(userRepo, times(1)).save(newUser);
+        User result = userService.save(newUser); // Call save
+
+        assertNotNull(result, "The saved user should not be null."); // Verify non-null result
+
+        verify(userRepo, times(1)).save(newUser); // Ensure save was called with newUser
     }
 
     /**
@@ -204,13 +221,14 @@ public class UserServiceTest {
     @Test
     @Order(8)
     void testDeleteUser_Success() {
-        when(userRepo.existsById(VALID_ID)).thenReturn(true);
-        doNothing().when(userRepo).deleteById(VALID_ID);
+        when(userRepo.existsById(VALID_ID)).thenReturn(true); // Mock user existence
+        doNothing().when(userRepo).deleteById(VALID_ID); // Mock delete behavior
 
         assertDoesNotThrow(() -> userService.deleteUser(VALID_ID),
-                           "Deletion should occur without throwing an exception.");
-        verify(userRepo, times(1)).existsById(VALID_ID);
-        verify(userRepo, times(1)).deleteById(VALID_ID);
+                           "Deletion should occur without throwing an exception."); // Expect no exception
+
+        verify(userRepo, times(1)).existsById(VALID_ID); // Verify existence check
+        verify(userRepo, times(1)).deleteById(VALID_ID); // Verify deletion
     }
 
     /**
@@ -222,13 +240,16 @@ public class UserServiceTest {
     @Test
     @Order(9)
     void testDeleteUser_NotFound() {
-        when(userRepo.existsById(INVALID_ID)).thenReturn(false);
+        when(userRepo.existsById(INVALID_ID)).thenReturn(false); // Mock missing user
 
-        Exception exception = assertThrows(UserNotFoundException.class, () -> userService.deleteUser(INVALID_ID),
-                                           "Expected a UserNotFoundException when deleting a non-existent user.");
+        Exception exception = assertThrows(UserNotFoundException.class,
+                                           () -> userService.deleteUser(INVALID_ID),
+                                           "Expected a UserNotFoundException when deleting a non-existent user."); // Expect exception
+
         assertTrue(exception.getMessage().contains("User not found with id " + INVALID_ID),
-                   "The exception message should indicate that the user was not found.");
-        verify(userRepo, times(1)).existsById(INVALID_ID);
+                   "The exception message should indicate that the user was not found."); // Check exception message
+
+        verify(userRepo, times(1)).existsById(INVALID_ID); // Verify existence check
     }
 
     /**
@@ -241,15 +262,17 @@ public class UserServiceTest {
     @Test
     @Order(10)
     void testUserEntityGettersAndSetters() {
-        User user = new User();
+        User user = new User(); // Creating new User object
+
         Long id = 2L;
         String username = "anotheruser";
         String email = "another@example.com";
 
-        user.setId(id);
+        user.setId(id); // Set values
         user.setUsername(username);
         user.setEmail(email);
 
+        // Validate values were properly set using getters
         assertEquals(id, user.getId(), "The user ID should match the value set.");
         assertEquals(username, user.getUsername(), "The username should match the value set.");
         assertEquals(email, user.getEmail(), "The email should match the value set.");
