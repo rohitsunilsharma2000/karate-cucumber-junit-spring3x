@@ -18,11 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * </p>
  *
  * @version 1.0
- * @since 2025-03-27
  */
 public class GlobalExceptionHandlerTest {
 
-    // Create an instance of GlobalExceptionHandler to test its methods.
     private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
 
     /**

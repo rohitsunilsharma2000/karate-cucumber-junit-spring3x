@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li><strong>Error Propagation:</strong> Confirms that the message is properly returned by {@link RuntimeException#getMessage()}.</li>
  * </ul>
  *
- * @since 2025-03-27
  */
 public class UserNotFoundExceptionTest {
 

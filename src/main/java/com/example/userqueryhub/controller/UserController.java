@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
  * </ul>
  *
  * @version 1.0
- * @since 2025-03-27
  */
 @RestController
 @RequestMapping("/api/users")

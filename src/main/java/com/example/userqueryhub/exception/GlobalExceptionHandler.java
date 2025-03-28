@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * </ul>
  *
  * @version 1.0
- * @since 2025-03-27
  */
 @RestControllerAdvice
 @Slf4j

@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
  * </ul>
  *
  * @version 1.0
- * @since 2025-03-27
  */
 @Service
 @RequiredArgsConstructor

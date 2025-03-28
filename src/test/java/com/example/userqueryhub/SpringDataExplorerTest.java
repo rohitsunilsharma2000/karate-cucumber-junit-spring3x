@@ -18,7 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest;
  * With these tests, code coverage tools (e.g., JaCoCo) should report over 90% class, method, and line coverage.
  * </p>
  *
- * @since 2025-03-27
  */
 @SpringBootTest(classes = SpringDataExplorerTest.class)
 public class SpringDataExplorerTest {

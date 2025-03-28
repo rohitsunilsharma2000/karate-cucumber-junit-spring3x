@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </p>
  *
  * @version 1.0
- * @since 2025-03-27
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc

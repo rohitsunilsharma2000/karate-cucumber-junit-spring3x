@@ -31,7 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The tests simulate HTTP requests using {@link MockMvc} and use Mockito to mock the {@link UserService}.
  * </p>
  *
- * @since 2025-03-27
  */
 @WebMvcTest(UserController.class)
 class UserControllerTest {
