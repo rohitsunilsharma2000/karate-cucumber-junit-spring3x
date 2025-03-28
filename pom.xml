@@ -11,8 +11,8 @@
 		<groupId>com.example</groupId>
 		<artifactId>notificationservice</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<name>notificationservice</name>
-		<description>It integrates multiple notification channels (email, SMS, push).</description>
+		<name>MultiChannelNotifierApplication</name>
+		<description>Write a Spring Boot @Service class named NotificationService that integrates multiple notification channels (email, SMS, push).</description>
 		<url/>
 		<licenses>
 			<license/>
@@ -44,11 +44,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<!-- Spring Security for authentication and authorization -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
+
 		<!-- Spring Boot Starter for Validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -58,7 +54,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.24</version>
+			<version>1.18.30</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- For Jakarta Bean Validation -->
@@ -67,10 +63,7 @@
 			<artifactId>jakarta.validation-api</artifactId>
 			<version>3.0.2</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
