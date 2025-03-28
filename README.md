@@ -56,7 +56,7 @@ A Spring Boot module designed for user management that uses Spring Data JPA to r
     - Handle the scenario where the username does not exist in the database.
     - Ensure proper error responses for any unexpected failures or invalid requests.
 
-userqueryhub
+
 
 **Dependency Requirements:**
 
@@ -64,21 +64,21 @@ userqueryhub
 - **Spring Boot Starter Web:** To build RESTful APIs.
 - **Spring Boot Starter Validation:** For validating request parameters.
 - **Spring Boot Starter Test:** For unit and integration testing.
-- **H2 Database:** For in-memory development and testing.
+- **mysql Database:** For development and testing.
 - **Lombok:** (Optional) To reduce boilerplate code in entities and DTOs.
 - **SLF4J / Logback:** For logging application events.
 - **Maven or Gradle:** For dependency management and build automation.
 
-userqueryhub
+
 
 ## **Goal:**
 To develop a user management feature within a Spring Boot application that retrieves user data based on the username using a derived query method provided by Spring Data JPA. This approach improves code maintainability, reduces boilerplate, and enforces robust error handling and logging. The focus is on a clean architectural design, thorough input validation, and comprehensive test coverage.
 
-userqueryhub
+
 
 **Plan**  
 I will begin by setting up the project using Spring Initializr, including the necessary dependencies such as Spring Data JPA, Spring Web, and Validation. The project structure will be organized into packages like `entity`, `repository`, `service`, `controller`, and `exception`. The `User` entity will be defined with relevant fields, and the `UserRepository` interface will include the method `findByUsername(String username)` to perform the derived query. The service layer will handle the business logic, invoking the repository method to fetch the user, while the REST controller will expose an endpoint to access this functionality. A global exception handler will be implemented to manage cases where a user is not found or other errors occur. Finally, unit and integration tests will be written to ensure the functionality meets the requirements and handles edge cases effectively.
-userqueryhub
+
 
 # **Complete Project Code**
 
@@ -1421,7 +1421,7 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 ```
 
-userqueryhub
+
 
 ### 4. **Build & Test:**
 
@@ -1437,7 +1437,7 @@ userqueryhub
   ```
   Ensure that your test coverage meets or exceeds the 90% target.
 
-userqueryhub
+
 
 ### 5. **Start the Application:**
 
@@ -1447,7 +1447,7 @@ userqueryhub
   ```
 - By default, the application starts on port **8080** (unless configured otherwise).
 
-userqueryhub
+
 
 ### 6. **Accessing Endpoints & Features:**
 
@@ -1459,7 +1459,7 @@ GET User by Username
 curl -X GET http://localhost:8080/api/users/username/alice
 ```
 
-userqueryhub
+
 
 POST Save New User
 
@@ -1502,4 +1502,4 @@ Iteration Two:
 https://drive.google.com/file/d/1OtGCAgv_lyizsfXkvMwvNDMHW5A1CI3s/view?usp=drive_link
 
 Download Code:
-https://drive.google.com/file/d/158tRPKP0Nzv8xKLgXREvMKO-NpmG_XsH/view?usp=drive_link   
+https://drive.google.com/file/d/1HGSNWj04Y3M0pfCMGnVlLdktwKD3XK6l/view?usp=drive_link
