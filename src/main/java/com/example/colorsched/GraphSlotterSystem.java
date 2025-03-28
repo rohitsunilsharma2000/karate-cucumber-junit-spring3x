@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem;
+package com.example.colorsched;
 
 
 
@@ -41,7 +41,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
  * @author
  */
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
-public class TuringLLMTuningSystem {
+public class GraphSlotterSystem {
 
     /**
      * Main method that starts the Spring Boot application.
@@ -49,6 +49,6 @@ public class TuringLLMTuningSystem {
      * @param args Command-line arguments passed to the application.
      */
     public static void main(String[] args) {
-        SpringApplication.run(TuringLLMTuningSystem.class, args);
+        SpringApplication.run(GraphSlotterSystem.class, args);
     }
 }

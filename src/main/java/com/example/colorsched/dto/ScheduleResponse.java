@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.dto;
+package com.example.colorsched.dto;
 
 import lombok.Data;
 

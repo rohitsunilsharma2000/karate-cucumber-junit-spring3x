@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.dto;
+package com.example.colorsched.dto;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,20 +32,23 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class ScheduleResponseTest {
 
+    /**
+     * Test to verify correct mapping of tasks to slots in the task assignments map.
+     */
     @Test
     @DisplayName("Unit Test: Should correctly store and return task assignments")
     void testTaskAssignmentsMapping() {
-        // Arrange
+        // Arrange: Create a new ScheduleResponse object and a map of task assignments
         ScheduleResponse response = new ScheduleResponse();
         Map<Integer, Integer> assignments = new HashMap<>();
-        assignments.put(0, 0);
-        assignments.put(1, 1);
-        assignments.put(2, 0);
+        assignments.put(0, 0);  // Task 0 is assigned to slot 0
+        assignments.put(1, 1);  // Task 1 is assigned to slot 1
+        assignments.put(2, 0);  // Task 2 is assigned to slot 0
 
-        // Act
+        // Act: Set the task assignments in the ScheduleResponse object
         response.setTaskAssignments(assignments);
 
-        // Assert
+        // Assert: Verify the task assignments are correctly set
         assertNotNull(response.getTaskAssignments(), "Task assignments map should not be null");
         assertEquals(3, response.getTaskAssignments().size(), "Map size should match the number of tasks assigned");
         assertEquals(0, response.getTaskAssignments().get(0), "Task 0 should be assigned to slot 0");
@@ -53,34 +56,40 @@ class ScheduleResponseTest {
         assertEquals(0, response.getTaskAssignments().get(2), "Task 2 should be assigned to slot 0");
     }
 
+    /**
+     * Test to verify that the total number of colors used is correctly tracked.
+     */
     @Test
     @DisplayName("Unit Test: Should correctly track total number of colors used")
     void testTotalColorsUsed() {
-        // Arrange
+        // Arrange: Create a new ScheduleResponse object and set the expected number of colors
         ScheduleResponse response = new ScheduleResponse();
         int expectedColors = 2;
 
-        // Act
+        // Act: Set the total colors used in the ScheduleResponse object
         response.setTotalColorsUsed(expectedColors);
 
-        // Assert
+        // Assert: Verify that the total colors used are correctly set
         assertEquals(expectedColors, response.getTotalColorsUsed(), "Total colors used should match the value set");
     }
 
+    /**
+     * Test to verify correct behavior when no task assignments are provided (empty map)
+     * and zero colors are used.
+     */
     @Test
     @DisplayName("Unit Test: Should handle empty assignments and zero colors")
     void testEmptyAssignments() {
-        // Arrange
+        // Arrange: Create a new ScheduleResponse object
         ScheduleResponse response = new ScheduleResponse();
 
-        // Act
-        response.setTaskAssignments(new HashMap<>());
-        response.setTotalColorsUsed(0);
+        // Act: Set empty task assignments and zero total colors used
+        response.setTaskAssignments(new HashMap<>());  // No tasks assigned
+        response.setTotalColorsUsed(0);  // No colors used
 
-        // Assert
+        // Assert: Verify that the task assignments are initialized as empty and total colors are zero
         assertNotNull(response.getTaskAssignments(), "Task assignments should be initialized and not null");
         assertTrue(response.getTaskAssignments().isEmpty(), "Task assignments map should be empty");
         assertEquals(0, response.getTotalColorsUsed(), "Total colors used should be zero for empty input");
     }
 }
-

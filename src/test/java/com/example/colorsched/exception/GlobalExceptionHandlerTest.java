@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.exception;
+package com.example.colorsched.exception;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

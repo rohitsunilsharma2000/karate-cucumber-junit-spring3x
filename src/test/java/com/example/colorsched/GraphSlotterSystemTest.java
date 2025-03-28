@@ -1,5 +1,4 @@
-package com.example.turingLLMTuningSystem;
-import com.example.turingLLMTuningSystem.TuringLLMTuningSystem;
+package com.example.colorsched;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * and that the main() method can be called without errors.
  */
 @SpringBootTest
-class TuringLLMTuningSystemTest {
+class GraphSlotterSystemTest {
 
     /**
      * ✅ Test: Ensures that the Spring application context loads without exceptions.
@@ -28,6 +27,6 @@ class TuringLLMTuningSystemTest {
     @DisplayName("main() method should start the Spring Boot application without error")
     void testMainMethodRunsSuccessfully() {
         String[] args = {};
-        TuringLLMTuningSystem.main(args); // This should run without throwing exceptions
+        GraphSlotterSystem.main(args); // This should run without throwing exceptions
     }
 }

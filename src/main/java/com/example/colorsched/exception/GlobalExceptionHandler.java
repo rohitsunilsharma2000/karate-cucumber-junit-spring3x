@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.exception;
+package com.example.colorsched.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

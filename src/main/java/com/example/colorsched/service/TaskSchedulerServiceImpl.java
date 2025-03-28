@@ -1,7 +1,7 @@
-package com.example.turingLLMTuningSystem.service;
+package com.example.colorsched.service;
 
-import com.example.turingLLMTuningSystem.dto.ScheduleResponse;
-import com.example.turingLLMTuningSystem.dto.TaskRequest;
+import com.example.colorsched.dto.ScheduleResponse;
+import com.example.colorsched.dto.TaskRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

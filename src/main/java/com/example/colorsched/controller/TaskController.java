@@ -1,8 +1,8 @@
-package com.example.turingLLMTuningSystem.controller;
+package com.example.colorsched.controller;
 
-import com.example.turingLLMTuningSystem.dto.ScheduleResponse;
-import com.example.turingLLMTuningSystem.dto.TaskRequest;
-import com.example.turingLLMTuningSystem.service.TaskSchedulerService;
+import com.example.colorsched.dto.ScheduleResponse;
+import com.example.colorsched.dto.TaskRequest;
+import com.example.colorsched.service.TaskSchedulerService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

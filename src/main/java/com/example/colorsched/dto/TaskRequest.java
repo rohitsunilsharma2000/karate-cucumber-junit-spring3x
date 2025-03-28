@@ -1,4 +1,4 @@
-package com.example.turingLLMTuningSystem.dto;
+package com.example.colorsched.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
