@@ -3,89 +3,128 @@
 
 
 **Use Case:** A network analysis tool for industries requiring efficient detection of bridges and articulation points in complex networks. This API is designed to be integrated into larger systems (e.g., infrastructure monitoring, cybersecurity, and social network analysis) to quickly identify critical nodes and connections whose removal could fragment or weaken the network. The solution must be robust, scalable, and well-documented with comprehensive REST endpoints, input validations, and strong exception handling.
+Here’s your reformatted and properly indented prompt, matching the indentation and structure style of the previous "Social Media Platform" format:
+
+
 
 # **Prompt**
 
 ## **Title:**
 Spring Boot Graph Analyzer — Bridge and Articulation Point Detection API
 
-## **High-Level Description:**
-A Spring Boot API that identifies *bridges* and *articulation points* in an undirected graph. The application exposes REST API endpoints where users can submit a graph defined by vertices and edges. It utilizes DFS-based algorithms to detect structural vulnerabilities—edges whose removal disconnects the graph (bridges), and vertices whose removal increases the number of connected components (articulation points). The solution adheres to layered architecture principles and includes a controller, service, exception handling, validation, and test coverage.
+## **High-Level Description:**  
+You need to build a Spring Boot application that exposes REST endpoints to analyze undirected graphs and detect:
 
-## **Key Features:**
+- **Bridges**: Edges whose removal disconnects the graph.
+- **Articulation Points**: Vertices whose removal increases the number of connected components.
 
-1. **Project Structure & Setup**
-  - Create the project with Spring Initializr.
-  - Organize packages into `controller`, `service`, `dto`, `exception`, and `config`.
+This API receives a graph represented as vertices and edges, uses DFS-based algorithms for structural analysis, and returns the results in a clean format. The solution follows layered architecture, uses validation, exception handling, and includes full test coverage.
 
-2. **REST Controller & API Endpoints**
-  - Implement a REST controller under `/graph`.
-  - Expose two endpoints:
-    - `POST /graph/bridges` — accepts a JSON request and returns a list of bridge edges.
-    - `POST /graph/articulation` — accepts a JSON request and returns a list of articulation point nodes.
-  - Use `@Valid` with request DTO to enforce field constraints.
 
-3. **Service Layer – DFS-based Algorithms**
-  - Detect **bridges** using Tarjan’s Bridge-Finding algorithm (DFS-based).
-  - Detect **articulation points** using DFS with tracking of discovery and low times.
-  - Log detailed progress using SLF4J at `INFO`, `DEBUG`, and `ERROR` levels.
 
-4. **Exception Handling & Input Validation**
-  - Validate input using Jakarta annotations:
+## **Key Features**
+
+### 1. **Project Structure & Setup**
+- Create the project using Spring Initializr.
+- Organize packages as:
+    - `controller`
+    - `service`
+    - `dto`
+    - `exception`
+    - `config`
+
+### 2. **REST Controller & API Endpoints**
+- Create a REST controller under `/graph`.
+- Expose the following endpoints:
+    - `POST /graph/bridges` → Returns a list of bridge edges.
+    - `POST /graph/articulation` → Returns a list of articulation points.
+- Validate requests using `@Valid` on the input DTO.
+
+### 3. **Service Layer – DFS-Based Algorithms**
+- Implement:
+    - **Tarjan’s Algorithm** to find bridges.
+    - **Low-link value tracking** to find articulation points.
+- Ensure the service:
+    - Uses efficient DFS with visited, discovery, and low arrays.
+    - Logs computation at `INFO`, `DEBUG`, and `ERROR` levels.
+
+### 4. **Exception Handling & Input Validation**
+- Validate using Jakarta Bean Validation:
     - `@Min(1)` for vertex count.
-    - `@NotEmpty`, `@NotNull` for edge definitions.
-  - Implement `@RestControllerAdvice` to handle:
-    - Validation exceptions (`MethodArgumentNotValidException`)
-    - Malformed JSON (`HttpMessageNotReadableException`)
-    - Custom graph exceptions (`GraphAnalysisException`)
-    - Generic unhandled exceptions.
+    - `@NotEmpty`, `@NotNull` for edge lists.
+    - `GraphRequestValidator` for cross-field edge validator.
+- Add custom validation:
+    - Edge must contain exactly 2 vertices.
+    - Vertex indices must be within bounds `[0, vertices-1]`.
+- Use `@RestControllerAdvice` to handle:
+    - `MethodArgumentNotValidException`
+    - `HttpMessageNotReadableException`
+    - `MissingServletRequestParameterException`
+    - `GraphAnalysisException`
+    - Generic `Exception`
 
-5. **Logging & Traceability**
-  - Log incoming requests, internal algorithm steps, and responses using SLF4J.
-  - Capture exceptions with stack traces for debugging.
+### 5. **Logging & Traceability**
+- Log:
+    - Incoming requests and payloads.
+    - Step-by-step DFS traversal logic.
+    - Final results.
+    - Exceptions and their stack traces.
 
-6. **Testing & Documentation**
-  - Write:
-    - Unit tests for graph logic in service layer.
-    - Integration tests for controller with MockMvc.
-    - Negative test cases for malformed JSON and invalid input.
-  - Use Javadoc and class-level documentation for maintainability.
+### 6. **Testing & Documentation**
+- Write:
+    - **Unit Tests** for service logic (bridge/articulation detection).
+    - **Integration Tests** for REST endpoints with `MockMvc`.
+    - **Negative Tests** for invalid requests and malformed JSON.
+- Document:
+    - All public methods with Javadoc.
+    - Test classes with premise, assertions, pass/fail notes.
 
-7. **Expected Behaviour:**
-  - The bridge/articulation detection endpoints must:
-    - Return HTTP 200 OK with correct results for valid graphs.
-    - Return HTTP 400 Bad Request for:
-      - Missing/zero vertices → “Number of vertices must be at least 1”
-      - Null/empty edge list → “Edges list cannot be null/empty”
-      - Edges with null nodes → “Edge vertex cannot be null”
-      - Malformed JSON → “Malformed JSON request”
-  - In case of internal errors during analysis, return HTTP 500 with a meaningful error.
+### 7. **Expected Behavior**
+- Return:
+    - `200 OK` for valid inputs.
+    - `400 Bad Request` for:
+        - `vertices <= 0`
+        - `edges == null || edges.isEmpty()`
+        - `null` edge nodes
+        - malformed JSON
+        - out-of-bound vertex indices
+    - `500 Internal Server Error` for unexpected logic errors.
 
-8. **Edge Cases**
-  - Handle cases where:
-    - `vertices = 0` → return 400.
-    - `edges = null or []` → return 400.
-    - Graph has isolated nodes → no bridges/articulation points.
-    - Edge list contains null vertex → return validation error.
-    - Invalid JSON → return parse error.
-  - Maintain consistent error response format with `timestamp`, `status`, `error`, `message`.
+### 8. **Edge Case Handling**
+- `vertices = 0` → return 400.
+- `edges = null or []` → return 400.
+- Self-loops (e.g., `[0, 0]`) → valid, must not crash.
+- Duplicate edges → should be handled gracefully.
+- Out-of-bound vertex indices → validation error.
+- Isolated nodes → no bridges or articulation points.
+- Maintain uniform error format with:
+    - `timestamp`
+    - `status`
+    - `error`
+    - `message`
 
-**Dependency Requirements:**
 
-- **JUnit 5:** For writing and executing unit tests.
-- **Maven:** For dependency management and builds.
-- **Spring Boot Starter Web:** For exposing RESTful APIs.
-- **Spring Boot Starter Validation:** For request validation using Jakarta Bean Validation.
-- **Spring Boot Starter Test:** For unit and integration testing.
-- **Lombok:** (optional) for reducing boilerplate in DTOs and services.
-- **SLF4J / Logback:** For logging.
-- **Spring Boot DevTools:** For fast development and hot reloading.
-- **H2 Database:** Only if persistence is needed for future enhancements (not used here).
 
-## **Goal:**
-To develop a Spring Boot microservice that reliably detects bridges and articulation points in a graph using efficient DFS-based algorithms. The application must maintain a clean structure, enforce robust validation, log key activities, and handle both expected and unexpected errors gracefully. This service is useful for identifying critical points in communication, social, and transport networks.
+## **Dependency Requirements**
 
-**Plan**  
+- **Spring Boot Starter Web**: REST API support
+- **Spring Boot Starter Validation**: Jakarta Bean validation
+- **Spring Boot Starter Test**: JUnit 5, Mockito
+- **Lombok**: (Optional) to reduce boilerplate
+- **SLF4J / Logback**: Logging
+- **Spring Boot DevTools**: For hot reload
+- **JUnit 5**: For testing
+- **Maven**: Dependency management
+
+
+
+## **Goal**
+To build a scalable, robust, and clean Spring Boot service for analyzing graph vulnerabilities through bridge and articulation point detection. The system must follow clean architecture, provide helpful logging and error messages, and be thoroughly tested for correctness and reliability across edge cases.
+
+
+
+## **Plan**
+ 
 I will set up the project structure using Spring Initializr and create the core packages: `controller`, `service`, `dto`, `exception`, and `config`. I will configure the `pom.xml` with all required dependencies and set the Java version to 17. I will define the `GraphRequest` DTO with validation annotations to ensure input integrity. I will build the REST controller to expose two endpoints: one for detecting bridges and another for articulation points. I will implement the DFS-based algorithms in the service layer with proper SLF4J logging at INFO and DEBUG levels. I will add a `GlobalExceptionHandler` class to handle validation failures, malformed requests, and custom graph exceptions uniformly. I will write unit tests for the service logic and integration tests for the REST endpoints using JUnit 5 and Spring MockMvc. Finally, I will verify the application by building and running it with Maven, ensuring that it returns correct results and properly handles edge cases and errors.
 
 
@@ -109,8 +148,11 @@ src
 |   |               |-- exception
 |   |               |   |-- GlobalExceptionHandler.java
 |   |               |   `-- GraphAnalysisException.java
-|   |               `-- service
-|   |                   `-- GraphService.java
+|   |               |-- service
+|   |               |   `-- GraphService.java
+|   |               `-- validation
+|   |                   |-- GraphRequestValidator.java
+|   |                   `-- ValidGraphRequest.java
 |   `-- resources
 `-- test
     `-- java
@@ -119,14 +161,17 @@ src
                 `-- graph
                     |-- GraphIntegrityAppTest.java
                     |-- controller
-                    |   `-- GraphControllerIntegrationTest.java
+                    |   |-- GraphControllerIntegrationTest.java
                     |   `-- GraphControllerTest.java
                     |-- dto
                     |   `-- GraphRequestTest.java
                     |-- exception
                     |   `-- GlobalExceptionHandlerTest.java
-                    `-- service
-                        `-- GraphServiceTest.java
+                    |-- service
+                    |   `-- GraphServiceTest.java
+                    `-- validation
+                        `-- GraphRequestValidatorTest.java
+
 
 
 
@@ -378,7 +423,7 @@ public class GraphAnalysisException extends RuntimeException {
 }
 
 ```
-**4) GlobalExceptionHandler:** `src/main/java/com/example/graph/exception/GlobalExceptionHandler.java`
+**5) GlobalExceptionHandler:** `src/main/java/com/example/graph/exception/GlobalExceptionHandler.java`
 ```java
 package com.example.graph.exception;
 
@@ -469,7 +514,7 @@ public class GlobalExceptionHandler {
 }
 
 ```
-**5) GraphRequest:** `src/main/java/com/example/graph/dto/GraphRequest.java`
+**6) GraphRequest:** `src/main/java/com/example/graph/dto/GraphRequest.java`
 ```java
 package com.example.graph.dto;
 
@@ -543,7 +588,7 @@ public class GraphRequest {
 }
 
 ```
-**6) GraphController:** `src/`main/java/com/example/graph/controller/GraphController.java`
+**7) GraphController:** `src/main/java/com/example/graph/controller/GraphController.java`
 ```java
 package com.example.graph.controller;
 
@@ -622,15 +667,163 @@ public class GraphController {
 }
 
 ```
-**7) application.properties:** `src/main/resources/application.properties`
-```text
-spring.application.name=graph-integrity-app
-server.port=8080
+**8) GraphRequestValidator:** `src/main/java/com/example/graph/validation/GraphRequestValidator.java`
+```javapackage com.example.graph.validation;
+
+import com.example.graph.dto.GraphRequest;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+
+/**
+ * Custom validator for {@link GraphRequest}.
+ *
+ * <p>
+ * Ensures that:
+ * <ul>
+ *   <li>The number of vertices is ≥ 1 (already enforced via annotation).</li>
+ *   <li>Each edge is a non-null list of exactly two integers.</li>
+ *   <li>Each vertex index in an edge is within the valid range: [0, vertices - 1].</li>
+ * </ul>
+ * </p>
+ */
+public class GraphRequestValidator implements ConstraintValidator<ValidGraphRequest, GraphRequest> {
+
+    private static final Logger logger = LoggerFactory.getLogger(GraphRequestValidator.class);
+
+    @Override
+    public boolean isValid(GraphRequest request, ConstraintValidatorContext context) {
+        // Null request — let other validators handle it
+        if (request == null) {
+            logger.warn("GraphRequest is null. Skipping custom validation.");
+            return true;
+        }
+
+        logger.debug("Starting validation for GraphRequest: vertices={}, edges={}",
+                     request.getVertices(), request.getEdges());
+
+        int vertices = request.getVertices();
+        List<List<Integer>> edges = request.getEdges();
+
+        // Ensure edge list is not null or empty
+        if (edges == null || edges.isEmpty()) {
+            logger.error("Validation failed: Edges list is null or empty.");
+            return false;
+        }
+
+        int edgeIndex = 0;
+        for (List<Integer> edge : edges) {
+            logger.debug("Validating edge[{}]: {}", edgeIndex, edge);
+
+            // Check if the edge itself is null
+            if (edge == null) {
+                logger.error("Validation failed: Edge[{}] is null.", edgeIndex);
+                return false;
+            }
+
+            // Each edge must contain exactly 2 vertices
+            if (edge.size() != 2) {
+                logger.error("Validation failed: Edge[{}] does not contain exactly two vertices.", edgeIndex);
+                return false;
+            }
+
+            int vertexIndex = 0;
+            for (Integer vertex : edge) {
+                if (vertex == null) {
+                    logger.error("Validation failed: Vertex in edge[{}][{}] is null.", edgeIndex, vertexIndex);
+                    return false;
+                }
+                if (vertex < 0 || vertex >= vertices) {
+                    logger.error("Validation failed: Vertex in edge[{}][{}] = {} is out of bounds (0 to {}).",
+                                 edgeIndex, vertexIndex, vertex, vertices - 1);
+                    return false;
+                }
+                logger.debug("Vertex[{}] in edge[{}] is valid: {}", vertexIndex, edgeIndex, vertex);
+                vertexIndex++;
+            }
+
+            edgeIndex++;
+        }
+
+        logger.info("GraphRequest validation passed.");
+        return true;
+    }
+}
+
 
 ```
+**9) ValidGraphRequest:** `src/main/resources/validation/ValidGraphRequest.java`
+```javapackage com.example.graph.validation;
+
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+
+import java.lang.annotation.*;
+
+/**
+ * Custom constraint annotation for validating a {@link com.example.graph.dto.GraphRequest}.
+ *
+ * <p><strong>Purpose:</strong></p>
+ * Ensures that:
+ * <ul>
+ *   <li>Each edge in the graph contains exactly two vertices.</li>
+ *   <li>Each vertex index is non-null and within the range [0, vertices - 1].</li>
+ * </ul>
+ *
+ * <p><strong>How it works:</strong></p>
+ * This annotation delegates validation to the {@link GraphRequestValidator} class,
+ * which implements the logic for checking structure and range of vertex indices.
+ *
+ * <p><strong>Usage:</strong></p>
+ * <pre>
+ * {@code
+ * @ValidGraphRequest
+ * public class GraphRequest {
+ *     ...
+ * }
+ * }
+ * </pre>
+ *
+ * <p><strong>Target:</strong> Classes (i.e., DTOs)</p>
+ * <p><strong>Retention:</strong> Runtime, required for runtime validation.</p>
+ *
+ * @see com.example.graph.validation.GraphRequestValidator
+ * @see jakarta.validation.ConstraintValidator
+ */
+@Documented
+@Constraint(validatedBy = GraphRequestValidator.class)
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ValidGraphRequest {
+
+    /**
+     * Default error message if validation fails.
+     */
+    String message() default "Invalid graph request: edge vertices must be within range and non-negative.";
+
+    /**
+     * Allows specification of validation groups.
+     */
+    Class<?>[] groups() default {};
+
+    /**
+     * Payloads can be used by clients to assign custom payload objects to a constraint.
+     */
+    Class<? extends Payload>[] payload() default {};
+}
 
 
-**8) Maven:** `pom.xml`
+```
+**10) application.properties:** `src/main/resources/application.properties`
+```properties
+spring.application.name=graph-integrity-app
+server.port=8080
+```
+
+**11) Maven:** `pom.xml`
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -723,7 +916,7 @@ server.port=8080
 
 # **Unit Tests (JUnit 5 + Mockito)**
 
-**9) Main Application:** `src/test/java/com/example/graph/GraphIntegrityAppTest.java`
+**12) Main Application:** `src/test/java/com/example/graph/GraphIntegrityAppTest.java`
 ```java
 package com.example.graph;
 
@@ -770,7 +963,7 @@ public class GraphIntegrityAppTest {
 }
 
 ```
-**10) GraphServiceTest:** `src/test/java/com/example/graph/service/GraphServiceTest.java`
+**13) GraphServiceTest:** `src/test/java/com/example/graph/service/GraphServiceTest.java`
 ```java
 package com.example.graph.service;
 
@@ -978,7 +1171,7 @@ class GraphServiceTest {
 
 ```
 
-**11) GraphRequestTest:** `src/test/java/com/example/graph/dto/GraphRequestTest.java`
+**14) GraphRequestTest:** `src/test/java/com/example/graph/dto/GraphRequestTest.java`
 ```java
 package com.example.graph.dto;
 
@@ -1127,10 +1320,10 @@ public class GraphRequestTest {
 
 ```
 
-## After the first iteration, the overall test coverage was 74%. To improve this, additional test cases—including those in GraphControllerIntegrationTest , GraphControllerTest and GlobalExceptionHandlerTest will be introduced to further increase the test coverage percentage.
+## After the first iteration, the overall test coverage was 88%. To improve this, additional test cases—including those in GraphControllerIntegrationTest , GraphControllerTest , GlobalExceptionHandlerTest and GraphControllerTest will be introduced to further increase the test coverage percentage.
 
 
-**12) GraphControllerIntegrationTest:** `src/test/java/com/example/graph/controller/GraphControllerIntegrationTest.java`
+**15) GraphControllerIntegrationTest:** `src/test/java/com/example/graph/controller/GraphControllerIntegrationTest.java`
 ```java
 package com.example.graph.controller;
 
@@ -1326,7 +1519,7 @@ public class GraphControllerIntegrationTest {
 
 ```
 
-**11) GlobalExceptionHandlerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
+**16) GlobalExceptionHandlerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
 ```java
 package com.example.graph.exception;
 
@@ -1491,7 +1684,7 @@ public class GlobalExceptionHandlerTest {
 }
 
 ```
-**12) GraphControllerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
+**17) GraphControllerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
 ```java
 package com.example.graph.controller;
 
@@ -1667,18 +1860,183 @@ public class GraphControllerTest {
 }
 
 ```
+**18) GraphControllerTest:** `src/test/java/com/example/graph/exception/GlobalExceptionHandlerTest.java`
+```java
+package com.example.graph.validation;
+
+import com.example.graph.dto.GraphRequest;
+import jakarta.validation.ConstraintValidatorContext;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+/**
+ * Unit tests for {@link GraphRequestValidator}.
+ *
+ * <p><strong>Premise:</strong> The validator enforces that:
+ * <ul>
+ *     <li>Each edge must contain exactly 2 vertices</li>
+ *     <li>Each vertex must be in range [0, vertices - 1]</li>
+ *     <li>Vertices must not be null or negative</li>
+ * </ul>
+ *
+ * <p><strong>Assertions:</strong> The validation result matches expected validity.
+ *
+ * <p><strong>Pass/Fail Conditions:</strong>
+ * <ul>
+ *     <li><strong>Pass:</strong> All edge lists are valid and vertices are within bounds.</li>
+ *     <li><strong>Fail:</strong> If any edge is null, malformed, or references invalid vertex indices.</li>
+ * </ul>
+ */
+class GraphRequestValidatorTest {
+
+
+    // Create a validator instance and mock context for testing
+    private final GraphRequestValidator validator = new GraphRequestValidator();
+    private final ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
+
+    @Test
+    @DisplayName("Valid graph with correct edge format and in-range vertices")
+    void testValidGraph () {
+        // Setup: valid graph with 4 vertices and 2 well-formed edges
+        GraphRequest request = new GraphRequest();
+        request.setVertices(4);
+        request.setEdges(List.of(List.of(0 , 1), List.of(2 , 3)));
+
+        // Expect the validator to return true
+        assertTrue(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Edge contains more than two vertices")
+    void testEdgeWithTooManyVertices () {
+        // Setup: edge has 3 vertices instead of 2
+        GraphRequest request = new GraphRequest();
+        request.setVertices(4);
+        request.setEdges(List.of(List.of(0 , 1 , 2)));
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Edge contains only one vertex")
+    void testEdgeWithOneVertex () {
+        // Setup: edge has only 1 vertex
+        GraphRequest request = new GraphRequest();
+        request.setVertices(4);
+        request.setEdges(List.of(List.of(0)));
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Edge contains null vertex")
+    void testEdgeWithNullVertex () {
+        // Setup: one vertex in the edge is null
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        List<List<Integer>> edges = new ArrayList<>();
+        edges.add(Arrays.asList(0 , null));
+        request.setEdges(edges);
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Vertex index out of bounds (negative)")
+    void testVertexNegative () {
+        // Setup: one vertex is negative
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        request.setEdges(List.of(List.of(-1 , 1)));
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Vertex index out of bounds (greater than max)")
+    void testVertexTooLarge () {
+        // Setup: one vertex index exceeds the allowed maximum
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        request.setEdges(List.of(List.of(0 , 4))); // Max index should be 2
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Edge list is null")
+    void testEdgesListNull () {
+        // Setup: edge list itself is null
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        request.setEdges(null);
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Edge list is empty")
+    void testEdgesListEmpty () {
+        // Setup: edge list is empty
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+        request.setEdges(List.of());
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("Edge object is null in list")
+    void testEdgeNullInList () {
+        // Setup: edge list contains a null edge object
+        GraphRequest request = new GraphRequest();
+        request.setVertices(3);
+
+        List<List<Integer>> edges = new ArrayList<>();
+        edges.add(null);
+        request.setEdges(edges);
+
+        // Expect the validator to return false
+        assertFalse(validator.isValid(request, context));
+    }
+
+    @Test
+    @DisplayName("GraphRequest is null")
+    void testNullGraphRequest () {
+        // Setup: null input request
+        // Expect true, as per convention (Bean Validation spec handles nulls as valid unless explicitly disallowed)
+        assertTrue(validator.isValid(null, context));
+    }
+}
+
+```
 # After the second iteration, test coverage increased to 99%.
 **Result:** Total line coverage is 99%
+
 
 # **How to Run**
 
 1. **Create the Project Structure:** Manually create the directories and files as shown in the provided project layout or use Spring Initializr to generate a skeleton, then place/modify files accordingly.
-2. **pom.xml / Dependencies:** Ensure your pom.xml includes Spring Boot Starter Web, Security, Validation, Lombok, Test, H2 Database, Jakarta Validation API, and DevTools dependencies with Java version set to 17 for a scalable REST API using the Edmonds‑Karp algorithm..
-3. ** Application Properties:** :
+2. **pom.xml / Dependencies:** Ensure your pom.xml contains the necessary Spring Boot dependencies (e.g., Spring Web, Spring Boot Starter Test,  etc.). Confirm that the Java version is set to 17 (or adjust accordingly) and any needed plugins  are present.
+3. ** Application Properties:** Configure `server.port` in application.properties (or application.yml), for example:
 ```properties
 spring.application.name=graph-integrity-app
 server.port=8080
-
 ```
 4. **Build & Test:**
 
@@ -1701,9 +2059,6 @@ mvn spring-boot:run
 - By default, it starts on port 8080 (unless configured otherwise).
 
 
-Here’s the complete **cURL documentation** for the **Detect Bridges** and **Detect Articulation Points** endpoints, formatted exactly like your sample:
-
-
 
 ### 6. **Accessing Endpoints & Features:**
 
@@ -1711,158 +2066,50 @@ Below are runnable cURL commands along with sample success and error responses f
 
 
 
-###  Detect Bridges
 
-- **Valid Request (Success Response)**
+Detect Bridges – Valid Request
+```bash
+curl -X POST http://localhost:8080/graph/bridges \
+  -H "Content-Type: application/json" \
+  -d '{"vertices":5,"edges":[[0,1],[1,2],[2,0],[1,3],[3,4]]}'
 
-  - **cURL Command:**
-
-    ```bash
-    curl --location 'http://localhost:8080/graph/bridges' \
-    --header 'Content-Type: application/json' \
-    --data '{
-        "vertices": 5,
-        "edges": [
-            [0, 1],
-            [1, 2],
-            [2, 0],
-            [1, 3],
-            [3, 4]
-        ]
-    }'
-    ```
-
-  - **Sample Success Response:**
-
-    ```json
-    [
-      "3-4",
-      "1-3"
-    ]
-    ```
-
-    *(The API returns HTTP status 200 OK and a list of bridge edges in the graph.)*
+```
 
 
 
-- **Missing Vertices (Error Response)**
-
-  - **cURL Command:**
-
-    ```bash
-    curl --location 'http://localhost:8080/graph/bridges' \
-    --header 'Content-Type: application/json' \
-    --data '{
-        "edges": [
-            [0, 1],
-            [1, 2]
-        ]
-    }'
-    ```
-
-  - **Sample Error Response:**
-
-    ```json
-    {
-      "timestamp": "2025-03-27T13:45:20.147732",
-      "status": 400,
-      "error": "Bad Request",
-      "message": "Validation failed",
-      "errors": {
-        "vertices": "must not be null"
-      }
-    }
-    ```
-
-    *(The API returns HTTP status 400 Bad Request due to missing required `vertices` field.)*
+ Missing Vertices
+```bash
+curl -X POST http://localhost:8080/graph/bridges \
+  -H "Content-Type: application/json" \
+  -d '{"edges":[[0,1],[1,2]]}'
+```
 
 
 
-- **Malformed JSON (Error Response)**
-
-  - **cURL Command:**
-
-    ```bash
-    curl --location 'http://localhost:8080/graph/bridges' \
-    --header 'Content-Type: application/json' \
-    --data '{"vertices": 4, "edges": [[0,1], [1,2]'  # Missing closing bracket
-    ```
-
-  - **Sample Error Response:**
-
-    ```json
-    {
-      "timestamp": "2025-03-27T13:47:01.253465",
-      "status": 400,
-      "error": "Bad Request",
-      "message": "Malformed JSON request"
-    }
-    ```
-
-    *(The API returns HTTP status 400 Bad Request due to malformed JSON.)*
+Malformed JSON
+```bash
+curl -X POST http://localhost:8080/graph/bridges \
+  -H "Content-Type: application/json" \
+  -d '{"vertices":4,"edges":[[0,1],[1,2]'
+```
 
 
 
-###  Detect Articulation Points
-
-- **Valid Request (Success Response)**
-
-  - **cURL Command:**
-
-    ```bash
-    curl --location 'http://localhost:8080/graph/articulation' \
-    --header 'Content-Type: application/json' \
-    --data '{
-        "vertices": 5,
-        "edges": [
-            [0, 1],
-            [1, 2],
-            [2, 0],
-            [1, 3],
-            [3, 4]
-        ]
-    }'
-    ```
-
-  - **Sample Success Response:**
-
-    ```json
-    [1, 3]
-    ```
-
-    *(The API returns HTTP status 200 OK and a list of articulation point node indices.)*
+Detect Articulation Points – Valid Request
+```bash
+curl -X POST http://localhost:8080/graph/articulation \
+  -H "Content-Type: application/json" \
+  -d '{"vertices":5,"edges":[[0,1],[1,2],[2,0],[1,3],[3,4]]}'
+```
 
 
 
-- **Empty Edges (Error Response)**
-
-  - **cURL Command:**
-
-    ```bash
-    curl --location 'http://localhost:8080/graph/articulation' \
-    --header 'Content-Type: application/json' \
-    --data '{
-        "vertices": 4,
-        "edges": []
-    }'
-    ```
-
-  - **Sample Error Response:**
-
-    ```json
-    {
-      "timestamp": "2025-03-27T13:48:50.987351",
-      "status": 400,
-      "error": "Bad Request",
-      "message": "Validation failed",
-      "errors": {
-        "edges": "must not be empty"
-      }
-    }
-    ```
-
-    *(The API returns HTTP status 400 Bad Request due to empty edge list which violates the validation constraints.)*
-
+Empty Edges
+```bash
+curl -X POST http://localhost:8080/graph/articulation \
+  -H "Content-Type: application/json" \
+  -d '{"vertices":4,"edges":[]}'
+```
 
 
 
@@ -1898,7 +2145,6 @@ This makes the application suitable for academic, enterprise, and analytical use
 # ** Iteration**
 
 
-First Iteration: https://drive.google.com/file/d/1qFJcG7LmphJimo_lPlfdq_CttqWEqUDw/view?usp=drive_link
-First Iteration: https://drive.google.com/file/d/1UXzwqbspuFDcE4vgSvoGYfp2UtzRPWEE/view?usp=drive_link
-Code Download:
-https://drive.google.com/file/d/1UNzUVJuYjaix-HaKOgmJ9qfUtp9uBaLZ/view?usp=drive_link
+First Iteration: https://drive.google.com/file/d/1k5aWK_9uDu8GKvd5dCHPl24LrUv3JI5i/view?usp=drive_link
+First Iteration: https://drive.google.com/file/d/1FoUCCNkvL8b-V59H3SjpqOGzpAY5UeZj/view?usp=drive_link
+Code Download:https://drive.google.com/file/d/13r91CiKdWESVm379HkGiZJ9XDSP7Wdbe/view?usp=drive_link

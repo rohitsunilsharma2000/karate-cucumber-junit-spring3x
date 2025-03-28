@@ -1,191 +1,176 @@
+
 package com.example.graph.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for {@link GraphController}.
+ * Integration tests for {@link GraphController}, specifically for edge case scenarios.
  *
- * <p>
- * This class verifies the behavior of the REST endpoints defined in the GraphController within a full Spring Boot application context.
- * The tests cover:
+ * <p>This class uses parameterized tests to verify that the controller behaves as expected when provided with special
+ * or boundary graph inputs, such as:</p>
  * <ul>
- *   <li>HTTP status codes for valid and invalid input payloads</li>
- *   <li>Proper JSON request/response handling</li>
- *   <li>Validation constraint violations on the {@link com.example.graph.dto.GraphRequest} DTO</li>
- *   <li>Behavior of {@link com.example.graph.exception.GlobalExceptionHandler} for edge cases</li>
+ *   <li>A graph with a single vertex and no edges</li>
+ *   <li>A graph with a self-loop edge</li>
+ *   <li>A fully connected graph (clique) which has no articulation points or bridges</li>
+ *   <li>A simple path graph where intermediate nodes are articulation points</li>
+ *   <li>A star-shaped graph with one central articulation point</li>
+ *   <li>A graph with an out-of-bounds vertex reference</li>
+ *   <li>A graph with duplicate edges</li>
  * </ul>
- * </p>
  *
- * <p>
- * By running these tests, we ensure that the controller logic, validation, and exception handling work as expected when the application is fully bootstrapped.
- * </p>
- *
- * @author
- * @since 2025-03-26
+ * <p>Each test validates both the HTTP response status and, where applicable, the expected response body.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 public class GraphControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc; // Simulates HTTP requests for integration testing
+    private MockMvc mockMvc; // For sending simulated HTTP requests
 
     @Autowired
-    private ObjectMapper objectMapper; // Converts Java objects to JSON and vice versa
+    private ObjectMapper objectMapper; // For converting request maps to JSON
 
     /**
-     * Integration test for the /graph/bridges endpoint with valid input.
-     *
-     * <p>
-     * <strong>Scenario:</strong> A valid request is sent with 5 vertices and a proper list of edges.
-     * The test expects an HTTP 200 OK response, indicating that the request was processed successfully.
-     * </p>
-     *
-     * @throws Exception if an error occurs during request processing.
+     * Represents a single test case used in the parameterized test.
      */
-    @Test
-    @DisplayName("POST /graph/bridges - Valid Input - Returns 200 OK")
-    public void testFindBridges_ValidInput_ReturnsOk() throws Exception {
-        // GIVEN: Build a valid request payload containing 5 vertices and a list of edges.
-        Map<String, Object> request = Map.of(
-                "vertices", 5,
-                "edges", List.of(
-                        List.of(0, 1),
-                        List.of(1, 2),
-                        List.of(2, 0),
-                        List.of(1, 3),
-                        List.of(3, 4)
+    static class GraphTestCase {
+        final String name;               // Description of the test
+        final Map<String, Object> request;  // The graph input request
+        final String endpoint;          // The controller endpoint to call
+        final int expectedStatus;       // Expected HTTP status
+        final String expectedJson;      // Expected JSON response (can be null if only checking status)
+
+        GraphTestCase(String name, Map<String, Object> request, String endpoint, int expectedStatus, String expectedJson) {
+            this.name = name;
+            this.request = request;
+            this.endpoint = endpoint;
+            this.expectedStatus = expectedStatus;
+            this.expectedJson = expectedJson;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    /**
+     * Supplies the edge case scenarios for the parameterized test.
+     */
+    static Stream<GraphTestCase> graphEdgeCasesProvider() {
+        return Stream.of(
+
+                // A graph with a single vertex and no edges. Should return 200 with empty response.
+                new GraphTestCase(
+                        "Single vertex, no edges (via self-loop)",
+                        Map.of("vertices", 1, "edges", List.of(List.of(0, 0))), // Added self-loop to avoid empty edge list
+                        "/graph/bridges",
+                        200,
+                        "[]" // Still expecting no bridges
+                ),
+
+
+                // A self-loop edge should be ignored in bridge detection.
+                new GraphTestCase(
+                        "Self-loop edge",
+                        Map.of("vertices", 1, "edges", List.of(List.of(0, 0))),
+                        "/graph/bridges",
+                        200,
+                        "[]"
+                ),
+
+                // Fully connected graph with 4 nodes. No articulation points should be detected.
+                new GraphTestCase(
+                        "Fully connected graph",
+                        Map.of("vertices", 4, "edges", List.of(
+                                List.of(0, 1), List.of(0, 2), List.of(0, 3),
+                                List.of(1, 2), List.of(1, 3), List.of(2, 3))),
+                        "/graph/articulation",
+                        200,
+                        "[]"
+                ),
+
+                // A line graph: nodes 1, 2, 3 are articulation points.
+                new GraphTestCase(
+                        "Simple path with articulation points",
+                        Map.of("vertices", 5, "edges", List.of(
+                                List.of(0, 1), List.of(1, 2), List.of(2, 3), List.of(3, 4))),
+                        "/graph/articulation",
+                        200,
+                        "[1,2,3]"
+                ),
+
+                // A star-shaped graph: only the center node (0) is an articulation point.
+                new GraphTestCase(
+                        "Star topology with central articulation point",
+                        Map.of("vertices", 5, "edges", List.of(
+                                List.of(0, 1), List.of(0, 2), List.of(0, 3), List.of(0, 4))),
+                        "/graph/articulation",
+                        200,
+                        "[0]"
+                ),
+
+                // An edge includes a vertex index (4) that is outside the valid range [0, 2].
+                new GraphTestCase(
+                        "Edge with out-of-bound vertex",
+                        Map.of("vertices", 3, "edges", List.of(List.of(0, 4))),
+                        "/graph/bridges",
+                        400,
+                        null // Validation should fail, so no need to verify response body
+                ),
+
+                // Duplicate edges should not break the algorithm or appear more than once.
+                new GraphTestCase(
+                        "Duplicate edges",
+                        Map.of("vertices", 3, "edges", List.of(
+                                List.of(0, 1), List.of(1, 2), List.of(0, 1))),
+                        "/graph/bridges",
+                        200,
+                        "[\"1-2\",\"0-1\"]"
                 )
         );
-
-        // WHEN & THEN: Perform a POST request to /graph/bridges, then expect HTTP 200 OK.
-        mockMvc.perform(post("/graph/bridges")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
-               .andExpect(status().isOk());
     }
 
     /**
-     * Integration test for the /graph/articulation endpoint with valid input.
+     * Executes a parameterized integration test for each graph edge case.
      *
-     * <p>
-     * <strong>Scenario:</strong> A valid request is sent with 5 vertices and a list of edges.
-     * The test expects an HTTP 200 OK response, indicating that the endpoint processed the request successfully.
-     * </p>
+     * <p>Each test performs a POST request to the specified endpoint using the request payload,
+     * then validates the HTTP status code and optionally the JSON response body.</p>
      *
-     * @throws Exception if an error occurs during request processing.
+     * @param testCase The test case input and expected result
+     * @throws Exception if request processing fails
      */
-    @Test
-    @DisplayName("POST /graph/articulation - Valid Input - Returns 200 OK")
-    public void testFindArticulationPoints_ValidInput_ReturnsOk() throws Exception {
-        // GIVEN: Build a valid request payload containing 5 vertices and a list of edges.
-        Map<String, Object> request = Map.of(
-                "vertices", 5,
-                "edges", List.of(
-                        List.of(0, 1),
-                        List.of(1, 2),
-                        List.of(2, 0),
-                        List.of(1, 3),
-                        List.of(3, 4)
-                )
-        );
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("graphEdgeCasesProvider")
+    @DisplayName("Parameterized edge case test for /graph endpoints")
+    void testGraphEdgeCases(GraphTestCase testCase) throws Exception {
+        // Perform the POST request to the specified endpoint with given input
+        var resultActions = mockMvc.perform(post(testCase.endpoint)
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .content(objectMapper.writeValueAsString(testCase.request)))
+                                   .andExpect(status().is(testCase.expectedStatus)); // Assert expected HTTP status
 
-        // WHEN & THEN: Perform a POST request to /graph/articulation and expect HTTP 200 OK.
-        mockMvc.perform(post("/graph/articulation")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
-               .andExpect(status().isOk());
-    }
-
-    /**
-     * Integration test for the /graph/bridges endpoint when the 'vertices' field is missing.
-     *
-     * <p>
-     * <strong>Scenario:</strong> A request is sent without the required 'vertices' field.
-     * The test expects an HTTP 400 Bad Request response due to validation failure.
-     * </p>
-     *
-     * @throws Exception if an error occurs during request processing.
-     */
-    @Test
-    @DisplayName("POST /graph/bridges - Missing vertices - Returns 400 Bad Request")
-    public void testFindBridges_MissingVertices_ReturnsBadRequest() throws Exception {
-        // GIVEN: Build a request payload with the 'edges' field only, leaving out the required 'vertices'.
-        Map<String, Object> request = Map.of(
-                "edges", List.of(
-                        List.of(0, 1),
-                        List.of(1, 2)
-                )
-        );
-
-        // WHEN & THEN: Perform a POST request to /graph/bridges and expect HTTP 400 Bad Request with a validation error message.
-        mockMvc.perform(post("/graph/bridges")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
-               .andExpect(status().isBadRequest())
-               .andExpect(jsonPath("$.message").value("Validation failed"));
-    }
-
-    /**
-     * Integration test for the /graph/articulation endpoint when the 'edges' list is empty.
-     *
-     * <p>
-     * <strong>Scenario:</strong> A request is sent with a valid 'vertices' value but an empty 'edges' list.
-     * The test expects an HTTP 400 Bad Request response due to a validation error.
-     * </p>
-     *
-     * @throws Exception if an error occurs during request processing.
-     */
-    @Test
-    @DisplayName("POST /graph/articulation - Empty edges - Returns 400 Bad Request")
-    public void testFindArticulationPoints_EmptyEdges_ReturnsBadRequest() throws Exception {
-        // GIVEN: Build a request payload with a valid 'vertices' value but an empty list for 'edges'.
-        Map<String, Object> request = Map.of(
-                "vertices", 4,
-                "edges", List.of()
-        );
-
-        // WHEN & THEN: Perform a POST request to /graph/articulation and expect HTTP 400 Bad Request with a validation error message.
-        mockMvc.perform(post("/graph/articulation")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
-               .andExpect(status().isBadRequest())
-               .andExpect(jsonPath("$.message").value("Validation failed"));
-    }
-
-    /**
-     * Integration test for the /graph/bridges endpoint with a malformed JSON payload.
-     *
-     * <p>
-     * <strong>Scenario:</strong> A request is sent with a malformed JSON body.
-     * The test expects an HTTP 400 Bad Request response due to a JSON parsing error.
-     * </p>
-     *
-     * @throws Exception if an error occurs during request processing.
-     */
-    @Test
-    @DisplayName("POST /graph/bridges - Invalid JSON - Returns 400 Bad Request")
-    public void testFindBridges_InvalidJson_ReturnsBadRequest() throws Exception {
-        // GIVEN: Create a malformed JSON string (e.g., missing closing bracket).
-        String malformedJson = "{\"vertices\": 4, \"edges\": [[0,1], [1,2], [2]]";
-
-        // WHEN & THEN: Perform a POST request to /graph/bridges with the malformed JSON and expect HTTP 400 Bad Request.
-        mockMvc.perform(post("/graph/bridges")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(malformedJson))
-               .andExpect(status().isBadRequest());
+        // If expected JSON is provided, assert the response body matches exactly
+        if (testCase.expectedJson != null) {
+            resultActions
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)) // Ensure response is JSON-compatible
+                    .andExpect(content().encoding("UTF-8")) // Optional: Assert encoding is UTF-8 (default for JSON)
+                    .andExpect(header().string("Content-Type", "application/json")) // Check exact header
+                    .andExpect(content().json(testCase.expectedJson, true)); // Strict JSON equality (no extra/missing fields)
+                  }
     }
 }

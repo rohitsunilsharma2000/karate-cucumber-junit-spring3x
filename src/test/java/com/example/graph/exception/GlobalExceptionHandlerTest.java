@@ -10,12 +10,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -158,4 +163,24 @@ public class GlobalExceptionHandlerTest {
                .andExpect(status().isInternalServerError())
                .andExpect(jsonPath("$.message").value("An unexpected error occurred. Please try again later."));
     }
+
+    @Test
+    @DisplayName("Should return 400 for missing servlet request parameter")
+    void testHandleMissingServletRequestParameterException() throws Exception {
+        // GIVEN: Simulate a request to a real endpoint that requires a query param (we'll trigger the exception manually)
+        String missingParamName = "param";
+        String missingParamType = "String";
+
+        // Create the exception manually
+        MissingServletRequestParameterException exception = new MissingServletRequestParameterException(missingParamName, missingParamType);
+
+        // WHEN: Call the handler method directly
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        ResponseEntity<Object> response = handler.handleMissingParams(exception);
+
+        // THEN: Assert the response is 400 and contains the correct message
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertTrue(response.getBody().toString().contains("Required request parameter 'param'"));
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.example.graph.dto;
 
+import com.example.graph.validation.ValidGraphRequest;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -13,8 +14,9 @@ import java.util.List;
  *
  * <p>
  * This class is used to receive input from clients via REST APIs for detecting
- * bridges and articulation points in an undirected graph.
- * It includes validation constraints to ensure data integrity.
+ * bridges and articulation points in an undirected graph. It ensures that
+ * the data is well-formed and adheres to expected constraints before being
+ * processed by the service layer.
  * </p>
  *
  * <p><strong>Structure:</strong></p>
@@ -26,8 +28,8 @@ import java.util.List;
  * <p><strong>Validation Constraints:</strong></p>
  * <ul>
  *   <li><code>@Min(1)</code>: Ensures the number of vertices is at least 1.</li>
- *   <li><code>@NotNull</code> and <code>@NotEmpty</code>: Ensure the edges list is non-null and not empty.</li>
- *   <li>Each edge vertex must also be non-null.</li>
+ *   <li><code>@NotNull</code> and <code>@NotEmpty</code>: Ensure the edges list is not null or empty.</li>
+ *   <li><code>@ValidGraphRequest</code>: Ensures that each edge contains exactly 2 valid vertex indices (0 ≤ vertex < vertices).</li>
  * </ul>
  *
  * <p><strong>Usage Example (JSON):</strong></p>
@@ -41,14 +43,14 @@ import java.util.List;
  * <p><strong>Pass/Fail Conditions:</strong></p>
  * <ul>
  *   <li><strong>Pass:</strong> All required fields are provided and meet the validation criteria.</li>
- *   <li><strong>Fail:</strong> Any field is missing, null, or does not satisfy validation constraints.</li>
+ *   <li><strong>Fail:</strong> Any field is missing, null, malformed, or violates a validation rule.</li>
  * </ul>
  *
  * @author
- * @since 2025-03-26
  */
 @Getter
 @Setter
+@ValidGraphRequest // Class-level validation: checks edges have valid size (2) and vertex bounds [0, vertices-1]
 public class GraphRequest {
 
     /**
@@ -59,9 +61,14 @@ public class GraphRequest {
     private int vertices;
 
     /**
-     * The list of undirected edges.
-     * Each edge is represented as a list of two integers [u, v].
-     * Cannot be null or empty.
+     * The list of undirected edges in the graph.
+     * Each edge is represented as a list of exactly two integers: [u, v].
+     *
+     * <ul>
+     *   <li><code>@NotNull</code>: Edges list must not be null.</li>
+     *   <li><code>@NotEmpty</code>: Edges list must contain at least one edge.</li>
+     *   <li><code>@NotNull</code> on inner list items: Each vertex index in each edge must be non-null.</li>
+     * </ul>
      */
     @NotNull(message = "Edges list cannot be null")
     @NotEmpty(message = "Edges list cannot be empty")

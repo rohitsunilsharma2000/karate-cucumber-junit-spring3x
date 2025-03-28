@@ -38,7 +38,6 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
  * </p>
  *
  * @author
- * @since 2025-03-26
  */
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
 public class GraphIntegrityApp {
