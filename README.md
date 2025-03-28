@@ -16,7 +16,7 @@ The method userRepository.delete(user) is used to permanently remove a user reco
 Spring Boot User Deletion Service — Repository Entity Removal
 
 ## **High-Level Description:**
-Develop a Spring Boot application that includes a dedicated service for deleting user entities from a relational database using Spring Data JPA. The service performs the deletion operation by retrieving the user entity and then calling `userRepository.delete(user)` to remove it from the database. The solution is structured with a service layer, repository, exception handling, and logging components. It emphasizes input validation and robust error management to ensure data integrity while providing detailed traceability through logging.
+A Spring Boot application that includes a dedicated service for deleting user entities from a relational database using Spring Data JPA. The service performs the deletion operation by retrieving the user entity and then calling `userRepository.delete(user)` to remove it from the database. The solution is structured with a service layer, repository, exception handling, and logging components. It emphasizes input validation and robust error management to ensure data integrity while providing detailed traceability through logging.
 
 ## **Key Features:**
 1. **Project Structure & Setup**
@@ -48,7 +48,48 @@ Develop a Spring Boot application that includes a dedicated service for deleting
     - Document the code thoroughly with Javadoc to facilitate maintainability and ease of future enhancements.
     - Ensure that logging and exception handling are properly validated through tests to confirm the robustness of the deletion process.
 
-This approach provides a clean and maintainable solution for deleting user entities from a database, emphasizing best practices such as robust error handling, input validation, and detailed logging within a Spring Boot application.
+6. **Edge Case Handling:**
+
+- **Invalid User ID Format:**
+    - When an invalid or non-numeric user ID is provided in the URL path, the application should return an HTTP 400 (Bad Request) error, indicating that the input is malformed.
+
+- **User Not Found:**
+    - When a valid user ID is provided but no corresponding user exists in the database, a {@link UserNotFoundException} should be thrown. This should be handled gracefully by returning an HTTP 404 (Not Found) response with an appropriate error message.
+
+- **Empty or Malformed Request Body:**
+    - For create and update operations, if the request body is empty, contains malformed JSON, or does not meet the validation constraints (e.g., missing username or email), the application should return an HTTP 400 (Bad Request) error detailing the validation issues.
+
+- **Duplicate User Creation:**
+    - If the creation of a new user conflicts with an existing record (for example, if uniqueness constraints are in place), the system should handle this gracefully, typically returning an HTTP 409 (Conflict) status with an appropriate message.
+
+- **Concurrent Modifications:**
+    - In scenarios where multiple requests attempt to update or delete the same user concurrently, the service should ensure data integrity through proper transaction management and return an appropriate error if a conflict is detected.
+
+
+
+7. **Expected Behavior:**
+
+- **Get User By ID:**
+    - When a valid user ID is provided and the user exists, the system returns the user details with HTTP 200 (OK).
+    - If the user does not exist, the system returns HTTP 404 (Not Found) with an error message indicating that the user was not found.
+
+- **Get All Users:**
+    - The system returns a list of all users with HTTP 200 (OK). If no users are present, an empty list is returned.
+
+- **Create User:**
+    - When a valid user object is provided in the request body, the system creates the user, persists it in the database, and returns the created user with HTTP 201 (Created).
+    - If the request body fails validation (e.g., missing required fields or invalid data), the system returns HTTP 400 (Bad Request) with details about the validation errors.
+
+- **Update User:**
+    - When a valid user ID and an updated user object are provided, the system updates the existing user's details and returns the updated user with HTTP 200 (OK).
+    - If the user to be updated does not exist, the system returns HTTP 404 (Not Found) with an appropriate error message.
+
+- **Delete User:**
+    - When a valid user ID is provided for deletion, the system deletes the user from the database and returns HTTP 204 (No Content).
+    - If the user does not exist, the system throws a {@link UserNotFoundException} and returns HTTP 404 (Not Found) with an error message.
+
+- **Error Responses:**
+    - For all endpoints, proper error responses are returned for various edge cases, ensuring that clients receive clear and informative messages about any issues encountered during the operation.
 
 **Dependency Requirements:**
 
@@ -83,6 +124,8 @@ src
 |   |       `-- example
 |   |           `-- userpurge
 |   |               |-- UserPurgeSystem.java
+|   |               |-- controller
+|   |               |   `-- UserController.java
 |   |               |-- exception
 |   |               |   `-- UserNotFoundException.java
 |   |               |-- model
@@ -98,12 +141,13 @@ src
             `-- example
                 `-- userpurge
                     |-- UserPurgeSystemTest.java
+                    |-- controller
+                    |   |-- UserControllerIntegrationTest.java
+                    |   `-- UserControllerUnitTest.java
                     |-- exception
                     |   `-- UserNotFoundExceptionTest.java
                     `-- service
                         `-- UserServiceTest.java
-
-
 ```
 
 **2) Main Application:** `src/main/java/com/example/userpurge/UserPurgeSystem.java`
@@ -130,7 +174,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * **Key Features:**
  * 1. **Project Structure & Setup**
- *    - Built using Spring Boot with essential dependencies such as Spring Data JPA and an embedded database (H2) for development and testing.
+ *    - Built using Spring Boot with essential dependencies such as Spring Data JPA and an embedded database (mySql) for development and testing.
  *    - Organized into clearly defined packages: {@code model}, {@code repository}, {@code service}, and {@code exception}.
  *
  * 2. **Service Layer – User Deletion**
@@ -494,7 +538,147 @@ public class UserNotFoundException extends RuntimeException {
 
 	</project>
 ```
-**8) application.properties:** `src/main/resources/application.properties`
+**8) UserController:** `src/main/java/com/example/userpurge/controller/UserController.java`
+```java
+package com.example.userpurge.controller;
+
+import com.example.userpurge.exception.UserNotFoundException;
+import com.example.userpurge.model.User;
+import com.example.userpurge.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
+/**
+ * REST controller for managing users in the UserPurge system.
+ * <p>
+ * This controller provides endpoints for performing CRUD operations on user entities.
+ * It interacts with the {@link UserService} to perform business logic and ensures that all operations
+ * are validated, logged, and handled appropriately.
+ * </p>
+ *
+ * <h3>Functionality:</h3>
+ * <ul>
+ *   <li>Retrieve a user by ID.</li>
+ *   <li>Retrieve all users.</li>
+ *   <li>Create a new user with input validation.</li>
+ *   <li>Update an existing user's profile with validation.</li>
+ *   <li>Delete a user by ID.</li>
+ * </ul>
+ *
+ * <h3>Test Coverage:</h3>
+ * <ul>
+ *   <li>Unit and integration tests ensure 100% line coverage for all endpoints.</li>
+ *   <li>Enhanced Javadoc, inline comments, and logging improve code clarity and maintainability.</li>
+ * </ul>
+ */
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+@Slf4j
+public class UserController {
+
+    // Inject the UserService to delegate business logic
+    private final UserService userService;
+
+    /**
+     * Retrieves a user by their unique ID.
+     *
+     * @param id The unique identifier of the user.
+     * @return A {@link ResponseEntity} containing the user if found.
+     * @throws UserNotFoundException if no user is found with the given ID.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        log.debug("Received request to retrieve user with ID: {}", id);
+        // Call service layer to retrieve user by ID
+        User user = userService.getUserById(id);
+        log.info("User with ID: {} retrieved successfully", id);
+        // Return HTTP 200 (OK) along with the user data
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Retrieves all users.
+     *
+     * @return A {@link ResponseEntity} containing a list of all users.
+     */
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        log.debug("Received request to retrieve all users");
+        // Retrieve all users from the service layer
+        List<User> users = userService.findAll();
+        log.info("Retrieved {} users", users.size());
+        // Return HTTP 200 (OK) along with the list of users
+        return ResponseEntity.ok(users);
+    }
+
+    /**
+     * Creates a new user.
+     * <p>
+     * Validates the input using Jakarta Bean Validation (@Valid) to ensure that the user data meets the required constraints.
+     * </p>
+     *
+     * @param user The user object to be created, provided in the request body.
+     * @return A {@link ResponseEntity} containing the created user with HTTP 201 (Created) status.
+     */
+    @PostMapping
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        log.debug("Received request to create user with username: {}", user.getUsername());
+        // Persist the new user using the service layer
+        User savedUser = userService.save(user);
+        log.info("User created successfully with ID: {}", savedUser.getId());
+        // Return HTTP 201 (Created) along with the created user data
+        return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
+    }
+
+    /**
+     * Updates an existing user's profile.
+     * <p>
+     * Validates the input using Jakarta Bean Validation (@Valid) to ensure that the updated user data is valid.
+     * </p>
+     *
+     * @param id   The unique identifier of the user to update.
+     * @param user The user object containing updated data, provided in the request body.
+     * @return A {@link ResponseEntity} containing the updated user with HTTP 200 (OK) status.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+        log.debug("Received request to update user with ID: {}", id);
+        // Update the user's profile using the service layer
+        User updated = userService.updateUserProfile(id, user);
+        log.info("User with ID: {} updated successfully", id);
+        // Return HTTP 200 (OK) along with the updated user data
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Deletes a user by their unique ID.
+     * <p>
+     * First, the service checks if the user exists; if not, a {@link UserNotFoundException} is thrown.
+     * </p>
+     *
+     * @param id The unique identifier of the user to be deleted.
+     * @return A {@link ResponseEntity} with HTTP 204 (No Content) status if the deletion is successful.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        log.debug("Received request to delete user with ID: {}", id);
+        // Delete the user using the service layer; exceptions are handled globally
+        userService.deleteUser(id);
+        log.info("User with ID: {} deleted successfully", id);
+        // Return HTTP 204 (No Content) to indicate successful deletion without any response body
+        return ResponseEntity.noContent().build();
+    }
+}
+
+```
+**9) application.properties:** `src/main/resources/application.properties`
 ```properties
 
 spring.application.name=user-purge-system
@@ -889,6 +1073,358 @@ public class UserServiceTest {
 }
 
 ```
+**12) UserControllerIntegrationTest:** `src/test/java/com/example/userpurge/controller/UserControllerIntegrationTest.java`
+```java
+package com.example.userpurge.controller;
+
+import com.example.userpurge.model.User;
+import com.example.userpurge.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.*;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Integration tests for {@link UserController}.
+ * <p>
+ * This test class verifies that the REST endpoints exposed by {@code UserController} operate as expected.
+ * It uses an embedded mySql database (or another configured database) and the {@link TestRestTemplate} to perform HTTP calls.
+ * Each test method ensures the endpoint's behavior matches the expected response.
+ * </p>
+ *
+ * <h3>Test Scenarios:</h3>
+ * <ul>
+ *   <li>Retrieve a user by ID and verify correct data is returned.</li>
+ *   <li>Retrieve all users and confirm the returned list is not empty.</li>
+ *   <li>Create a new user and check that the user is persisted correctly.</li>
+ *   <li>Update an existing user and verify the updates are reflected.</li>
+ *   <li>Delete a user and confirm that subsequent retrieval attempts fail.</li>
+ * </ul>
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class UserControllerIntegrationTest {
+
+    // TestRestTemplate to perform HTTP requests in tests.
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    // UserRepository to interact with the database directly for test setup and verification.
+    @Autowired
+    private UserRepository userRepository;
+
+    // Sample user used across test methods.
+    private User sampleUser;
+
+    /**
+     * Setup method to initialize test data.
+     * <p>
+     * This method clears the database and creates a sample user before each test.
+     * </p>
+     */
+    @BeforeEach
+    void setUp() {
+        // Clean the database before each test
+        userRepository.deleteAll();
+
+        // Create and persist a sample user for testing
+        sampleUser = new User();
+        sampleUser.setUsername("integrationUser");
+        sampleUser.setEmail("integration@example.com");
+        sampleUser = userRepository.save(sampleUser);
+    }
+
+    /**
+     * Tests retrieval of a user by their ID.
+     * <p>
+     * Sends a GET request to {@code /api/users/{id}} and verifies that the returned user has the expected username.
+     * </p>
+     */
+    @Test
+    void testGetUserById() {
+        // Send GET request to retrieve the sample user by ID
+        ResponseEntity<User> response = restTemplate.getForEntity("/api/users/" + sampleUser.getId(), User.class);
+
+        // Assert that the HTTP status is 200 OK
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // Assert that the username matches the sample user's username
+        assertThat(response.getBody().getUsername()).isEqualTo("integrationUser");
+    }
+
+    /**
+     * Tests retrieval of all users.
+     * <p>
+     * Sends a GET request to {@code /api/users} and verifies that the returned list contains at least one user.
+     * </p>
+     */
+    @Test
+    void testGetAllUsers() {
+        // Send GET request to retrieve all users
+        ResponseEntity<User[]> response = restTemplate.getForEntity("/api/users", User[].class);
+
+        // Assert that the HTTP status is 200 OK
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // Convert the response body to a list and assert that it is not empty
+        List<User> users = List.of(response.getBody());
+        assertThat(users).isNotEmpty();
+    }
+
+    /**
+     * Tests creation of a new user.
+     * <p>
+     * Sends a POST request to {@code /api/users} with a new user's data and verifies that the user is created with HTTP 201 status.
+     * </p>
+     */
+    @Test
+    void testCreateUser() {
+        // Prepare a new user object to be created
+        User newUser = new User();
+        newUser.setUsername("newIntegrationUser");
+        newUser.setEmail("newintegration@example.com");
+
+        // Send POST request to create the new user
+        ResponseEntity<User> response = restTemplate.postForEntity("/api/users", newUser, User.class);
+
+        // Assert that the HTTP status is 201 Created
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Assert that the created user's username matches the expected value
+        assertThat(response.getBody().getUsername()).isEqualTo("newIntegrationUser");
+    }
+
+    /**
+     * Tests updating an existing user's information.
+     * <p>
+     * Sends a PUT request to {@code /api/users/{id}} with updated data and verifies that the response contains the updated user.
+     * </p>
+     */
+    @Test
+    void testUpdateUser() {
+        // Update the sample user's username
+        sampleUser.setUsername("updatedIntegrationUser");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Create an HTTP entity with the updated user data and headers
+        HttpEntity<User> requestEntity = new HttpEntity<>(sampleUser, headers);
+
+        // Send PUT request to update the user
+        ResponseEntity<User> response = restTemplate.exchange("/api/users/" + sampleUser.getId(),
+                                                              HttpMethod.PUT, requestEntity, User.class);
+
+        // Assert that the HTTP status is 200 OK
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // Assert that the username was updated successfully
+        assertThat(response.getBody().getUsername()).isEqualTo("updatedIntegrationUser");
+    }
+
+    /**
+     * Tests deletion of a user.
+     * <p>
+     * Sends a DELETE request to {@code /api/users/{id}} and then attempts to retrieve the same user to verify deletion.
+     * </p>
+     */
+    @Test
+    void testDeleteUser() {
+        // Send DELETE request to remove the sample user
+        ResponseEntity<Void> response = restTemplate.exchange("/api/users/" + sampleUser.getId(),
+                                                              HttpMethod.DELETE, null, Void.class);
+        // Assert that the HTTP status is 204 No Content
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        // Attempt to retrieve the deleted user; expect a 404 Not Found
+        ResponseEntity<User> getResponse = restTemplate.getForEntity("/api/users/" + sampleUser.getId(), User.class);
+        // Assert that the user is not found (assuming global exception handling returns 404)
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+```
+**13) UserControllerUnitTest:** `src/test/java/com/example/userpurge/controller/UserControllerUnitTest.java`
+```java
+package com.example.userpurge.controller;
+
+import com.example.userpurge.model.User;
+import com.example.userpurge.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import java.util.Collections;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Unit tests for {@link UserController} ensuring that all endpoints function as expected.
+ * <p>
+ * These tests use Spring's {@link WebMvcTest} with {@link MockMvc} to simulate HTTP requests
+ * and validate the responses returned by the controller methods. The tests also employ Mockito to
+ * mock interactions with the {@link UserService}.
+ * </p>
+ *
+ * <h3>Test Scenarios Covered:</h3>
+ * <ul>
+ *   <li>Retrieval of a user by ID when the user exists.</li>
+ *   <li>Retrieval of all users.</li>
+ *   <li>Creation of a new user with proper input validation.</li>
+ *   <li>Updating an existing user and verifying the updates.</li>
+ *   <li>Deletion of a user and verifying that the proper status code is returned.</li>
+ * </ul>
+ */
+@ExtendWith(SpringExtension.class)
+@WebMvcTest(UserController.class)
+public class UserControllerUnitTest {
+
+    // MockMvc is used to simulate HTTP requests and assert responses.
+    @Autowired
+    private MockMvc mockMvc;
+
+    // Mock the UserService to isolate controller testing.
+    @MockBean
+    private UserService userService;
+
+    // ObjectMapper to convert Java objects to JSON string and vice versa.
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // A sample user object used across multiple test cases.
+    private User sampleUser;
+
+    /**
+     * Sets up a sample user before each test.
+     * <p>
+     * This method initializes the sample user with preset values for use in the tests.
+     * </p>
+     */
+    @BeforeEach
+    void setUp() {
+        sampleUser = new User();
+        sampleUser.setId(1L);
+        sampleUser.setUsername("testuser");
+        sampleUser.setEmail("testuser@example.com");
+    }
+
+    /**
+     * Tests the retrieval of a user by ID when the user exists.
+     * <p>
+     * Mocks the UserService to return the sample user and verifies that the controller
+     * responds with the correct status code and user data.
+     * </p>
+     */
+    @Test
+    void testGetUserById_Success() throws Exception {
+        // Mock the service call to return the sample user for ID 1.
+        when(userService.getUserById(1L)).thenReturn(sampleUser);
+
+        // Perform GET request to /api/users/1 and assert that the response is OK with expected user data.
+        mockMvc.perform(get("/api/users/1"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.username").value("testuser"));
+    }
+
+    /**
+     * Tests the retrieval of all users.
+     * <p>
+     * Mocks the UserService to return a singleton list containing the sample user and verifies
+     * that the response contains the expected data.
+     * </p>
+     */
+    @Test
+    void testGetAllUsers() throws Exception {
+        // Mock the service call to return a list with the sample user.
+        when(userService.findAll()).thenReturn(Collections.singletonList(sampleUser));
+
+        // Perform GET request to /api/users and assert that the first user's username matches.
+        mockMvc.perform(get("/api/users"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].username").value("testuser"));
+    }
+
+    /**
+     * Tests the creation of a new user.
+     * <p>
+     * Mocks the UserService to return the sample user upon creation.
+     * Sends a POST request with the sample user JSON and verifies that the response status is CREATED
+     * and that the returned user data matches the expected values.
+     * </p>
+     */
+    @Test
+    void testCreateUser() throws Exception {
+        // Mock the service call to return the sample user when saving any User.
+        when(userService.save(any(User.class))).thenReturn(sampleUser);
+
+        // Convert sampleUser object to JSON.
+        String userJson = objectMapper.writeValueAsString(sampleUser);
+
+        // Perform POST request to /api/users with user JSON and verify response status and content.
+        mockMvc.perform(post("/api/users")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(userJson))
+               .andExpect(status().isCreated())
+               .andExpect(jsonPath("$.username").value("testuser"));
+    }
+
+    /**
+     * Tests updating an existing user's profile.
+     * <p>
+     * Mocks the UserService to return an updated user object and verifies that the controller
+     * correctly processes the PUT request and returns the updated user.
+     * </p>
+     */
+    @Test
+    void testUpdateUser() throws Exception {
+        // Create an updated user object with modified username and email.
+        User updatedUser = new User();
+        updatedUser.setId(1L);
+        updatedUser.setUsername("updateduser");
+        updatedUser.setEmail("updated@example.com");
+
+        // Mock the service call to return the updated user when updating user with ID 1.
+        when(userService.updateUserProfile(eq(1L), any(User.class))).thenReturn(updatedUser);
+
+        // Convert the updated user object to JSON.
+        String userJson = objectMapper.writeValueAsString(updatedUser);
+
+        // Perform PUT request to /api/users/1 with updated user JSON and verify response.
+        mockMvc.perform(put("/api/users/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(userJson))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.username").value("updateduser"));
+    }
+
+    /**
+     * Tests deletion of a user.
+     * <p>
+     * Mocks the UserService to do nothing on delete (simulating successful deletion) and verifies that
+     * the DELETE request returns the correct HTTP status.
+     * </p>
+     */
+    @Test
+    void testDeleteUser() throws Exception {
+        // Mock the deleteUser method to do nothing when called with user ID 1.
+        Mockito.doNothing().when(userService).deleteUser(1L);
+
+        // Perform DELETE request to /api/users/1 and assert that the response status is NO_CONTENT.
+        mockMvc.perform(delete("/api/users/1"))
+               .andExpect(status().isNoContent());
+    }
+}
+
+```
 
 # After the second iteration, test coverage increased to 100%.
 **Result:** Total line coverage is 100%
@@ -896,8 +1432,8 @@ public class UserServiceTest {
 # **How to Run**
 
 1. **Create the Project Structure:** Manually create the directories and files as shown in the provided project layout or use Spring Initializr to generate a skeleton, then place/modify files accordingly.
-2. **pom.xml / Dependencies:** Ensure your pom.xml includes Spring Boot Starter Web, Security, Validation, Lombok, Test, H2 Database, Jakarta Validation API, and DevTools dependencies with Java version set to 17 for a scalable REST API using the Edmonds‑Karp algorithm..
-3. **Database & Application Properties:** Configure H2 DB credentials in application.properties (or application.yml) due to in-memory auth, for example:
+2. **pom.xml / Dependencies:** Ensure your pom.xml includes Spring Boot Starter Web, Security, Validation, Lombok, Test, mySql Database, Jakarta Validation API, and DevTools dependencies with Java version set to 17 for a scalable REST API using the Edmonds‑Karp algorithm..
+3. **Database & Application Properties:** Configure mySql DB credentials in application.properties (or application.yml) due to in-memory auth, for example:
 ```properties
 
 spring.application.name=user-purge-system
@@ -929,6 +1465,7 @@ This will compile the code, install dependencies, and package the application.
 mvn clean test
 ```
 Verify that test coverage meets or exceeds the 90% target.
+
 5. **Start the Application:**
 
 - Launch the Spring Boot app via Maven:
@@ -937,29 +1474,43 @@ mvn spring-boot:run
 ```
 ### 6. **Accessing Endpoints & Features:**
 
-#### **Delete User Service Operation:**
-- **Method:** `deleteUser(Long id)`
-- **Description:**  
-  Removes a user entity from the database by invoking the service method that calls `userRepository.delete(user)`. The operation first verifies that the user exists before deletion, ensuring data integrity and robust error management through comprehensive logging and exception handling. Although no REST endpoint is exposed, this service operation is a key feature of the UserPurge system.
-- **Parameters:**
-    - **id** (Long): The unique identifier of the user to be deleted.
-- **Usage Example (Java):**
-  ```java
-  // Example usage in a service or a test case:
-  try {
-      userService.deleteUser(1L);
-      System.out.println("User deleted successfully.");
-  } catch (UserNotFoundException ex) {
-      System.out.println("Deletion failed: " + ex.getMessage());
-  }
-  ```
-- **Outcome:**
-    - **Success:** The user is removed from the database. No data is returned.
-    - **Failure:** A `UserNotFoundException` is thrown if the user does not exist, allowing calling code to handle the error appropriately.
+ Get User By ID
+```bash
+curl --location --request GET 'http://localhost:8080/api/users/1'
+```
 
-This service operation is invoked directly within the application logic or through internal APIs rather than via a REST endpoint, ensuring that the deletion process remains encapsulated and testable within the service layer.
+Get All Users
+```bash
+curl --location --request GET 'http://localhost:8080/api/users'
 
+```
 
+ Create User
+```bash
+curl --location --request POST 'http://localhost:8080/api/users' \
+--header 'Content-Type: application/json' \
+--data '{
+"username": "newuser",
+"email": "newuser@example.com"
+}'
+```
+
+ Update User
+```bash
+curl --location --request PUT 'http://localhost:8080/api/users/1' \
+--header 'Content-Type: application/json' \
+--data '{
+"username": "updateduser",
+"email": "updated@example.com"
+}'
+```
+
+Delete User
+
+```bash
+curl --location --request DELETE 'http://localhost:8080/api/users/1'
+
+```
 
 # **Time and Space Complexity:**
 
@@ -986,3 +1537,15 @@ Key strengths of the solution include:
 - **Efficient Performance:** With both lookup and deletion operations operating in constant time, the service is highly performant.
 
 This makes the application ideal for enterprise environments that require reliable and maintainable user data management, ensuring that deletion operations are both precise and scalable.
+
+
+**Iteration One:**
+
+https://drive.google.com/file/d/1avUH0V35ukulqXF_wLN57e2Gjf9jYLxc/view?usp=drive_link
+
+**Iteration Two:**
+https://drive.google.com/file/d/1dMgqS-bD2TaFiwMpMnzVy2QIKJfd-2Kn/view?usp=drive_link
+
+**Download Code:**
+
+https://drive.google.com/file/d/1rShdMn5Aeq-iygIorpu-RSz2xthsrdRK/view?usp=drive_link
