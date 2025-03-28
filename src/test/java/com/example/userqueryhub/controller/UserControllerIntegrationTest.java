@@ -1,19 +1,24 @@
 package com.example.userqueryhub.controller;
 
 import com.example.userqueryhub.dto.UserDTO;
+import com.example.userqueryhub.exception.UserNotFoundException;
 import com.example.userqueryhub.model.User;
 import com.example.userqueryhub.repository.UserRepository;
+import com.example.userqueryhub.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -51,6 +56,8 @@ public class UserControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository; // Repository used for data persistence in tests
 
+    @MockBean
+    private UserService userService;
     @Autowired
     private ObjectMapper objectMapper; // Converts Java objects to/from JSON
 
@@ -137,15 +144,22 @@ public class UserControllerIntegrationTest {
      *
      * @throws Exception if the HTTP request fails.
      */
-    @Test
-    public void getUserByUsernameInvalidTest() throws Exception {
-        // GIVEN: Define an invalid username input (whitespace).
-        String invalidUsername = " ";
 
-        // WHEN & THEN: Perform a GET request to /api/users/username/{username} with the blank username and expect an error.
-        // Note: In this implementation, the test expects an Internal Server Error (500), though a proper implementation would return 400.
-        mockMvc.perform(get("/api/users/username/{username}", invalidUsername)
+
+    @Test
+    public void getUserByUsernameNotFoundTest() throws Exception {
+        // GIVEN
+        String username = "non_existent_user";
+        when(userService.getUserByUsername(username))
+                .thenThrow(new UserNotFoundException("User with username '" + username + "' not found"));
+
+        // WHEN & THEN
+        mockMvc.perform(get("/api/users/username/{username}", username)
                                 .contentType(MediaType.APPLICATION_JSON))
-               .andExpect(status().isInternalServerError());
+               .andExpect(status().isNotFound())
+               .andExpect(content().string("User with username 'non_existent_user' not found"));
     }
+
+
+
 }
