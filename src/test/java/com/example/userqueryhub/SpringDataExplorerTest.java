@@ -1,7 +1,5 @@
 package com.example.userqueryhub;
 
-
-
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -11,34 +9,52 @@ import org.springframework.boot.test.context.SpringBootTest;
  * <p>
  * This test class includes:
  * <ul>
- *   <li>{@code contextLoads()} - verifies that the Spring application context starts up correctly.
- *   <li>{@code testMainMethod()} - calls the main method to ensure it executes without throwing exceptions.
+ *   <li>{@code contextLoads()} - Verifies that the Spring application context starts up correctly.</li>
+ *   <li>{@code testMainMethod()} - Calls the main method to ensure it executes without throwing exceptions.</li>
  * </ul>
  * </p>
  *
  * <p>
  * With these tests, code coverage tools (e.g., JaCoCo) should report over 90% class, method, and line coverage.
  * </p>
+ *
+ * @since 2025-03-27
  */
 @SpringBootTest(classes = SpringDataExplorerTest.class)
 public class SpringDataExplorerTest {
 
     /**
      * Verifies that the Spring application context loads successfully.
-     * If the context fails to load, the test will fail.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> The application is configured correctly.
+     * <br>
+     * <strong>WHEN:</strong> The test starts, and Spring Boot attempts to load the application context.
+     * <br>
+     * <strong>THEN:</strong> No exceptions should be thrown, indicating that the context has loaded properly.
+     * </p>
      */
     @Test
     public void contextLoads() {
         // The application context is automatically loaded by the @SpringBootTest annotation.
+        // If context loading fails, this test will fail.
     }
 
     /**
      * Verifies that calling the main method of {@link SpringDataExplorerTest} executes without exceptions.
+     *
+     * <p>
+     * <strong>GIVEN:</strong> An empty argument array.
+     * <br>
+     * <strong>WHEN:</strong> The main method is invoked.
+     * <br>
+     * <strong>THEN:</strong> The application should start and terminate without any exceptions.
+     * </p>
      */
     @Test
     public void testMainMethod() {
-        // Call the main method with an empty argument array.
+        // WHEN: Call the main method with an empty argument array.
         SpringDataExplorer.main(new String[]{});
-        // Test passes if no exception is thrown.
+        // THEN: The test passes if no exception is thrown during execution.
     }
 }
