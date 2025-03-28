@@ -658,7 +658,7 @@ public class TaskController {
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.24</version>
+			<version>1.18.30</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- For Jakarta Bean Validation -->
@@ -694,9 +694,11 @@ spring.application.name=Graph-Slotter
 server.port=8080
 ```
 
+
+
 # **Unit Tests (JUnit 5 + Mockito)**
 
-**2) Main ApplicationTest:** `src/main/java/com/example/colorsched/GraphSlotterSystem.java`
+**2) Main ApplicationTest:** `src/test/java/com/example/colorsched/GraphSlotterSystemTest.java`
 ```java
 package com.example.colorsched;
 import org.junit.jupiter.api.DisplayName;
@@ -733,7 +735,7 @@ class GraphSlotterSystemTest {
 
 ```
 
-**3) GlobalExceptionHandlerTest:** `src/main/java/com/example/colorsched/exception/GlobalExceptionHandler.java`
+**3) GlobalExceptionHandlerTest:** `src/test/java/com/example/colorsched/exception/GlobalExceptionHandlerTest.java`
 ```java
 package com.example.colorsched.exception;
 
@@ -820,7 +822,7 @@ class GlobalExceptionHandlerTest {
 
 
 ```
-**4) ScheduleResponseTest:** `src/main/java/com/example/colorsched/dto/ScheduleResponse.java`
+**4) ScheduleResponseTest:** `src/test/java/com/example/colorsched/dto/ScheduleResponseTest.java`
 ```java
 package com.example.colorsched.dto;
 
@@ -920,7 +922,7 @@ class ScheduleResponseTest {
 
 ```
 # After the first iteration, the overall test coverage was 21%. To improve this, additional test cases—including those in `TaskControllerIntegrationTest`  , `TaskSchedulerServiceImplTest` and `TaskControllerTest` will be introduced to further increase the test coverage percentage.
-**5) TaskControllerIntegrationTest:** `src/main/java/com/example/colorsched/dto/TaskRequest.java`
+**5) TaskControllerIntegrationTest:** `src/test/java/com/example/colorsched/controller/TaskControllerIntegrationTest.java`
 ```java
 package com.example.colorsched.controller;
 
@@ -1152,7 +1154,7 @@ class TaskControllerIntegrationTest {
 }
 
 ```
-**6) TaskSchedulerServiceImplTest:** `src/main/java/com/example/colorsched/service/TaskSchedulerServiceImpl.java`
+**6) TaskSchedulerServiceImplTest:** `src/test/java/com/example/colorsched/service/TaskSchedulerServiceImplTest.java`
 ```java
 package com.example.colorsched.service;
 
@@ -1299,7 +1301,7 @@ class TaskSchedulerServiceImplTest {
 }
 
 ```
-**7) TaskControllerTest:** `src/main/java/com/example/colorsched/GraphSlotterSystem.java`
+**7) TaskControllerTest:** `src/test/java/com/example/colorsched/controller/TaskControllerTest.java`
 ```java
 package com.example.colorsched.controller;
 
@@ -1634,6 +1636,7 @@ This will compile the code, install dependencies, and package the application.
 mvn clean test
 ```
 Verify that test coverage meets or exceeds the 90% target.
+
 5. **Start the Application:**
 
 - Launch the Spring Boot app via Maven:
@@ -1785,6 +1788,8 @@ The system ensures:
 - **Extensive unit and integration test coverage** using JUnit 5 and Spring MockMvc.
 
 This makes it well-suited for real-world applications in domains such as **compiler task planning**, **distributed computing**, and **resource allocation systems** where correctness, concurrency, and performance are critical.
+
+
 
 # **Iteration**
 
