@@ -45,8 +45,19 @@ You need to build a Spring Boot @Service class named `NotificationService` that 
   - Use a control flow mechanism (such as a switch-case) to route the request to the appropriate channel service.
 
 7. **Testability:**
-  - Design the class to be easily unit-testable by allowing mocking of the individual channel services.
-  - Ensure thorough documentation of each method's purpose, parameters, and error conditions.
+  - The class is designed to be easily unit-testable by decoupling the individual channel services using dependency injection.
+  - All methods are documented with clear descriptions, parameter ranges, and error conditions.
+  - This structure allows for the use of mocking frameworks (e.g., Mockito) to simulate both successful flows and error conditions, ensuring comprehensive test coverage.
+
+8. **Edge Case Handling:**
+  - Missing or empty input fields (e.g., recipient, subject, or message) are validated and result in specific custom exceptions.
+  - Unsupported or null notification types trigger clear error messages.
+  - Unexpected errors in underlying service calls are caught and wrapped in a consistent custom exception (NotificationException) to ensure uniform error responses.
+
+9. **Expected Behavior:**
+  - For valid inputs, the service immediately delegates to the appropriate channel service (Email, SMS, or Push) and returns a success response.
+  - For invalid inputs, detailed validation errors are returned (HTTP 400) with descriptive messages.
+  - In the event of a failure in the underlying service, the system catches the error and returns an HTTP 500 error with a standardized error message, ensuring consistent client feedback.
 
 **Dependency Requirements:**
 
@@ -1936,9 +1947,13 @@ The Notification Service built with Spring Boot efficiently handles notification
 
 
 
-1st Iteration:
+## Code Iteration
+
+**1st Iteration:**
 https://drive.google.com/file/d/1dDMSPmJFPZlfFRYbH7Jana-xDxTKYihl/view?usp=drive_link
-2nd Iteration:
+
+**2nd Iteration:**
 https://drive.google.com/file/d/1u4aN83xf0bY9NK5WCXBUSYwnQWIXLMer/view?usp=drive_link
-Project Source Code:
+
+**Project Source Code:**
 https://drive.google.com/file/d/1e4SQ7ALrsj06kuzQ99UTQnJijSOKVDW5/view?usp=drive_link
